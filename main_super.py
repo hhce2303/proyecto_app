@@ -173,8 +173,8 @@ def open_main_window(username, station, role, session_id):
         "Rol": {"command": lambda: backend_super.open_rol_window(), "permission": "Rol"},
         "View": {"command": lambda: backend_super.open_view_window(), "permission": "View"},
         "Map": {"command": lambda: backend_super.show_map(), "permission": "Map"},
-        "Specials": {"command": lambda: backend_super.open_hybrid_events_supervisor(username=username, root=root), "permission": "Specials"},
-        "Lead Specials": {"command": lambda: backend_super.open_hybrid_events_lead_supervisor(username=username, root=root), "permission": "Lead Specials"},
+        "Specials": {"command": lambda: backend_super.open_hybrid_events_supervisor(username=username, session_id=session_id, station=station, root=root), "permission": "Specials"},
+        "Lead Specials": {"command": lambda: backend_super.open_hybrid_events_lead_supervisor(username=username, session_id=session_id, station=station, root=root), "permission": "Lead Specials"},
         "Audit": {"command": lambda: backend_super.audit_view(parent=None), "permission": "Audit"},
         "Time Zone": {"command": lambda: backend_super.open_tz_editor(username, station, role, session_id), "permission": "Time Zone"},
         # Abrir la ventana de estadísticas de Cover (evita pasar argumentos no esperados a get_cover_stats)

@@ -9,6 +9,21 @@ from datetime import datetime
 import under_super
 now = datetime.now()
 
+# ---- Función de cierre de ventana ----
+def on_login_window_close():
+    """Maneja el cierre de la ventana principal sin quedar colgado"""
+    try:
+        import sys
+        import os
+        # Terminar el proceso de forma forzada
+        os._exit(0)
+    except Exception as e:
+        print(f"[ERROR] Error en on_login_window_close: {e}")
+        try:
+            sys.exit(0)
+        except Exception:
+            pass
+
 # ---- Cache global para recursos de Login (evita recargar imagen desde red en cada logout) ----
 _LOGIN_BG_CACHE = {
     "image": None,  # PIL.Image
@@ -37,11 +52,11 @@ def do_logout(session_id, station, root):
         print("[DEBUG] Ejecutando UPDATE Sesiones...")
         cursor.execute(
             """
-            UPDATE Sesiones
-            SET Log_Out = %s, Is_Active = '0'
-            WHERE ID_Sesion = %s AND Is_Active = '-1'
+            UPDATE sesion
+            SET Log_Out = %s, Active = "0"
+            WHERE ID = %s AND Active = "1" or ACTIVE = "-1"
             """,
-            (log_out_time, int(session_id))
+            (log_out_time, session_id)
         )
         print(f"[DEBUG] Filas afectadas: {cursor.rowcount}")
         print("[DEBUG] UPDATE Sesiones OK ✅")
@@ -52,8 +67,9 @@ def do_logout(session_id, station, root):
             UPDATE Estaciones
             SET User_Logged = NULL
             WHERE Station_Number=%s
+            
             """,
-            (station,)
+            (station)
         )
         print("[DEBUG] Estación liberada en tabla Estaciones")
 
@@ -241,14 +257,42 @@ def show_login():
         tk.Label(frame, text="Iniciar Sesión", bg="#1c1c1c", fg="#4aa3ff",
                  font=("Segoe UI", 18, "bold")).pack(pady=(9, 12))
 
-    # Usuario
+    # Usuario - FilteredCombobox con lista de usuarios
+    # Cargar lista de usuarios desde la base de datos
+    users_list = []
+    try:
+        conn = under_super.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT Nombre_Usuario FROM user ORDER BY Nombre_Usuario")
+        users_list = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"[DEBUG] Error al cargar usuarios: {e}")
+    
     if UI is not None:
         UI.CTkLabel(frame, text="Usuario:", text_color="white", font=("Segoe UI", 11)).pack(anchor="w", padx=20)
-        username_entry = UI.CTkEntry(frame, width=240)
+        username_var = tk.StringVar()
+        username_entry = under_super.FilteredCombobox(
+            frame, textvariable=username_var, values=users_list,
+            font=("Segoe UI", 10), width=30,
+            background='#1c1c1c', foreground='#ffffff',
+            fieldbackground='#1c1c1c',
+            bordercolor='#1c1c1c', arrowcolor='#ffffff',
+            borderwidth=0
+        )
         username_entry.pack(pady=2, padx=20)
     else:
         tk.Label(frame, text="Usuario:", bg="#1c1c1c", fg="white", font=("Segoe UI", 9)).pack(anchor="w", padx=20)
-        username_entry = ttk.Entry(frame, width=30)
+        username_var = tk.StringVar()
+        username_entry = under_super.FilteredCombobox(
+            frame, textvariable=username_var, values=users_list,
+            font=("Segoe UI", 9), width=30,
+            background='#1c1c1c', foreground='#ffffff',
+            fieldbackground='#1c1c1c',
+            bordercolor='#1c1c1c', arrowcolor='#ffffff',
+            borderwidth=0
+        )
         username_entry.pack(pady=2, padx=20)
 
     # Contraseña
@@ -279,7 +323,7 @@ def show_login():
 
         # Validar estación
         if not station_input.isdigit():
-            messagebox.showerror("Error", "Debes ingresar un número de estación válido")
+            messagebox.showerror("Error", "Datos invalidos")
             return
         station = int(station_input)  # Número lógico de estación
 
@@ -312,9 +356,9 @@ def show_login():
 
             # Insertar nueva sesión
             cursor.execute("""
-                INSERT INTO Sesiones (Nombre_Usuario, Stations_ID, Login_Time, Is_Active)
+                INSERT INTO sesion (ID_user, Log_in, ID_estacion, Active)
                 VALUES (%s, %s, %s, %s)
-            """, (username, station, datetime.now(), "-1"))
+            """, (username, datetime.now(), station, "1"))
             print("[DEBUG] INSERT Sesiones ejecutado")
 
             # 🔹 Obtener último ID insertado
@@ -323,7 +367,7 @@ def show_login():
             print(f"[DEBUG] Nuevo Session_ID generado: {session_id}")
 
             # 🔹 Verificar si la estación ya está ocupada
-            cursor.execute("SELECT User_Logged FROM Estaciones WHERE Station_Number=%s", (station,))
+            cursor.execute("SELECT User_Logged FROM estaciones WHERE Station_Number=%s", (station,))
             row = cursor.fetchone()
 
             if row and row[0]:  # Si ya hay alguien logeado
@@ -342,7 +386,7 @@ def show_login():
             backend_super.prompt_exit_active_cover(username, win)
 
             # Mensaje de bienvenida
-            messagebox.showinfo("Login", f"Bienvenido {username} ({role})")
+
             # No destruir el root: solo ocultarlo; main window será un Toplevel
             try:
                 win.withdraw()
@@ -356,11 +400,11 @@ def show_login():
             elif role == "Supervisor":
                 # Para Supervisor, abrir ventana de hybrid events supervisor
                 print(f"[DEBUG] Rol Supervisor detectado, abriendo hybrid events supervisor")
-                backend_super.open_hybrid_events_supervisor(username=username, root=win)
+                backend_super.open_hybrid_events_supervisor(username, session_id, station, win)
             elif role == "Lead Supervisor":
                 # Para Lead Supervisor, abrir ventana específica con permisos de eliminación
                 print(f"[DEBUG] Rol Lead Supervisor detectado, abriendo hybrid events lead supervisor")
-                backend_super.open_hybrid_events_lead_supervisor(username=username, root=win)
+                backend_super.open_hybrid_events_lead_supervisor(username, session_id, station, win)
             else:
                 # Para otros roles, abrir menú principal
                 print(f"[DEBUG] Rol {role} detectado, abriendo menú principal")
@@ -392,6 +436,9 @@ def show_login():
     # Enter para login
     win.bind("<Return>", lambda event: do_login())
 
+    # ⭐ Configurar protocolo de cierre para evitar que se quede colgado
+    win.protocol("WM_DELETE_WINDOW", on_login_window_close)
+
     # Solo iniciar mainloop si acabamos de crear el root
     if created_new_root:
         win.mainloop()
@@ -410,9 +457,9 @@ def logout_silent(session_id, station):
         log_out_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
             """
-            UPDATE Sesiones
-            SET Log_Out = %s, Is_Active = '0'
-            WHERE ID_Sesion = %s AND Is_Active = '-1'
+            UPDATE Sesion 
+            SET Log_Out = %s, Active = '1'
+            WHERE ID = %s AND Active = '0'
             """,
             (log_out_time, int(session_id))
         )

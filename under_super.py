@@ -1,3 +1,5 @@
+from logging import root
+from tkinter import messagebox
 import backend_super
 import os
 import  csv
@@ -11,7 +13,9 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_all
 from PyInstaller.building.build_main import Analysis
 
+import login
 
+now = datetime.now()
 
 ICON_PATH = r"\\192.168.7.12\Data SIG\Central Station SLC-COLOMBIA\1. Daily Logs - Operators\DataBase\icons"
 import pyodbc
@@ -20,62 +24,8 @@ ACCESS_DB_PATH = r"\\192.168.7.12\Data SIG\Central Station SLC-COLOMBIA\1. Daily
 # 📂 Ruta compartida para el archivo de configuración
 CONFIG_PATH = Path=r"\\192.168.7.12\Data SIG\Central Station SLC-COLOMBIA\1. Daily Logs - Operators\DataBase\Base de Datos\roles_config.json"
 
-class FilteredCombobox(ttk.Combobox):
-    def __init__(self, master=None, **kwargs):
-        # Extraer parámetros personalizados para el borde
-        bordercolor = kwargs.pop('bordercolor', '#5ab4ff')
-        borderwidth = kwargs.pop('borderwidth', 3)
-        background = kwargs.pop('background', '#2b2b2b')
-        foreground = kwargs.pop('foreground', '#ffffff')
-        fieldbackground = kwargs.pop('fieldbackground', '#2b2b2b')
-        arrowcolor = kwargs.pop('arrowcolor', '#ffffff')
-        
-        # Crear estilo único para este widget
-        style = ttk.Style()
-        style_name = f"Bordered.TCombobox.{id(self)}"
-        
-        # Configurar el estilo con borde prominente
-        style.configure(style_name,
-            fieldbackground=fieldbackground,
-            background=background,
-            foreground=foreground,
-            arrowcolor=arrowcolor,
-            bordercolor=bordercolor,
-            lightcolor=bordercolor,
-            darkcolor=bordercolor,
-            borderwidth=borderwidth,
-            relief='solid'
-        )
-        
-        style.map(style_name,
-            fieldbackground=[('readonly', fieldbackground), ('disabled', '#1a1a1a')],
-            foreground=[('readonly', foreground), ('disabled', '#666666')],
-            bordercolor=[('focus', bordercolor), ('!focus', bordercolor)],
-            lightcolor=[('focus', bordercolor), ('!focus', bordercolor)],
-            darkcolor=[('focus', bordercolor), ('!focus', bordercolor)]
-        )
-        
-        # Aplicar el estilo
-        kwargs['style'] = style_name
-        
-        super().__init__(master, **kwargs)
-        self.original_values = self['values']
-        self.bind('<KeyRelease>', self.check_key)
-        
-        # Configurar colores del Entry interno
-        try:
-            self.configure(foreground=foreground)
-        except:
-            pass
 
-    def check_key(self, event):
-        value = self.get()
-        if value == '':
-            self['values'] = self.original_values
-        else:
-            filtered = [item for item in self.original_values if value.lower() in str(item).lower()]
-            self['values'] = filtered
-    
+
 
 def get_connection():
     """
@@ -95,7 +45,193 @@ def get_connection():
         print("❌ Error de conexión:", e)
         return None
     return conn
+    
+def get_station(username):
+    conn = get_connection()
+    station = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT ID_estacion
+            FROM sesion
+            WHERE ID_user = %s
+            """,
+            (username,)
+        )
+        result = cursor.fetchone()
+        print(f"[DEBUG] al obtener estación: {station}")
+        if result:
+            station = result[0]
+    except pymysql.Error as e:
+        print(f"[ERROR] al obtener estación: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+    return station
 
+def request_covers(username, time_request, reason, aprvoved):
+
+    confirmed = messagebox.askyesno("Esta seguro", "¿Está seguro de solicitar el cover?")
+    
+    if not confirmed:
+        print("[DEBUG] Solicitud de cover cancelada por el usuario")
+        return None
+#Solicita un cover para el usuario dado.
+    
+    #Args:
+        #username: Nombre de usuario que solicita el cover
+        #cover_type: Tipo de cover (e.g., "break", "lunch")
+        #reason: Razón para la solicitud del cover
+    conn = get_connection()
+    ID_cover = None
+    try:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT ID_estacion
+            FROM sesion
+            WHERE ID_user = %s
+            ORDER BY ID DESC
+            LIMIT 1
+            """,
+            (username,)
+        )
+        station = cursor.fetchone()
+
+        print(f"[DEBUG] Estación obtenida: {station}")
+        cursor.execute(
+            """
+            INSERT INTO covers_programados (ID_user, Time_request, Station, Reason, Approved, is_Active)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (username, time_request, station, reason, aprvoved, 1)
+        )
+        conn.commit()
+        print("[DEBUG] Cover solicitado correctamente ✅")
+        # 🔹 Obtener último ID insertado
+        cursor.execute("SELECT LAST_INSERT_ID()")
+        ID_cover = cursor.fetchone()[0]
+        print(f"[DEBUG] Nuevo ID_cover generado: {ID_cover}")
+        messagebox.showinfo("Solicitud Exitosa", f"Cover solicitado correctamente. ID Cover: {ID_cover}")
+
+    except pymysql.Error as e:
+        print(f"[ERROR] al solicitar cover: {e}")
+    finally:
+        cursor.close()
+        conn.close() 
+    return ID_cover
+
+def insertar_cover(username, Covered_by, Motivo, session_id, station):
+    ID_cover = None
+    Cover_in= now.strftime("%Y-%m-%d %H:%M:%S")
+    Activo = False
+    Cover_Out= None
+    if ID_cover is None:
+        try:
+            conn = get_connection()
+        
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT cp.ID_Cover
+                FROM covers_programados cp
+                WHERE cp.ID_user = %s
+                AND cp.Approved = 1
+                ORDER BY cp.ID_Cover DESC
+                LIMIT 1
+                """,
+                (username)
+            )
+            result = cursor.fetchone()
+            if result is not None:
+                ID_cover = result[0]
+                print(f"[DEBUG] al obtener ID_cover: {ID_cover}")
+                
+            else:
+                print("[DEBUG] No se encontró ningún ID_cover aprobado para este usuario.")
+        except pymysql.Error as e:
+            print(f"[ERROR] al obtener ID_cover: {e}")
+    
+    try:
+        conn = get_connection()
+   
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO covers_realizados (Nombre_Usuarios, ID_programacion_covers, Cover_in, Cover_Out, Covered_by, Motivo)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (username, ID_cover, Cover_in, Cover_Out, Covered_by, Motivo)
+        )
+        conn.commit()
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                        """UPDATE covers_programados SET is_Active = 0 WHERE is_Active = 1 AND ID_user = %s""",
+                        (username,)
+                    )
+            conn.commit()
+            
+
+            print(f"[DEBUG] is_Active actualizado correctamente")
+
+        except pymysql.Error as e:
+            print(f"[ERROR] al actualizar is_Active: {e}")
+
+        print("[DEBUG] Cover realizado correctamente ✅")
+
+        # 🔹 Obtener último ID insertado
+        cursor.execute("SELECT LAST_INSERT_ID()")
+        ID_cover = cursor.fetchone()[0]
+
+    except pymysql.Error as e:
+        print(f"[ERROR] al realizar cover: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+        login.logout_silent(session_id, station)
+
+
+def set_new_status(new_value, username):
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE sesion SET Active = %s WHERE ID_user = %s ORDER BY ID DESC LIMIT 1",
+                            (new_value, username))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return print("Status updated")
+
+def get_user_status_bd(username):
+    conn = get_connection()
+    if not conn:
+        return "Error de conexión"
+    
+    try:
+        cursor = conn.cursor()
+        # Ejecutar query
+        cursor.execute("""
+            SELECT Active FROM sesion 
+            WHERE ID_user = %s 
+            ORDER BY ID DESC 
+            LIMIT 1
+        """, (username,))
+        result = cursor.fetchone()
+        if not result:
+            return "Usuario no encontrado"
+        status_value = result[0]
+    except pymysql.Error as e:
+        print(f"[ERROR] Error al consultar el estado: {e}")
+        
+    finally:
+        cursor.close()
+        conn.close()   
+
+        return status_value
 
 def get_events():
     print("events")
@@ -111,8 +247,36 @@ def single_window(name, func):
 
         opened_windows = {}  # Para controlar ventanas abiertas
 
-def get_sites():
-    """Obtiene la lista de sitios de la tabla Sitios"""
+# 🔄 CACHE CON AUTO-REFRESH para Sitios y Actividades
+_sites_cache = {'data': None, 'last_update': None}
+_activities_cache = {'data': None, 'last_update': None}
+CACHE_DURATION = 120  # 2 minutos en segundos
+
+def get_sites(force_refresh=False):
+    """
+    Obtiene la lista de sitios de la tabla Sitios con cache de 2 minutos
+    
+    Args:
+        force_refresh: Si es True, fuerza actualización ignorando cache
+        
+    Returns:
+        Lista de sitios en formato "Nombre_Sitio (ID)"
+    """
+    global _sites_cache
+    
+    # Verificar si necesita actualización
+    now = datetime.now()
+    needs_update = (
+        force_refresh or 
+        _sites_cache['data'] is None or 
+        _sites_cache['last_update'] is None or
+        (now - _sites_cache['last_update']).total_seconds() > CACHE_DURATION
+    )
+    
+    if not needs_update:
+        print(f"[DEBUG] Usando cache de sitios (edad: {int((now - _sites_cache['last_update']).total_seconds())}s)")
+        return _sites_cache['data']
+    
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -125,11 +289,20 @@ def get_sites():
         """)
 
         sites = [row[0] for row in cursor.fetchall()]
-        print(f"[DEBUG] Sitios cargados")  # debug
+        
+        # Actualizar cache
+        _sites_cache['data'] = sites
+        _sites_cache['last_update'] = now
+        
+        print(f"[DEBUG] Sitios cargados y cache actualizado ({len(sites)} sitios)")
         return sites
 
     except Exception as e:
         print(f"[ERROR] get_sites: {e}")
+        # Si hay error pero tenemos cache, devolverlo
+        if _sites_cache['data']:
+            print(f"[WARN] Usando cache antiguo de sitios por error de BD")
+            return _sites_cache['data']
         return []
     finally:
         try:
@@ -138,18 +311,51 @@ def get_sites():
         except:
             pass
 
-def get_activities():
-    """Obtiene la lista de actividades de la tabla Actividades"""
+def get_activities(force_refresh=False):
+    """
+    Obtiene la lista de actividades de la tabla Actividades con cache de 2 minutos
+    
+    Args:
+        force_refresh: Si es True, fuerza actualización ignorando cache
+        
+    Returns:
+        Lista de nombres de actividades
+    """
+    global _activities_cache
+    
+    # Verificar si necesita actualización
+    now = datetime.now()
+    needs_update = (
+        force_refresh or
+        _activities_cache['data'] is None or 
+        _activities_cache['last_update'] is None or
+        (now - _activities_cache['last_update']).total_seconds() > CACHE_DURATION
+    )
+    
+    if not needs_update:
+        print(f"[DEBUG] Usando cache de actividades (edad: {int((now - _activities_cache['last_update']).total_seconds())}s)")
+        return _activities_cache['data']
+    
     try:
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("""SELECT Nombre_Actividad FROM Actividades ORDER BY Nombre_Actividad""")
         
         activities = [row[0] for row in cursor.fetchall()]
-        print(f"[DEBUG] Actividades cargadas")  # debug
+        
+        # Actualizar cache
+        _activities_cache['data'] = activities
+        _activities_cache['last_update'] = now
+        
+        print(f"[DEBUG] Actividades cargadas y cache actualizado ({len(activities)} actividades)")
         return activities
+        
     except Exception as e:
         print(f"[ERROR] get_activities: {e}")
+        # Si hay error pero tenemos cache, devolverlo
+        if _activities_cache['data']:
+            print(f"[WARN] Usando cache antiguo de actividades por error de BD")
+            return _activities_cache['data']
         return []
     finally:
         try:
@@ -157,6 +363,52 @@ def get_activities():
             conn.close()
         except:
             pass
+
+def parse_site_filter(site_display):
+    """
+    🔧 HELPER: Deconstruye el formato "Nombre_Sitio (ID)" del FilteredCombobox
+    
+    Permite búsqueda flexible por:
+    - Formato completo: "Site Name (123)" -> retorna (nombre, id)
+    - Solo ID: "123" -> retorna (None, id)
+    - Solo nombre: "Site Name" -> retorna (nombre, None)
+    
+    Args:
+        site_display: String del FilteredCombobox (ej: "CARULLA CALLE 79 (305)")
+        
+    Returns:
+        tuple: (site_name, site_id) donde cada uno puede ser None
+        
+    Ejemplos:
+        >>> parse_site_filter("CARULLA CALLE 79 (305)")
+        ("CARULLA CALLE 79", "305")
+        
+        >>> parse_site_filter("305")
+        (None, "305")
+        
+        >>> parse_site_filter("CARULLA CALLE 79")
+        ("CARULLA CALLE 79", None)
+    """
+    import re
+    
+    if not site_display or not site_display.strip():
+        return None, None
+    
+    site_display = site_display.strip()
+    
+    # Patrón: "Nombre (123)" -> extraer nombre e ID
+    match = re.match(r'^(.+?)\s*\((\d+)\)$', site_display)
+    if match:
+        site_name = match.group(1).strip()
+        site_id = match.group(2).strip()
+        return site_name, site_id
+    
+    # Si es solo un número, asumir que es un ID
+    if site_display.isdigit():
+        return None, site_display
+    
+    # Si no coincide con el patrón, asumir que es solo el nombre
+    return site_display, None
 
 def add_event(username, site, activity, quantity, camera, desc, hour, minute, second):
     """
@@ -211,33 +463,6 @@ def add_event(username, site, activity, quantity, camera, desc, hour, minute, se
         except:
             pass
 
-def add_cover(station_id, username, new_user, cover_reason):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    try:
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute("""
-            INSERT INTO Eventos (FechaHora, Nombre_Actividad, Cantidad, Camera, Descripcion, ID_Usuario)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            now,                  # FechaHora → datetime válido
-            f"{username} - Covered by {new_user}",              # Nombre_Actividad → texto                    # Cantidad → número
-            f"Station: {station_id}",           # Camera o Station → número si la columna es Number
-            cover_reason,
-            0,                                  # Descripcion → texto
-            10                     # ID_Usuario → ajusta a un id real existente
-        ))
-        conn.commit()
-        print("[DEBUG] Evento insertado correctamente")
-    except Exception as e:
-        print("[ERROR]", e)
-    finally:
-        cursor.close()
-        conn.close()
-
-
-
 def admin_mode():
      print("admin mode")
 
@@ -267,24 +492,48 @@ class FilteredCombobox(tk.Frame):
         
         combobox_kwargs = {k: v for k, v in kwargs.items() if k in valid_options}
         
-        # Crear estilo para el Combobox interno (SIN layout personalizado)
+        # Crear estilo único para el Combobox interno
         style = ttk.Style()
-        style_name = f"Dark.TCombobox"
+        style_name = f"Custom{id(self)}.TCombobox"  # Único por widget
         
-        # Solo configurar si no existe ya
         try:
+            # Usar 'clam' theme para mejor personalización
+            try:
+                style.theme_use('clam')
+            except:
+                pass
+            
             style.configure(style_name,
                 fieldbackground=fieldbackground,
                 background=background,
                 foreground=foreground,
                 arrowcolor=arrowcolor,
                 borderwidth=0,
-                relief='flat'
+                relief='flat',
+                insertcolor=foreground,
+                selectbackground='#4a90e2',
+                selectforeground='#ffffff'
             )
             
             style.map(style_name,
-                fieldbackground=[('readonly', fieldbackground), ('disabled', '#1a1a1a')],
-                foreground=[('readonly', foreground), ('disabled', '#666666')]
+                fieldbackground=[
+                    ('readonly', fieldbackground),
+                    ('!readonly', fieldbackground),
+                    ('disabled', '#1a1a1a'),
+                    ('focus', fieldbackground),
+                    ('!focus', fieldbackground)
+                ],
+                background=[
+                    ('readonly', background),
+                    ('!readonly', background),
+                    ('active', background)
+                ],
+                foreground=[
+                    ('readonly', foreground),
+                    ('!readonly', foreground),
+                    ('disabled', '#666666'),
+                    ('focus', foreground)
+                ]
             )
         except Exception as e:
             print(f"[DEBUG] Style config error (non-critical): {e}")

@@ -7893,6 +7893,9 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                                         Descripcion = %s,
                                         Usuario = %s,
                                         Time_Zone = %s,
+                                        marked_status = NULL,
+                                        marked_at = NULL,
+                                        marked_by = NULL,
                                         Supervisor = %s
                                     WHERE ID_Special = %s
                                     """,
