@@ -5,7 +5,7 @@ import os
 import  csv
 import tkinter as tk
 from tkinter import ttk
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from mysql.connector import Error
 import pymysql
 from pathlib import Path
@@ -125,7 +125,7 @@ def request_covers(username, time_request, reason, aprvoved):
 
 def insertar_cover(username, Covered_by, Motivo, session_id, station):
     ID_cover = None
-    Cover_in= now.strftime("%Y-%m-%d %H:%M:%S")
+    Cover_in = (now + timedelta(minutes=2)).strftime("%Y-%m-%d %H:%M:%S")
     Activo = False
     Cover_Out= None
     if ID_cover is None:

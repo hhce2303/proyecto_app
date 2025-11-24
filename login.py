@@ -386,7 +386,7 @@ def show_login():
             backend_super.prompt_exit_active_cover(username, win)
 
             # Mensaje de bienvenida
-
+            messagebox.showinfo("Login", f"Bienvenido {username} ({role})")
             # No destruir el root: solo ocultarlo; main window será un Toplevel
             try:
                 win.withdraw()

@@ -1,4 +1,3 @@
-import os
 import tkinter as tk
 import csv
 from datetime import datetime, timedelta
@@ -9,7 +8,6 @@ from tkinter import ttk, messagebox, simpledialog, filedialog
 from PIL import Image, ImageTk
 from PIL import Image, ImageTk
 import login
-import main_super
 import json
 import re
 import traceback
@@ -18,8 +16,10 @@ import pandas as pd
 import under_super
 import tkcalendar
 from tkinter import font as tkfont
+import pymysql
 import time
-import threading
+
+
 
 opened_windows = {}
 
@@ -28,7 +28,7 @@ prev_user = None
 prev_session_id = None
 cover_state_active = False
 
-
+now = datetime.now()
 
 # --- Helpers para ventanas únicas (singleton por función) ---
 def _focus_singleton(key):
@@ -46,6 +46,11 @@ def _focus_singleton(key):
                 pass
             try:
                 win.focus_force()
+            except Exception:
+                pass
+            # Generar evento personalizado para que la ventana recargue datos
+            try:
+                win.event_generate("<<WindowRefocused>>", when="tail")
             except Exception:
                 pass
             return win
@@ -184,7 +189,7 @@ def on_end_shift(username):
         
         ID_Usuario = row[0]
         
-        # Insertar el evento START SHIFT
+        # Insertar el evento END OF SHIFT
         cur.execute("""
             INSERT INTO Eventos (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, ID_Usuario)
             VALUES (NOW(), %s, %s, %s, %s, %s, %s)
@@ -509,13 +514,13 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
     refresh_job = None
 
     # Columnas para SPECIALS
-    columns_specials = ["ID", "FechaHora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "Usuario", "TZ", "Marca"]
+    columns_specials = ["ID", "Fecha Hora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "Usuario", "TZ", "Marca"]
     columns = columns_specials
     
     # Anchos personalizados para SPECIALS
     custom_widths_specials = {
         "ID": 60,
-        "FechaHora": 150,
+        "Fecha Hora": 150,
         "Sitio": 220,
         "Actividad": 150,
         "Cantidad": 70,
@@ -594,6 +599,61 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
                     font=("Segoe UI", 12, "bold"))
         delete_btn_header.pack(side="left", padx=5, pady=15)
         
+        # ⭐ INDICADOR DE STATUS CON DROPDOWN (a la derecha, antes del botón Shift)
+        status_frame = UI.CTkFrame(header, fg_color="transparent")
+        status_frame.pack(side="right", padx=(5, 10), pady=15)
+        
+        # Obtener status actual del usuario
+        current_status_bd = under_super.get_user_status_bd(username)
+        
+        # Mapear el status a texto legible
+        if current_status_bd == 1:
+            status_text = "🟢 Disponible"
+        elif current_status_bd == 0:
+            status_text = "🟡 Ocupado"
+        elif current_status_bd == -1:
+            status_text = "🔴 No disponible"
+        else:
+            status_text = "⚪ Desconocido"
+        
+        status_label = UI.CTkLabel(status_frame, text=status_text, 
+                                   font=("Segoe UI", 12, "bold"))
+        status_label.pack(side="left", padx=(0, 8))
+        
+        btn_emoji_green = "🟢"
+        btn_emoji_yellow = "🟡"
+        btn_emoji_red = "🔴"
+        
+        def update_status_label(new_value):
+            """Actualiza el label y el status en la BD"""
+            under_super.set_new_status(new_value, username)
+            # Actualizar el texto del label
+            if new_value == 1:
+                status_label.configure(text="🟢 Disponible")
+            elif new_value == 2:
+                status_label.configure(text="🟡 Ocupado")
+            elif new_value == -1:
+                status_label.configure(text="🔴 No disponible")
+        
+        status_btn_green = UI.CTkButton(status_frame, text=btn_emoji_green, command=lambda:(update_status_label(1), username),
+                    fg_color="#00c853", hover_color="#00a043",
+                    width=45, height=38,
+                    font=("Segoe UI", 16, "bold"))
+        status_btn_green.pack(side="left")    
+
+        status_btn_yellow = UI.CTkButton(status_frame, text=btn_emoji_yellow, command=lambda: (update_status_label(2), username),
+                    fg_color="#f5a623", hover_color="#e69515",
+                    width=45, height=38,
+                    font=("Segoe UI", 16, "bold"))
+        status_btn_yellow.pack(side="left")
+
+        status_btn_red = UI.CTkButton(status_frame, text=btn_emoji_red, command=lambda: (update_status_label(-1), username),
+                    fg_color="#d32f2f", hover_color="#b71c1c",
+                    width=45, height=38,
+                    font=("Segoe UI", 16, "bold"))
+        status_btn_red.pack(side="left")
+
+        
         # ⭐ Botón Start/End Shift a la derecha
         shift_btn = UI.CTkButton(
             header, 
@@ -618,6 +678,14 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
                  font=("Segoe UI", 12, "bold"), relief="flat",
                  width=12)
         delete_btn_header.pack(side="left", padx=5, pady=15)
+        
+        # ⭐ INDICADOR DE STATUS CON DROPDOWN (Tkinter fallback)
+        status_frame = tk.Frame(header, bg="#23272a")
+        status_frame.pack(side="right", padx=(5, 10), pady=15)
+        
+        current_status_value = get_user_status(username)
+
+    
         
         shift_btn = tk.Button(
             header,
@@ -658,6 +726,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
         specials_container.pack_forget()
         audit_container.pack_forget()
         cover_container.pack_forget()
+        
         
         # Resetear colores de todos los botones
         inactive_color = "#3b4754"
@@ -842,7 +911,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             conn = under_super.get_connection()
             cur = conn.cursor()
             cur.execute("""
-                SELECT e.FechaHora
+                SELECT e.FechaHora 
                 FROM Eventos e
                 INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
                 WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = %s
@@ -1174,7 +1243,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
                 conn = under_super.get_connection()
                 cur = conn.cursor()
                 cur.execute("""
-                    SELECT e.FechaHora
+                    SELECT e.FechaHora 
                     FROM Eventos e
                     INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
                     WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = %s
@@ -1602,7 +1671,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
         """Busca eventos con los filtros especificados"""
         try:
             user_filter = audit_user_var.get().strip()
-            site_filter = audit_site_var.get().strip()
+            site_filter_raw = audit_site_var.get().strip()
             fecha_filter = audit_fecha_var.get().strip()
             
             conn = under_super.get_connection()
@@ -1622,9 +1691,22 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
                 sql += " AND u.Nombre_Usuario = %s"
                 params.append(user_filter)
             
-            if site_filter:
-                sql += " AND s.Nombre_Sitio = %s"
-                params.append(site_filter)
+            # ⭐ USAR HELPER para deconstruir formato "Nombre (ID)"
+            if site_filter_raw:
+                site_name, site_id = under_super.parse_site_filter(site_filter_raw)
+                
+                if site_name and site_id:
+                    # Buscar por nombre (más preciso cuando tenemos ambos)
+                    sql += " AND s.Nombre_Sitio = %s"
+                    params.append(site_name)
+                elif site_id:
+                    # Buscar solo por ID
+                    sql += " AND s.ID_Sitio = %s"
+                    params.append(site_id)
+                elif site_name:
+                    # Buscar solo por nombre
+                    sql += " AND s.Nombre_Sitio = %s"
+                    params.append(site_name)
             
             if fecha_filter:
                 sql += " AND DATE(e.FechaHora) = %s"
@@ -1642,7 +1724,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             for r in rows:
                 data.append([
                     r[0] or "",  # ID_Eventos
-                    str(r[1]) if r[1] else "",  # FechaHora
+                    str(r[1]) if r[1] else "",  #  
                     r[2] or "",  # Nombre_Sitio
                     r[3] or "",  # Nombre_Actividad
                     r[4] or "",  # Cantidad
@@ -1656,7 +1738,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             # Aplicar anchos personalizados
             audit_widths = {
                 "ID_Evento": 80,
-                "FechaHora": 150,
+                " ": 150,
                 "Nombre_Sitio": 220,
                 "Nombre_Actividad": 150,
                 "Cantidad": 70,
@@ -1664,7 +1746,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
                 "Descripcion": 200,
                 "Usuario": 100
             }
-            cols = ["ID_Evento", "FechaHora", "Nombre_Sitio", "Nombre_Actividad", 
+            cols = ["ID_Evento", " ", "Nombre_Sitio", "Nombre_Actividad", 
                    "Cantidad", "Camera", "Descripcion", "Usuario"]
             for idx, col_name in enumerate(cols):
                 if col_name in audit_widths:
@@ -1742,7 +1824,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
     audit_sheet_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
     # Crear tksheet para Audit
-    audit_columns = ["ID_Evento", "FechaHora", "Nombre_Sitio", "Nombre_Actividad", 
+    audit_columns = ["ID_Evento", " ", "Nombre_Sitio", "Nombre_Actividad", 
                     "Cantidad", "Camera", "Descripcion", "Usuario"]
     audit_sheet = SheetClass(audit_sheet_frame, data=[[]], headers=audit_columns)
     audit_sheet.enable_bindings([
@@ -1763,235 +1845,265 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
         cover_container = tk.Frame(top, bg="#2c2f33")
     # NO hacer pack() aquí - se mostrará solo cuando se cambie a modo Cover Time
 
-    # Frame de filtros de Cover Time
+    # Frame de filtros para covers_realizados
     if UI is not None:
-        cover_filters = UI.CTkFrame(cover_container, fg_color="#23272a", corner_radius=8)
+        cover_filters_frame = UI.CTkFrame(cover_container, fg_color="#23272a", corner_radius=8)
     else:
-        cover_filters = tk.Frame(cover_container, bg="#23272a")
-    cover_filters.pack(fill="x", padx=10, pady=10)
+        cover_filters_frame = tk.Frame(cover_container, bg="#23272a")
+    cover_filters_frame.pack(fill="x", padx=10, pady=10)
 
-    # Fila 1: Operador
+    # Variables de filtros
+    cover_user_var = tk.StringVar()
+    cover_desde_var = tk.StringVar()
+    cover_hasta_var = tk.StringVar()
+
+    # Fila de filtros
     if UI is not None:
-        UI.CTkLabel(cover_filters, text="Operador:", text_color="#c9d1d9", 
+        UI.CTkLabel(cover_filters_frame, text="Usuario:", text_color="#c9d1d9", 
                    font=("Segoe UI", 11)).grid(row=0, column=0, sticky="w", padx=(15, 5), pady=10)
     else:
-        tk.Label(cover_filters, text="Operador:", bg="#23272a", fg="#c9d1d9", 
+        tk.Label(cover_filters_frame, text="Usuario:", bg="#23272a", fg="#c9d1d9", 
                 font=("Segoe UI", 11)).grid(row=0, column=0, sticky="w", padx=(15, 5), pady=10)
-    
-    cover_user_var = tk.StringVar()
-    # Obtener usuarios
+
+    # Obtener usuarios para el filtro
     try:
         conn = under_super.get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT `Nombre_Usuario` FROM `user` ORDER BY `Nombre_Usuario`")
-        cover_users = [r[0] for r in cur.fetchall()]
+        cur.execute("SELECT DISTINCT Nombre_usuarios FROM covers_realizados WHERE Nombre_usuarios IS NOT NULL ORDER BY Nombre_usuarios")
+        cover_users = ["Todos"] + [r[0] for r in cur.fetchall()]
         cur.close()
         conn.close()
     except Exception:
-        cover_users = []
-    
-    try:
-        cover_user_cb = under_super.FilteredCombobox(cover_filters, textvariable=cover_user_var, 
-                                                     values=cover_users, width=25)
-    except Exception:
-        cover_user_cb = ttk.Combobox(cover_filters, textvariable=cover_user_var, 
-                                     values=cover_users, width=25)
+        cover_users = ["Todos"]
+
+    cover_user_cb = ttk.Combobox(cover_filters_frame, textvariable=cover_user_var, 
+                                 values=cover_users, width=20, state="readonly")
+    cover_user_cb.set("Todos")
     cover_user_cb.grid(row=0, column=1, sticky="w", padx=5, pady=10)
 
-    # Fila 2: Rango de fechas (Desde - Hasta)
     if UI is not None:
-        UI.CTkLabel(cover_filters, text="Desde:", text_color="#c9d1d9", 
-                   font=("Segoe UI", 11)).grid(row=1, column=0, sticky="w", padx=(15, 5), pady=10)
+        UI.CTkLabel(cover_filters_frame, text="Desde:", text_color="#c9d1d9", 
+                   font=("Segoe UI", 11)).grid(row=0, column=2, sticky="w", padx=(15, 5), pady=10)
     else:
-        tk.Label(cover_filters, text="Desde:", bg="#23272a", fg="#c9d1d9", 
-                font=("Segoe UI", 11)).grid(row=1, column=0, sticky="w", padx=(15, 5), pady=10)
-    
-    cover_desde_var = tk.StringVar()
+        tk.Label(cover_filters_frame, text="Desde:", bg="#23272a", fg="#c9d1d9", 
+                font=("Segoe UI", 11)).grid(row=0, column=2, sticky="w", padx=(15, 5), pady=10)
+
     try:
         from tkcalendar import DateEntry
         cover_desde_entry = DateEntry(
-            cover_filters,
+            cover_filters_frame,
             textvariable=cover_desde_var,
             date_pattern="yyyy-mm-dd",
-            width=23
+            width=15
         )
     except Exception:
-        cover_desde_entry = tk.Entry(cover_filters, textvariable=cover_desde_var, width=25)
-    cover_desde_entry.grid(row=1, column=1, sticky="w", padx=5, pady=10)
+        cover_desde_entry = tk.Entry(cover_filters_frame, textvariable=cover_desde_var, width=17)
+    cover_desde_entry.grid(row=0, column=3, sticky="w", padx=5, pady=10)
 
     if UI is not None:
-        UI.CTkLabel(cover_filters, text="Hasta:", text_color="#c9d1d9", 
-                   font=("Segoe UI", 11)).grid(row=1, column=2, sticky="w", padx=(15, 5), pady=10)
+        UI.CTkLabel(cover_filters_frame, text="Hasta:", text_color="#c9d1d9", 
+                   font=("Segoe UI", 11)).grid(row=0, column=4, sticky="w", padx=(15, 5), pady=10)
     else:
-        tk.Label(cover_filters, text="Hasta:", bg="#23272a", fg="#c9d1d9", 
-                font=("Segoe UI", 11)).grid(row=1, column=2, sticky="w", padx=(15, 5), pady=10)
-    
-    cover_hasta_var = tk.StringVar()
+        tk.Label(cover_filters_frame, text="Hasta:", bg="#23272a", fg="#c9d1d9", 
+                font=("Segoe UI", 11)).grid(row=0, column=4, sticky="w", padx=(15, 5), pady=10)
+
     try:
         from tkcalendar import DateEntry
         cover_hasta_entry = DateEntry(
-            cover_filters,
+            cover_filters_frame,
             textvariable=cover_hasta_var,
             date_pattern="yyyy-mm-dd",
-            width=23
+            width=15
         )
     except Exception:
-        cover_hasta_entry = tk.Entry(cover_filters, textvariable=cover_hasta_var, width=25)
-    cover_hasta_entry.grid(row=1, column=3, sticky="w", padx=5, pady=10)
+        cover_hasta_entry = tk.Entry(cover_filters_frame, textvariable=cover_hasta_var, width=17)
+    cover_hasta_entry.grid(row=0, column=5, sticky="w", padx=5, pady=10)
 
-    # Botones de búsqueda y limpiar
-    cover_btn_frame = tk.Frame(cover_filters, bg="#23272a")
-    cover_btn_frame.grid(row=2, column=0, columnspan=4, pady=(10, 10))
+    # Configuración de tablas y columnas
+    candidate_tables = ["covers_programados", "covers_realizados"]
+    Columnas_deseadas_covers = {
+        "covers_programados": ["ID_user", "Time_request", "Station", "Reason", "Approved", "is_Active"],
+        "covers_realizados": ["Nombre_usuarios", "Cover_in", "Cover_out", "Covered_by", "Motivo"]
+    }
 
-    # Label de resumen (covers totales y tiempo)
-    if UI is not None:
-        cover_summary = UI.CTkLabel(
-            cover_btn_frame, 
-            text="Covers: 0 | Tiempo total: 00:00:00", 
-            text_color="#a3c9f9", 
-            font=("Segoe UI", 11, "bold")
-        )
-    else:
-        cover_summary = tk.Label(
-            cover_btn_frame, 
-            text="Covers: 0 | Tiempo total: 00:00:00", 
-            bg="#23272a", 
-            fg="#a3c9f9", 
-            font=("Segoe UI", 11, "bold")
-        )
-    cover_summary.pack(side="left", padx=(15, 20))
+    # Variable para guardar referencia al sheet de covers_realizados
+    cover_realizados_sheet_ref = None
 
-    def cover_search():
-        """Busca covers con los filtros especificados (rango de fechas)"""
+    def load_cover_table(tabla):
+        """Carga datos de una tabla de covers desde la BD"""
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            query = f"SELECT * FROM {tabla}"
+            cur.execute(query)
+            rows = cur.fetchall()
+            col_names = [desc[0] for desc in cur.description]
+            cur.close()
+            conn.close()
+            return col_names, rows
+        except Exception as e:
+            print(f"[ERROR] load_cover_table({tabla}): {e}")
+            return [], []
+
+    def apply_cover_filters():
+        """Aplica filtros a la tabla covers_realizados"""
+        nonlocal cover_realizados_sheet_ref
+        
+        if cover_realizados_sheet_ref is None:
+            messagebox.showwarning("Filtrar", "No hay datos de covers realizados cargados.", parent=top)
+            return
+        
         try:
             user_filter = cover_user_var.get().strip()
-            desde_str = cover_desde_var.get().strip()
-            hasta_str = cover_hasta_var.get().strip()
+            desde_filter = cover_desde_var.get().strip()
+            hasta_filter = cover_hasta_var.get().strip()
             
-            if not user_filter:
-                messagebox.showwarning("Operador requerido", "Selecciona un operador", parent=top)
-                return
-            
-            # Parsear fechas
-            def parse_date(s):
-                if not s:
-                    return None
-                for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%Y/%m/%d"):
-                    try:
-                        return datetime.strptime(s, fmt)
-                    except Exception:
-                        pass
-                return None
-            
-            desde_dt = parse_date(desde_str)
-            hasta_dt = parse_date(hasta_str)
-            
-            if not desde_dt or not hasta_dt:
-                messagebox.showwarning("Fechas inválidas", "Selecciona rango de fechas válido", parent=top)
-                return
-            
-            if desde_dt > hasta_dt:
-                messagebox.showwarning("Rango inválido", "La fecha 'Desde' debe ser menor o igual a 'Hasta'", parent=top)
-                return
-            
-            # Consultar covers en el rango
             conn = under_super.get_connection()
             cur = conn.cursor()
             
-            sql = """
-                SELECT c.Cover_in, c.Cover_out, c.Motivo, c.Covered_by
-                FROM Covers c
-                WHERE c.Nombre_Usuarios = %s
-                  AND DATE(c.Cover_in) >= %s
-                  AND DATE(c.Cover_in) <= %s
-                ORDER BY c.Cover_in DESC
-            """
+            sql = "SELECT Nombre_usuarios, Cover_in, Cover_out, Covered_by, Motivo FROM covers_realizados WHERE 1=1"
+            params = []
             
-            cur.execute(sql, (user_filter, desde_dt.strftime('%Y-%m-%d'), hasta_dt.strftime('%Y-%m-%d')))
+            if user_filter and user_filter != "Todos":
+                sql += " AND Nombre_usuarios = %s"
+                params.append(user_filter)
+            
+            if desde_filter:
+                sql += " AND DATE(Cover_in) >= %s"
+                params.append(desde_filter)
+            
+            if hasta_filter:
+                sql += " AND DATE(Cover_in) <= %s"
+                params.append(hasta_filter)
+            
+            sql += " ORDER BY Cover_in DESC"
+            
+            cur.execute(sql, params)
             rows = cur.fetchall()
             cur.close()
             conn.close()
             
-            # Calcular duraciones y tiempo total
-            data = []
-            total_seconds = 0
-            cover_count = 0
-            
-            for r in rows:
-                cover_in = r[0]
-                cover_out = r[1]
-                motivo = r[2] or ""
-                covered_by = r[3] or ""
+            # Procesar datos con duración
+            filtered_data = []
+            for row in rows:
+                nombre_usuarios = row[0] if row[0] else ""
+                cover_in = row[1]
+                cover_out = row[2]
+                covered_by = row[3] if row[3] else ""
+                motivo = row[4] if row[4] else ""
                 
                 # Calcular duración
-                duracion_str = ""
+                duration_str = ""
                 if cover_in and cover_out:
                     try:
-                        td = cover_out - cover_in
-                        total_secs = int(td.total_seconds())
-                        total_seconds += total_secs
-                        h = total_secs // 3600
-                        m = (total_secs % 3600) // 60
-                        s = total_secs % 60
-                        duracion_str = f"{h:02d}:{m:02d}:{s:02d}"
-                        cover_count += 1
-                    except Exception:
-                        duracion_str = "N/A"
+                        from datetime import datetime, timedelta
+                        if isinstance(cover_in, str):
+                            cover_in = datetime.strptime(cover_in, "%Y-%m-%d %H:%M:%S")
+                        if isinstance(cover_out, str):
+                            cover_out = datetime.strptime(cover_out, "%Y-%m-%d %H:%M:%S")
+                        
+                        delta = cover_out - cover_in
+                        hours, remainder = divmod(int(delta.total_seconds()), 3600)
+                        minutes, seconds = divmod(remainder, 60)
+                        duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    except Exception as e:
+                        print(f"[ERROR] Error calculando duración: {e}")
+                        duration_str = "Error"
                 
-                data.append([
+                # Formatear datos para mostrar
+                filtered_data.append([
+                    nombre_usuarios,
                     str(cover_in) if cover_in else "",
+                    duration_str,
                     str(cover_out) if cover_out else "",
-                    duracion_str,
-                    motivo,
-                    covered_by
+                    covered_by,
+                    motivo
                 ])
             
-            # Mostrar resultados en cover_sheet
-            cover_sheet.set_sheet_data(data)
+            if not filtered_data:
+                filtered_data = [["No hay resultados con estos filtros"] + [""] * 5]
             
-            # Aplicar anchos personalizados
-            cover_widths = {
-                "Cover_in": 150,
-                "Cover_out": 150,
-                "Duración": 100,
-                "Motivo": 220,
-                "Covered_by": 120
-            }
-            cols = ["Cover_in", "Cover_out", "Duración", "Motivo", "Covered_by"]
-            for idx, col_name in enumerate(cols):
-                if col_name in cover_widths:
-                    try:
-                        cover_sheet.column_width(idx, int(cover_widths[col_name]))
-                    except Exception:
-                        pass
-            cover_sheet.redraw()
+            cover_realizados_sheet_ref.set_sheet_data(filtered_data)
+            cover_realizados_sheet_ref.redraw()
             
-            # Actualizar resumen
-            h = total_seconds // 3600
-            m = (total_seconds % 3600) // 60
-            s = total_seconds % 60
-            summary_text = f"Covers: {cover_count} | Tiempo total: {h:02d}:{m:02d}:{s:02d}"
-            cover_summary.configure(text=summary_text)
-            
-            print(f"[DEBUG] Cover Time search returned {len(rows)} results")
+            print(f"[DEBUG] Cover filters applied: {len(rows)} results")
             
         except Exception as e:
-            messagebox.showerror("Error", f"Error en búsqueda:\n{e}", parent=top)
+            messagebox.showerror("Error", f"Error aplicando filtros:\n{e}", parent=top)
             traceback.print_exc()
 
-    def cover_clear():
-        """Limpia los filtros de búsqueda"""
-        cover_user_var.set("")
+    def clear_cover_filters():
+        """Limpia los filtros y recarga todos los datos"""
+        nonlocal cover_realizados_sheet_ref
+        
+        cover_user_var.set("Todos")
         cover_desde_var.set("")
         cover_hasta_var.set("")
-        cover_sheet.set_sheet_data([[]])
-        cover_summary.configure(text="Covers: 0 | Tiempo total: 00:00:00")
+        
+        if cover_realizados_sheet_ref is None:
+            return
+        
+        # Recargar todos los datos
+        try:
+            col_names, rows = load_cover_table("covers_realizados")
+            
+            indices = [col_names.index(c) for c in Columnas_deseadas_covers["covers_realizados"] if c in col_names]
+            
+            cover_in_idx = None
+            cover_out_idx = None
+            if "Cover_in" in col_names:
+                cover_in_idx = col_names.index("Cover_in")
+            if "Cover_out" in col_names:
+                cover_out_idx = col_names.index("Cover_out")
+            
+            filtered_data = []
+            for row in rows:
+                filtered_row = [row[idx] for idx in indices]
+                
+                if cover_in_idx is not None and cover_out_idx is not None:
+                    cover_in = row[cover_in_idx]
+                    cover_out = row[cover_out_idx]
+                    
+                    duration_str = ""
+                    if cover_in and cover_out:
+                        try:
+                            from datetime import datetime, timedelta
+                            if isinstance(cover_in, str):
+                                cover_in = datetime.strptime(cover_in, "%Y-%m-%d %H:%M:%S")
+                            if isinstance(cover_out, str):
+                                cover_out = datetime.strptime(cover_out, "%Y-%m-%d %H:%M:%S")
+                            
+                            delta = cover_out - cover_in
+                            hours, remainder = divmod(int(delta.total_seconds()), 3600)
+                            minutes, seconds = divmod(remainder, 60)
+                            duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                        except Exception as e:
+                            print(f"[ERROR] Error calculando duración: {e}")
+                            duration_str = "Error"
+                    
+                    filtered_row = ["" if v is None else str(v) for v in filtered_row]
+                    filtered_row.insert(2, duration_str)
+                else:
+                    filtered_row = ["" if v is None else str(v) for v in filtered_row]
+                
+                filtered_data.append(filtered_row)
+            
+            cover_realizados_sheet_ref.set_sheet_data(filtered_data)
+            cover_realizados_sheet_ref.redraw()
+            
+        except Exception as e:
+            print(f"[ERROR] clear_cover_filters: {e}")
+            traceback.print_exc()
+
+    # Botones de filtro
+    cover_btn_frame = tk.Frame(cover_filters_frame, bg="#23272a")
+    cover_btn_frame.grid(row=0, column=6, sticky="e", padx=(15, 15), pady=10)
 
     if UI is not None:
         UI.CTkButton(
             cover_btn_frame,
-            text="🔍 Buscar",
-            command=cover_search,
+            text="🔍 Filtrar",
+            command=apply_cover_filters,
             fg_color="#4a90e2",
             hover_color="#357ABD",
             width=100,
@@ -2002,7 +2114,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
         UI.CTkButton(
             cover_btn_frame,
             text="🗑️ Limpiar",
-            command=cover_clear,
+            command=clear_cover_filters,
             fg_color="#3b4754",
             hover_color="#4a5560",
             width=100,
@@ -2012,8 +2124,8 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
     else:
         tk.Button(
             cover_btn_frame,
-            text="🔍 Buscar",
-            command=cover_search,
+            text="🔍 Filtrar",
+            command=apply_cover_filters,
             bg="#4a90e2",
             fg="white",
             activebackground="#357ABD",
@@ -2025,7 +2137,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
         tk.Button(
             cover_btn_frame,
             text="🗑️ Limpiar",
-            command=cover_clear,
+            command=clear_cover_filters,
             bg="#3b4754",
             fg="white",
             activebackground="#4a5560",
@@ -2034,26 +2146,174 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             width=10
         ).pack(side="left")
 
-    # Frame para tksheet de Cover Time
+    # Crear TabView para covers_programados y covers_realizados
     if UI is not None:
-        cover_sheet_frame = UI.CTkFrame(cover_container, fg_color="#2c2f33")
+        cover_notebook = UI.CTkTabview(cover_container, width=1280, height=650)
     else:
-        cover_sheet_frame = tk.Frame(cover_container, bg="#2c2f33")
-    cover_sheet_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        cover_notebook = ttk.Notebook(cover_container)
+    cover_notebook.pack(padx=10, pady=10, fill="both", expand=True)
 
-    # Crear tksheet para Cover Time
-    cover_columns = ["Cover_in", "Cover_out", "Duración", "Motivo", "Covered_by"]
-    cover_sheet = SheetClass(cover_sheet_frame, data=[[]], headers=cover_columns)
-    cover_sheet.enable_bindings([
-        "single_select",
-        "row_select",
-        "column_width_resize",
-        "rc_select",
-        "copy",
-        "select_all"
-    ])
-    cover_sheet.pack(fill="both", expand=True)
-    cover_sheet.change_theme("dark blue")
+    # Crear pestaña para cada tabla
+    for tabla in candidate_tables:
+        col_names, rows = load_cover_table(tabla)
+        
+        # Filtrar solo las columnas deseadas
+        indices = [col_names.index(c) for c in Columnas_deseadas_covers[tabla] if c in col_names]
+        filtered_col_names = [col_names[i] for i in indices]
+        
+        if not filtered_col_names:
+            continue
+
+        # Crear pestaña
+        if UI is not None:
+            tab = cover_notebook.add(tabla)
+        else:
+            tab = tk.Frame(cover_notebook, bg="#2c2f33")
+            cover_notebook.add(tab, text=tabla)
+        
+        # Frame para el tksheet
+        if UI is not None:
+            sheet_frame_cover = UI.CTkFrame(tab, fg_color="#2c2f33")
+        else:
+            sheet_frame_cover = tk.Frame(tab, bg="#2c2f33")
+        sheet_frame_cover.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Headers personalizados en español
+        program_headers = ["Usuario", "Hora solicitud", "Estación", "Razón", "Aprobado", "Activo"]
+        realized_headers = ["Usuario", "Inicio Cover", "Duracion", "Fin Cover", "Cubierto por", "Motivo"]
+        headers = program_headers if tabla == "covers_programados" else realized_headers
+
+        # Crear tksheet
+        cover_tab_sheet = SheetClass(
+            sheet_frame_cover,
+            headers=headers,
+            theme="dark blue",
+            height=550,
+            width=1220,
+            show_selected_cells_border=True,
+            show_row_index=True,
+            show_top_left=False,
+            empty_horizontal=0,
+            empty_vertical=0
+        )
+        
+        # Configurar bindings (solo lectura con selección)
+        cover_tab_sheet.enable_bindings([
+            "single_select",
+            "drag_select",
+            "row_select",
+            "column_select",
+            "column_width_resize",
+            "double_click_column_resize",
+            "arrowkeys",
+            "copy",
+            "select_all"
+        ])
+        
+        cover_tab_sheet.pack(fill="both", expand=True)
+        cover_tab_sheet.change_theme("dark blue")
+        
+        # Guardar referencia al sheet de covers_realizados
+        if tabla == "covers_realizados":
+            cover_realizados_sheet_ref = cover_tab_sheet
+
+        # Preparar datos filtrados
+        filtered_data = []
+        orig_is_idx = None
+        if 'is_Active' in Columnas_deseadas_covers.get(tabla, []) and 'is_Active' in col_names:
+            try:
+                orig_is_idx = col_names.index('is_Active')
+            except Exception:
+                orig_is_idx = None
+
+        # Para covers_realizados, necesitamos calcular la duración
+        cover_in_idx = None
+        cover_out_idx = None
+        if tabla == "covers_realizados":
+            try:
+                if "Cover_in" in col_names:
+                    cover_in_idx = col_names.index("Cover_in")
+                if "Cover_out" in col_names:
+                    cover_out_idx = col_names.index("Cover_out")
+            except Exception:
+                pass
+
+        for row in rows:
+            filtered_row = [row[idx] for idx in indices]
+            
+            # Si es covers_realizados, calcular e insertar duración
+            if tabla == "covers_realizados" and cover_in_idx is not None and cover_out_idx is not None:
+                cover_in = row[cover_in_idx]
+                cover_out = row[cover_out_idx]
+                
+                # Calcular duración
+                duration_str = ""
+                if cover_in and cover_out:
+                    try:
+                        from datetime import datetime, timedelta
+                        # Si son strings, convertir a datetime
+                        if isinstance(cover_in, str):
+                            cover_in = datetime.strptime(cover_in, "%Y-%m-%d %H:%M:%S")
+                        if isinstance(cover_out, str):
+                            cover_out = datetime.strptime(cover_out, "%Y-%m-%d %H:%M:%S")
+                        
+                        delta = cover_out - cover_in
+                        hours, remainder = divmod(int(delta.total_seconds()), 3600)
+                        minutes, seconds = divmod(remainder, 60)
+                        duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    except Exception as e:
+                        print(f"[ERROR] Error calculando duración: {e}")
+                        duration_str = "Error"
+                
+                # Convertir valores None a string vacío
+                filtered_row = ["" if v is None else str(v) for v in filtered_row]
+                
+                # Insertar duración en la posición correcta (después de Cover_in, antes de Cover_out)
+                # Headers: ["Usuario", "Inicio Cover", "Duracion", "Fin Cover", "Cubierto por", "Motivo"]
+                # filtered_row: [Usuario, Cover_in, Cover_out, Covered_by, Motivo]
+                # Necesitamos insertar duration_str en el índice 2
+                filtered_row.insert(2, duration_str)
+            else:
+                # Convertir valores None a string vacío
+                filtered_row = ["" if v is None else str(v) for v in filtered_row]
+            
+            filtered_data.append(filtered_row)
+
+        # Insertar datos en el sheet
+        cover_tab_sheet.set_sheet_data(filtered_data)
+
+        # Aplicar formato a filas inactivas (is_Active == 0)
+        if orig_is_idx is not None:
+            try:
+                filtered_is_idx = indices.index(orig_is_idx)
+                for i, row in enumerate(rows):
+                    if row[orig_is_idx] == 0:
+                        # Aplicar resaltado gris a toda la fila
+                        cover_tab_sheet.highlight_rows([i], bg="#3a3a3a", fg="#808080")
+            except (ValueError, Exception):
+                pass
+        
+        # Ajustar anchos de columna
+        for idx, col_name in enumerate(filtered_col_names):
+            if col_name in ["ID_user", "Station", "Approved", "is_Active"]:
+                cover_tab_sheet.column_width(column=idx, width=100)
+            elif col_name in ["Time_request", "Cover_in", "Cover_out"]:
+                cover_tab_sheet.column_width(column=idx, width=150)
+            elif col_name in ["Reason", "Motivo"]:
+                cover_tab_sheet.column_width(column=idx, width=200)
+            else:
+                cover_tab_sheet.column_width(column=idx, width=120)
+        
+        cover_tab_sheet.redraw()
+    
+    # Frame de filtros de Cover Time (lo dejamos oculto ya que ahora tenemos tabs)
+    if UI is not None:
+        cover_filters = UI.CTkFrame(cover_container, fg_color="#23272a", corner_radius=8)
+    else:
+        cover_filters = tk.Frame(cover_container, bg="#23272a")
+    # NO hacer pack - los filtros ya no se usan con el nuevo diseño de tabs
+    
+    # ⭐ El código antiguo de filtros y búsqueda ha sido reemplazado por el sistema de tabs con tksheet
 
     # ==================== TOOLBAR (Footer) - Eliminado, Cover Time ahora es modo integrado ====================
     # Ya no necesitamos toolbar, Cover Time es un modo como Audit
@@ -2062,25 +2322,69 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
     sheet.bind("<Button-3>", show_context_menu)  # Menú contextual
     sheet.bind("<Double-Button-1>", lambda e: mark_as_done())  # Doble-click marca como "Registrado"
 
-    # Cleanup al cerrar
-    def on_close():
-        nonlocal refresh_job
-        if refresh_job:
-            top.after_cancel(refresh_job)
-        top.destroy()
     
-    top.protocol("WM_DELETE_WINDOW", on_close)
+# ⭐ CONFIGURAR CIERRE DE VENTANA: Ejecutar logout automáticamente
+    def on_window_close_super():
+        """Maneja el cierre de la ventana principal ejecutando logout y mostrando login"""
+        try:
+            if session_id and station:
+                login.do_logout(session_id, station, top)
+            if not session_id:
+                try:
+                    login.show_login()
+                    top.destroy()
+                except Exception as e:
+                    print(f"[ERROR] Error during logout: {e}")
+        except Exception as e:
+            print(f"[ERROR] Error destroying window: {e}")
+    # Configurar protocolo de cierre (botón X)
+    top.protocol("WM_DELETE_WINDOW", on_window_close_super)
 
-    # Registro singleton
-    _register_singleton('hybrid_events_supervisor', top)
+
+# nueva implementacion: status de supervisores
+# modificable y con efecto en operadores
+
+
+def get_user_status(username):
+    try:
+        
+        status_value = under_super.get_user_status_bd(username)
+        results = status_value    
+        if results:
+            
+            # Mapear el valor del status
+            if status_value == 1:
+                status_text = "🟢 Disponible"
+            elif status_value == 2:
+                status_text = "🟡 Ocupado"
+            elif status_value == -1:
+                status_text = "🔴 No disponible"
+            else:
+                status_text = f"⚪ Estado desconocido ({status_value})"
+            
+            print(f"[DEBUG] Usuario: {username}, Status DB: {status_value}, Texto: {status_text}")
+            return status_text
+        else:
+            print(f"[WARN] Usuario '{username}' no encontrado")
+            return "❌ Usuario no encontrado"
+            
+    except pymysql.Error as e:
+        print(f"[ERROR] Error al consultar el estado: {e}")
+        return f"Error: {e}"
+
+# Botón para refrescar
+def refresh_status(label_status, username):
+    new_status = get_user_status(username)
+    label_status.config(text=f"Status: {new_status}")
+    return new_status
+
+
     
-    # Carga inicial
-    load_data()
-    
-    return top
+
+# fin de la implementacion
 
 
-def open_hybrid_events_lead_supervisor(username, root=None):
+def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, root=None):
     """
     🚀 VENTANA HÍBRIDA PARA LEAD SUPERVISORS: Visualización de Specials con permisos de eliminación
     
@@ -2129,7 +2433,7 @@ def open_hybrid_events_lead_supervisor(username, root=None):
         top.configure(bg="#1e1e1e")
     
     top.title(f"👔 Lead Supervisor - Specials - {username}")
-    top.geometry("1350x700")
+    top.geometry("1350x800")
     top.resizable(True, True)
 
     # Variables de estado
@@ -2139,19 +2443,20 @@ def open_hybrid_events_lead_supervisor(username, root=None):
     refresh_job = None
 
     # Columnas
-    columns = ["FechaHora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "Usuario", "TZ", "Marca"]
+    columns = [" ", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "Usuario", "TZ", "Marca", "Marcado Por"]
     
     # Anchos personalizados
     custom_widths = {
-        "FechaHora": 150,
+        " ": 150,
         "Sitio": 220,
         "Actividad": 150,
         "Cantidad": 70,
         "Camera": 80,
-        "Descripcion": 190,
+        "Descripcion": 160,
         "Usuario": 100,
         "TZ": 90,
-        "Marca": 180
+        "Marca": 150,
+        "Marcado Por": 150
     }
 
     # ==================== FUNCIONES DE DATOS ====================
@@ -2164,7 +2469,7 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             
             # Obtener el último START SHIFT del Lead Supervisor (desde tabla Eventos)
             cursor.execute("""
-                SELECT e.FechaHora
+                SELECT e.FechaHora 
                 FROM Eventos e
                 INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
                 WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = 'START SHIFT'
@@ -2197,7 +2502,8 @@ def open_hybrid_events_lead_supervisor(username, root=None):
                     s.Descripcion,
                     s.Usuario,
                     s.Time_Zone,
-                    s.marked_status
+                    s.marked_status,
+                    s.marked_by
                 FROM specials s
                 WHERE s.Supervisor = %s
                   AND s.FechaHora >= %s
@@ -2239,8 +2545,15 @@ def open_hybrid_events_lead_supervisor(username, root=None):
                     else:
                         marca_status = str(row[9])
                 
+                # ⭐ Mostrar quién marcó el evento (marked_by)
+                marked_by_display = ""
+                if row[10]:  # marked_by (quien lo marcó)
+                    marked_by_display = str(row[10])
+                else:
+                    marked_by_display = "Sin Marcar"
+                
                 formatted_row = [
-                    str(row[1]) if row[1] else "",  # FechaHora
+                    str(row[1]) if row[1] else "",  #  
                     sitio_display,  # Sitio (resuelto)
                     str(row[3]) if row[3] else "",  # Actividad
                     str(row[4]) if row[4] else "",  # Cantidad
@@ -2248,7 +2561,8 @@ def open_hybrid_events_lead_supervisor(username, root=None):
                     str(row[6]) if row[6] else "",  # Descripcion
                     str(row[7]) if row[7] else "",  # Usuario
                     str(row[8]) if row[8] else "",  # Time_Zone
-                    marca_status  # Marca (procesada)
+                    marca_status,  # Marca (procesada)
+                    marked_by_display  # ⭐ NUEVO: Quién marcó el evento
                 ]
                 data.append(formatted_row)
             
@@ -2290,7 +2604,7 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             messagebox.showerror("Error", f"Error al cargar datos:\n{e}", parent=top)
 
     def delete_selected():
-        """Elimina los specials seleccionados (con permisos de Lead Supervisor)"""
+        """Elimina los specials seleccionados (con permisos de Lead Supervisor) usando safe_delete"""
         try:
             selected = sheet.get_selected_rows()
             if not selected:
@@ -2301,32 +2615,53 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             count = len(selected)
             confirm = messagebox.askyesno(
                 "Confirmar Eliminación",
-                f"¿Eliminar {count} special(s) seleccionado(s)?\n\n⚠️ Esta acción no se puede deshacer.",
+                f"¿Mover {count} special(s) a la papelera?\n\n💡 Podrán ser recuperados desde el sistema de auditoría.",
                 parent=top
             )
             
             if not confirm:
                 return
             
-            conn = under_super.get_connection()
-            cursor = conn.cursor()
-            
             deleted_count = 0
+            failed_count = 0
+            
             for row_idx in selected:
                 if row_idx < len(row_ids):
                     special_id = row_ids[row_idx]
                     try:
-                        # Eliminar de tabla specials
-                        cursor.execute("DELETE FROM specials WHERE ID_special = %s", (special_id,))
-                        deleted_count += 1
+                        # ⭐ Usar safe_delete para mover a papelera
+                        success = safe_delete(
+                            table_name="specials",
+                            pk_column="ID_special",
+                            pk_value=special_id,
+                            deleted_by=username,
+                            reason=f"Eliminado por Lead Supervisor desde 'Todos los eventos'"
+                        )
+                        
+                        if success:
+                            deleted_count += 1
+                        else:
+                            failed_count += 1
+                            print(f"[WARN] No se pudo mover special {special_id} a papelera")
+                            
                     except Exception as e:
-                        print(f"[ERROR] No se pudo eliminar special {special_id}: {e}")
+                        failed_count += 1
+                        print(f"[ERROR] Error al eliminar special {special_id}: {e}")
             
-            conn.commit()
-            cursor.close()
-            conn.close()
+            # Mostrar resultado
+            if deleted_count > 0:
+                if failed_count > 0:
+                    messagebox.showinfo("Resultado", 
+                                       f"✅ {deleted_count} special(s) movido(s) a papelera\n"
+                                       f"⚠️ {failed_count} no se pudieron eliminar", 
+                                       parent=top)
+                else:
+                    messagebox.showinfo("Éxito", 
+                                       f"✅ {deleted_count} special(s) movido(s) a papelera correctamente", 
+                                       parent=top)
+            else:
+                messagebox.showerror("Error", "No se pudo eliminar ningún registro", parent=top)
             
-            messagebox.showinfo("Éxito", f"✅ {deleted_count} special(s) eliminado(s)", parent=top)
             load_data()
             
         except Exception as e:
@@ -2407,6 +2742,114 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             hover_color="#00a043"
         )
         shift_btn.pack(side="right", padx=(5, 20), pady=15)
+        
+        # ⭐ INDICADOR DE STATUS CON DROPDOWN (antes del botón Shift)
+        status_frame = UI.CTkFrame(header, fg_color="transparent")
+        status_frame.pack(side="right", padx=(5, 10), pady=15)
+        
+        current_status_value = get_user_status(username)
+        status_label_lead = UI.CTkLabel(status_frame, text=current_status_value, 
+                                        font=("Segoe UI", 12, "bold"))
+        status_label_lead.pack(side="left", padx=(0, 8))
+        
+        def change_status_lead():
+            """Muestra menú para cambiar el status del lead supervisor"""
+            try:
+                status_actual = under_super.get_user_status_bd(username)
+                
+                if UI is not None:
+                    status_win = UI.CTkToplevel(top)
+                    status_win.configure(fg_color="#2c2f33")
+                else:
+                    status_win = tk.Toplevel(top)
+                    status_win.configure(bg="#2c2f33")
+                
+                status_win.title("Cambiar Status")
+                status_win.geometry("350x280")
+                status_win.resizable(False, False)
+                status_win.transient(top)
+                status_win.grab_set()
+                
+                if UI is not None:
+                    UI.CTkLabel(status_win, text=f"Status actual: {get_user_status(username)}",
+                               font=("Segoe UI", 13, "bold"), text_color="#e0e0e0").pack(pady=(20, 10))
+                    UI.CTkLabel(status_win, text="Selecciona nuevo status:",
+                               font=("Segoe UI", 11), text_color="#c9d1d9").pack(pady=(0, 15))
+                else:
+                    tk.Label(status_win, text=f"Status actual: {get_user_status(username)}",
+                            bg="#2c2f33", fg="#e0e0e0",
+                            font=("Segoe UI", 13, "bold")).pack(pady=(20, 10))
+                    tk.Label(status_win, text="Selecciona nuevo status:",
+                            bg="#2c2f33", fg="#c9d1d9",
+                            font=("Segoe UI", 11)).pack(pady=(0, 15))
+                
+                def set_new_status(new_value):
+                    label_status = new_value
+                    try:
+                        conn = under_super.get_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("UPDATE sesion SET Active = %s WHERE ID_user = %s ORDER BY ID DESC LIMIT 1",
+                                     (new_value, username))
+                        conn.commit()
+                        cursor.close()
+                        conn.close()
+                        
+                        new_text = get_user_status(username)
+                        status_label_lead.configure(text=new_text)
+                        
+
+                        
+                        refresh_status(label_status, username)
+                        status_win.destroy()
+                    except Exception as e:
+                        messagebox.showerror("Error", f"Error al cambiar status:\n{e}", parent=status_win)
+
+
+                
+                if UI is not None:
+                    UI.CTkButton(status_win, text="🟢 Disponible", 
+                               command=lambda: set_new_status(1),
+                               fg_color="#00c853", hover_color="#00a043",
+                               width=200, height=40,
+                               font=("Segoe UI", 12, "bold")).pack(pady=8)
+                    
+                    UI.CTkButton(status_win, text="🟡 Ocupado", 
+                               command=lambda: set_new_status(0),
+                               fg_color="#f5a623", hover_color="#e69515",
+                               width=200, height=40,
+                               font=("Segoe UI", 12, "bold")).pack(pady=8)
+                    
+                    UI.CTkButton(status_win, text="🔴 No disponible", 
+                               command=lambda: set_new_status(-1),
+                               fg_color="#d32f2f", hover_color="#b71c1c",
+                               width=200, height=40,
+                               font=("Segoe UI", 12, "bold")).pack(pady=8)
+                else:
+                    tk.Button(status_win, text="🟢 Disponible", 
+                             command=lambda: set_new_status(1),
+                             bg="#00c853", fg="white",
+                             font=("Segoe UI", 12, "bold"),
+                             relief="flat", width=18, height=2).pack(pady=8)
+                    
+                    tk.Button(status_win, text="🟡 Ocupado", 
+                             command=lambda: set_new_status(0),
+                             bg="#f5a623", fg="white",
+                             font=("Segoe UI", 12, "bold"),
+                             relief="flat", width=18, height=2).pack(pady=8)
+                    
+                    tk.Button(status_win, text="🔴 No disponible", 
+                             command=lambda: set_new_status(-1),
+                             bg="#d32f2f", fg="white",
+                             font=("Segoe UI", 12, "bold"),
+                             relief="flat", width=18, height=2).pack(pady=8)
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al abrir menú de status:\n{e}", parent=top)
+        
+        UI.CTkButton(status_frame, text="⚙️", command=change_status_lead,
+                    fg_color="#3b4754", hover_color="#4a5560",
+                    width=40, height=32,
+                    font=("Segoe UI", 12, "bold")).pack(side="left")
         
         # Botones de acción
         UI.CTkButton(header, text="🔄 Refrescar", command=load_data,
@@ -2753,7 +3196,6 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             conn.close()
             
             if marked_count > 0:
-                messagebox.showinfo("Éxito", f"✅ {marked_count} evento(s) marcado(s) como Registrado", parent=top)
                 load_data()
             else:
                 messagebox.showinfo("Info", "Los eventos seleccionados no están en la tabla specials", parent=top)
@@ -2794,7 +3236,6 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             conn.close()
             
             if marked_count > 0:
-                messagebox.showinfo("Éxito", f"🔄 {marked_count} evento(s) marcado(s) como En Progreso", parent=top)
                 load_data()
             else:
                 messagebox.showinfo("Info", "Los eventos seleccionados no están en la tabla specials", parent=top)
@@ -2835,10 +3276,10 @@ def open_hybrid_events_lead_supervisor(username, root=None):
     # No hacer pack aquí, se hace en switch_view()
     
     # Columnas para specials (basado en tabla specials)
-    columns_specials = ["ID", "FechaHora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "Usuario", "TZ", "Supervisor"]
+    columns_specials = ["ID", " ", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "Usuario", "TZ", "Supervisor"]
     custom_widths_specials = {
         "ID": 60,
-        "FechaHora": 150,
+        " ": 150,
         "Sitio": 220,
         "Actividad": 150,
         "Cantidad": 70,
@@ -2861,7 +3302,7 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             
             # Obtener el último START SHIFT del Lead Supervisor
             cursor.execute("""
-                SELECT e.FechaHora
+                SELECT e.FechaHora 
                 FROM Eventos e
                 INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
                 WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = 'START SHIFT'
@@ -2925,7 +3366,7 @@ def open_hybrid_events_lead_supervisor(username, root=None):
                 
                 formatted_row = [
                     str(row[0]),  # ID
-                    str(row[1]) if row[1] else "",  # FechaHora
+                    str(row[1]) if row[1] else "",  #  
                     sitio_display,  # Sitio
                     str(row[3]) if row[3] else "",  # Actividad
                     str(row[4]) if row[4] else "",  # Cantidad
@@ -3072,9 +3513,6 @@ def open_hybrid_events_lead_supervisor(username, root=None):
                     cursor.close()
                     conn.close()
                     
-                    messagebox.showinfo("Éxito", 
-                                       f"✅ {updated_count} special(s) asignado(s) a {supervisor_name}", 
-                                       parent=assign_win)
                     assign_win.destroy()
                     load_unassigned_specials()  # Recargar lista
                     
@@ -3271,12 +3709,13 @@ def open_hybrid_events_lead_supervisor(username, root=None):
         cur_temp.execute("SELECT Nombre_Usuario FROM user ORDER BY Nombre_Usuario")
         audit_users_list = ["Todos"] + [row[0] for row in cur_temp.fetchall()]
         
-        # Sitios
-        cur_temp.execute("SELECT Nombre_Sitio FROM Sitios ORDER BY Nombre_Sitio")
-        audit_sites_list = ["Todos"] + [row[0] for row in cur_temp.fetchall()]
-        
         cur_temp.close()
         conn_temp.close()
+        
+        # ⭐ Sitios con formato "Nombre (ID)" usando helper con cache
+        audit_sites_raw = under_super.get_sites()
+        audit_sites_list = ["Todos"] + audit_sites_raw
+        
     except Exception as e:
         print(f"[ERROR] Error al cargar usuarios/sitios para audit: {e}")
         audit_users_list = ["Todos"]
@@ -3382,9 +3821,23 @@ def open_hybrid_events_lead_supervisor(username, root=None):
                 sql += " AND ID_Usuario = (SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s)"
                 params.append(audit_user_var.get())
             
+            # ⭐ USAR HELPER para deconstruir formato "Nombre (ID)"
             if audit_site_var.get() and audit_site_var.get() != "Todos":
-                sql += " AND ID_Sitio = (SELECT ID_Sitio FROM Sitios WHERE Nombre_Sitio = %s)"
-                params.append(audit_site_var.get())
+                site_filter_raw = audit_site_var.get()
+                site_name, site_id = under_super.parse_site_filter(site_filter_raw)
+                
+                if site_name and site_id:
+                    # Buscar por nombre (más preciso cuando tenemos ambos)
+                    sql += " AND ID_Sitio = (SELECT ID_Sitio FROM Sitios WHERE Nombre_Sitio = %s)"
+                    params.append(site_name)
+                elif site_id:
+                    # Buscar solo por ID
+                    sql += " AND ID_Sitio = %s"
+                    params.append(site_id)
+                elif site_name:
+                    # Buscar solo por nombre
+                    sql += " AND ID_Sitio = (SELECT ID_Sitio FROM Sitios WHERE Nombre_Sitio = %s)"
+                    params.append(site_name)
             
             if audit_fecha_var.get():
                 sql += " AND DATE(FechaHora) = %s"
@@ -3415,7 +3868,7 @@ def open_hybrid_events_lead_supervisor(username, root=None):
                 
                 data.append([
                     str(row[0]),  # ID
-                    str(row[1]) if row[1] else "",  # FechaHora
+                    str(row[1]) if row[1] else "",  #  
                     sitio_nombre,  # Sitio
                     str(row[3]) if row[3] else "",  # Actividad
                     str(row[4]) if row[4] else "",  # Cantidad
@@ -3465,7 +3918,7 @@ def open_hybrid_events_lead_supervisor(username, root=None):
     audit_sheet_frame.pack(fill="both", expand=True, padx=10, pady=10)
     
     # Crear tksheet de Audit
-    audit_columns = ["ID", "FechaHora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "Usuario"]
+    audit_columns = ["ID", " ", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "Usuario"]
     audit_sheet = SheetClass(
         audit_sheet_frame,
         data=[[""] * len(audit_columns)],
@@ -3497,7 +3950,7 @@ def open_hybrid_events_lead_supervisor(username, root=None):
     audit_sheet.pack(fill="both", expand=True)
     audit_widths = {
         "ID": 60,
-        "FechaHora": 150,
+        " ": 150,
         "Sitio": 180,
         "Actividad": 140,
         "Cantidad": 80,
@@ -3940,6 +4393,10 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             messagebox.showwarning("Atención", "Seleccione un registro para eliminar.", parent=top)
             return
         
+        # Convertir a lista si es un set
+        if isinstance(selected, set):
+            selected = list(selected)
+        
         pk_name = admin_metadata.get('pk')
         col_names = admin_metadata.get('col_names', [])
         if not pk_name or pk_name not in col_names:
@@ -3953,7 +4410,12 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             pk_idx = col_names.index(pk_name)
             row_idx = selected[0]
             row_data = admin_sheet.get_row_data(row_idx)
-            pk_value = row_data[pk_idx] if pk_idx < len(row_data) else None
+            
+            # Convertir a lista si es un set
+            if isinstance(row_data, set):
+                row_data = list(row_data)
+            
+            pk_value = row_data[pk_idx] if row_data and pk_idx < len(row_data) else None
             
             if pk_value is None:
                 messagebox.showerror("Error", "No se pudo leer el valor de la PK.", parent=top)
@@ -3988,6 +4450,10 @@ def open_hybrid_events_lead_supervisor(username, root=None):
             messagebox.showwarning("Atención", "Seleccione un registro para editar.", parent=top)
             return
         
+        # Convertir a lista si es un set
+        if isinstance(selected, set):
+            selected = list(selected)
+        
         pk_name = admin_metadata.get('pk')
         col_names = admin_metadata.get('col_names', [])
         if not pk_name or pk_name not in col_names:
@@ -3997,6 +4463,11 @@ def open_hybrid_events_lead_supervisor(username, root=None):
         pk_idx = col_names.index(pk_name)
         row_idx = selected[0]
         row_data = admin_sheet.get_row_data(row_idx)
+        
+        # Convertir a lista si es un set
+        if isinstance(row_data, set):
+            row_data = list(row_data)
+        
         if not row_data or pk_idx >= len(row_data):
             messagebox.showerror("Error", "No se pudo leer el registro.", parent=top)
             return
@@ -4317,1473 +4788,520 @@ def open_hybrid_events_lead_supervisor(username, root=None):
 
     # ==================== CLOSE HANDLER ====================
     
-    def on_close():
-        """Cierra la ventana y ejecuta logout cerrando la ventana principal"""
-        nonlocal refresh_job
-        if refresh_job:
-            top.after_cancel(refresh_job)
-        
+    # ⭐ CONFIGURAR CIERRE DE VENTANA: Ejecutar logout automáticamente
+    def on_window_close_leadsuper():
+        """Maneja el cierre de la ventana principal ejecutando logout y mostrando login"""
         try:
-            print(f"[INFO] Lead Supervisor {username} cerró la ventana - ejecutando logout")
-            
-            # Cerrar la ventana actual primero
-            top.destroy()
-            
-            # Si existe una referencia a la ventana principal (root), cerrarla también
-            # Esto equivale a hacer logout completo
-            if root is not None:
+            if session_id and station:
+                login.do_logout(session_id, station, top)
+            if not session_id:
                 try:
-                    root.destroy()
-                    print(f"[INFO] Logout ejecutado correctamente para {username}")
+                    login.show_login()
+                    top.destroy()
                 except Exception as e:
-                    print(f"[WARNING] No se pudo cerrar ventana principal: {e}")
-            
+                    print(f"[ERROR] Error during logout: {e}")
         except Exception as e:
-            print(f"[ERROR] on_close: {e}")
-            traceback.print_exc()
-            try:
-                top.destroy()
-            except:
-                pass
-    
-    top.protocol("WM_DELETE_WINDOW", on_close)
-
-    # Registro singleton
-    _register_singleton('hybrid_events_lead_supervisor', top)
-    
-    # Carga inicial
-    load_data()
-    
-    return top
+            print(f"[ERROR] Error destroying window: {e}")
+    # Configurar protocolo de cierre (botón X)
+    top.protocol("WM_DELETE_WINDOW", on_window_close_leadsuper)
 
 
-def open_hybrid_events(username, session_id=None, station=None, root=None):
+def show_covers_programados_panel(parent_top, parent_ui, username):
     """
-    🚀 VENTANA HÍBRIDA: Registro + Visualización de Eventos
+    📋 PANEL INTEGRADO DE LISTA DE COVERS PROGRAMADOS
     
-    Combina funcionalidad de registro y edición en una sola ventana tipo Excel:
-    - Visualización de eventos del turno actual en tksheet
-    - Edición inline con doble-click
-    - Widgets especializados por columna (DatePicker, FilteredCombobox, etc.)
-    - Botones: Nuevo, Guardar, Eliminar, Refrescar
-    - Auto-refresh configurable
-    - Validaciones en tiempo real
-    - Incluye botones Cover y Start/End Shift en header
-    - Modos: Daily, Specials, Covers
+    Muestra todos los covers programados activos de TODOS los usuarios con:
+    - Visualización en tksheet (solo lectura) integrada en la ventana principal
+    - Información detallada: Usuario, Hora solicitud, Estación, Razón, Estado aprobación
+    - Botón de refrescar y cerrar
+    - Filtrado automático: solo muestra covers con is_Active = 1
+    - Resalta la fila del usuario actual en verde
+    
+    Args:
+        parent_top: Ventana principal (top) donde se creará el panel
+        parent_ui: Módulo UI (CustomTkinter o None para tkinter)
+        username: Usuario actual para resaltar su fila
     """
-    # Ventana única por función
-    ex = _focus_singleton('hybrid_events')
-    if ex:
-        return ex
-
-    # Intentar usar CustomTkinter
-    UI = None
-    try:
-        import importlib
-        ctk = importlib.import_module('customtkinter')
-        try:
-            ctk.set_appearance_mode("dark")
-            ctk.set_default_color_theme("dark-blue")
-        except Exception:
-            pass
-        UI = ctk
-    except Exception:
-        UI = None
-    
-
-    # Crear ventana
-    if UI is not None:
-        form = UI.CTkToplevel(root)
-        form.configure(fg_color="#23272b")
-    else:
-        form = tk.Toplevel(root)
-        form.configure(bg="#23272b")
-    form.title("Registrar Evento")
-    try:
-        form.geometry(f"400x480+0+{root.winfo_screenheight()-480}")
-    except Exception:
-        form.geometry("400x480+0+0")
-    form.resizable(False, False)
-
-    # Header
-    if UI is not None:
-        UI.CTkLabel(
-            form,
-            text="Registrar Nuevo Evento",
-            text_color="#a3c9f9",
-            font=("Segoe UI", 16, "bold"),
-            width=400,
-            height=30
-        ).place(x=0, y=10)
-        UI.CTkLabel(
-            form,
-            text="*Activity Required Only*",
-            text_color="#8e9297",
-            font=("Segoe UI", 10, "italic"),
-            width=370,
-            height=15
-        ).place(x=0, y=43)
-        card = UI.CTkFrame(form, fg_color="#2c2f33", corner_radius=8, width=370, height=380)
-    else:
-        tk.Label(form, text="Registrar Nuevo Evento", bg="#23272b", fg="#a3c9f9",
-                 font=("Segoe UI", 16, "bold")).place(x=0, y=10, width=400, height=30)
-        tk.Label(form, text="*Activity Required Only*", bg="#23272b", fg="#8e9297",
-                 font=("Segoe UI", 8, "italic")).place(x=0, y=43, width=370, height=15)
-        card = tk.Frame(form, bg="#2c2f33", bd=0, highlightthickness=0)
-    card.place(x=15, y=68)
-
-    label_fg = "#c9d1d9"
-    # Entradas
-    if UI is not None:
-        UI.CTkLabel(card, text="Sitio:", text_color=label_fg, font=("Segoe UI", 14, "bold")).place(x=16, y=18)
-    else:
-        tk.Label(card, text="Sitio:", bg=card["bg"], fg=label_fg, font=("Segoe UI", 14, "bold")).place(x=16, y=18)
-    site_var = tk.StringVar()
-    site_menu = under_super.FilteredCombobox(
-        card, textvariable=site_var, values=under_super.get_sites(), font=("Segoe UI", 10)
-    )
-    site_menu.place(x=140, y=16, width=230)
-    
-    # Configurar estilo oscuro para el combobox (Windows: usar 'clam' para que respete colores)
-    try:
-        style = ttk.Style(form)
-        try:
-            current_theme = style.theme_use()
-            if current_theme.lower() in ("vista", "xpnative", "winnative"):
-                style.theme_use("clam")
-        except Exception:
-            pass
-
-        # Estilo dedicado para no afectar globalmente
-        dark_combo = "Dark.TCombobox"
-        style.configure(
-            dark_combo,
-            fieldbackground="#23272b",
-            background="#23272b",
-            foreground="#c9d1d9",
-            bordercolor="#373737",
-            lightcolor="#373737",
-            darkcolor="#373737",
-            arrowcolor="#c9d1d9"
-        )
-        # Bordes/colores en foco/hover
-        style.map(
-            dark_combo,
-            fieldbackground=[("!disabled", "#23272b")],
-            background=[("active", "#2d3136"), ("!active", "#23272b")],
-            foreground=[("!disabled", "#c9d1d9")],
-            bordercolor=[("focus", "#4a90e2"), ("!focus", "#373737")],
-            lightcolor=[("focus", "#4a90e2"), ("!focus", "#373737")],
-            darkcolor=[("focus", "#4a90e2"), ("!focus", "#373737")]
-        )
-
-        # También intentar oscurecer el listado desplegable (Listbox interno)
-        try:
-            form.option_add("*TCombobox*Listbox.background", "#23272b")
-            form.option_add("*TCombobox*Listbox.foreground", "#c9d1d9")
-            form.option_add("*TCombobox*Listbox.selectBackground", "#4a90e2")
-            form.option_add("*TCombobox*Listbox.selectForeground", "#ffffff")
-        except Exception:
-            pass
-
-        site_menu.configure(style=dark_combo)
-    except Exception:
-        pass
-
-    if UI is not None:
-        UI.CTkLabel(card, text="Actividad*:", text_color=label_fg, font=("Segoe UI", 14, "bold")).place(x=16, y=62)
-    else:
-        tk.Label(card, text="Actividad*:", bg=card["bg"], fg=label_fg, font=("Segoe UI", 14, "bold")).place(x=16, y=62)
-    activity_var = tk.StringVar()
-    activity_menu = under_super.FilteredCombobox(
-        card, textvariable=activity_var, values=under_super.get_activities(), font=("Segoe UI", 10)
-    )
-    activity_menu.place(x=140, y=60, width=230)
-    
-    # Configurar estilo oscuro para el combobox de actividad
-    try:
-        style = ttk.Style(form)
-        try:
-            current_theme = style.theme_use()
-            if current_theme.lower() in ("vista", "xpnative", "winnative"):
-                style.theme_use("clam")
-        except Exception:
-            pass
-
-        dark_combo = "Dark.TCombobox"
-        style.configure(
-            dark_combo,
-            fieldbackground="#23272b",
-            background="#23272b",
-            foreground="#c9d1d9",
-            bordercolor="#373737",
-            lightcolor="#373737",
-            darkcolor="#373737",
-            arrowcolor="#c9d1d9"
-        )
-        style.map(
-            dark_combo,
-            fieldbackground=[("!disabled", "#23272b")],
-            background=[("active", "#2d3136"), ("!active", "#23272b")],
-            foreground=[("!disabled", "#c9d1d9")],
-            bordercolor=[("focus", "#4a90e2"), ("!focus", "#373737")],
-            lightcolor=[("focus", "#4a90e2"), ("!focus", "#373737")],
-            darkcolor=[("focus", "#4a90e2"), ("!focus", "#373737")]
-        )
-        try:
-            form.option_add("*TCombobox*Listbox.background", "#23272b")
-            form.option_add("*TCombobox*Listbox.foreground", "#c9d1d9")
-            form.option_add("*TCombobox*Listbox.selectBackground", "#4a90e2")
-            form.option_add("*TCombobox*Listbox.selectForeground", "#ffffff")
-        except Exception:
-            pass
-
-        activity_menu.configure(style=dark_combo)
-    except Exception:
-        pass
-
-    if UI is not None:
-        quantity_label = UI.CTkLabel(card, text="Cantidad:", text_color=label_fg, font=("Segoe UI", 14, "bold"))
-        quantity_label.place(x=16, y=106)
-        quantity_var = tk.StringVar()
-        quantity_entry = UI.CTkEntry(
-            card,
-            textvariable=quantity_var,
-            fg_color="#23272b",
-            text_color="#c9d1d9",
-            border_color="#373737",
-            width=230,
-            height=28
-        )
-        quantity_entry.place(x=140, y=104)
-    else:
-        quantity_label = tk.Label(card, text="Cantidad:", bg=card["bg"], fg=label_fg, font=("Segoe UI", 14, "bold"))
-        quantity_label.place(x=16, y=106)
-        quantity_var = tk.StringVar()
-        quantity_entry = tk.Entry(card, textvariable=quantity_var, font=("Segoe UI", 10),
-                                  bg="#23272b", fg="#c9d1d9", relief="flat", highlightbackground="#373737",
-                                  insertbackground="#c9d1d9")
-        quantity_entry.place(x=140, y=104, width=230, height=25)
-
-    if UI is not None:
-        camera_label = UI.CTkLabel(card, text="Cámara:", text_color=label_fg, font=("Segoe UI", 14, "bold"))
-        camera_label.place(x=16, y=150)
-        camera_var = tk.StringVar()
-        camera_entry = UI.CTkEntry(
-            card,
-            textvariable=camera_var,
-            fg_color="#23272b",
-            text_color="#c9d1d9",
-            border_color="#373737",
-            width=230,
-            height=28
-        )
-        camera_entry.place(x=140, y=148)
-    else:
-        camera_label = tk.Label(card, text="Cámara:", bg=card["bg"], fg=label_fg, font=("Segoe UI", 14, "bold"))
-        camera_label.place(x=16, y=150)
-        camera_var = tk.StringVar()
-        camera_entry = tk.Entry(card, textvariable=camera_var, font=("Segoe UI", 10),
-                                bg="#23272b", fg="#c9d1d9", relief="flat", highlightbackground="#373737",
-                                insertbackground="#c9d1d9")
-        camera_entry.place(x=140, y=148, width=230, height=25)
-
-    if UI is not None:
-        UI.CTkLabel(card, text="Descripción:", text_color=label_fg, font=("Segoe UI", 14, "bold")).place(x=16, y=194)
-        desc_entry = UI.CTkTextbox(
-            card,
-            fg_color="#23272b",
-            text_color="#c9d1d9",
-            border_color="#373737",
-            corner_radius=6,
-            wrap="word",
-            width=230,
-            height=76
-        )
-        desc_entry.place(x=140, y=192)
-    else:
-        tk.Label(card, text="Descripción:", bg=card["bg"], fg=label_fg, font=("Segoe UI", 14, "bold")).place(x=16, y=194)
-        desc_entry = tk.Text(card, font=("Segoe UI", 10), height=4, width=30,
-                             bg="#23272b", fg="#c9d1d9", relief="flat",
-                             highlightbackground="#373737", insertbackground="#c9d1d9", wrap="word")
-        desc_entry.place(x=140, y=192)
-
-    # Guardar posiciones originales para poder ocultar/mostrar dinámicamente
-    try:
-        _qty_label_place = quantity_label.place_info()
-        _qty_entry_place = quantity_entry.place_info()
-        _cam_label_place = camera_label.place_info()
-        _cam_entry_place = camera_entry.place_info()
-    except Exception:
-        _qty_label_place = _qty_entry_place = _cam_label_place = _cam_entry_place = None
-
-    # Reglas especiales: si la actividad es una de estas, autocompletar sitio y ocultar Cantidad/Cámara
-    _special_activities = {s.lower() for s in ("Change Split", "change station", "Took Station over", "Covered by")}
-
-    def _toggle_special_fields(is_special: bool):
-        try:
-            if is_special:
-                # Ocultar cantidad y cámara
-                try:
-                    quantity_label.place_forget(); quantity_entry.place_forget()
-                except Exception:
-                    pass
-                try:
-                    camera_label.place_forget(); camera_entry.place_forget()
-                except Exception:
-                    pass
-            else:
-                # Restaurar si tenemos info original
-                if _qty_label_place:
-                    try:
-                        quantity_label.place(**_qty_label_place)
-                    except Exception:
-                        pass
-                if _qty_entry_place:
-                    try:
-                        # width/height pueden venir como strings; place acepta strings
-                        quantity_entry.place(**_qty_entry_place)
-                    except Exception:
-                        pass
-                if _cam_label_place:
-                    try:
-                        camera_label.place(**_cam_label_place)
-                    except Exception:
-                        pass
-                if _cam_entry_place:
-                    try:
-                        camera_entry.place(**_cam_entry_place)
-                    except Exception:
-                        pass
-        except Exception:
-            pass
-
-    def _on_activity_change(*_):
-        name = (activity_var.get() or "").strip().lower()
-        is_special = name in _special_activities
-        if is_special:
-            try:
-                site_var.set("Slc Office 291")
-            except Exception:
-                pass
-        _toggle_special_fields(is_special)
-
-    # Vincular cambios de actividad
-    try:
-        activity_var.trace_add('write', _on_activity_change)
-    except Exception:
-        pass
-    try:
-        activity_menu.bind('<<ComboboxSelected>>', lambda e: _on_activity_change())
-    except Exception:
-        pass
-
-    # Aplicar estado inicial según actividad preseleccionada
-    _on_activity_change()
-
-    # Timestamp real (audit trail)
-    login_time = datetime.now()
-
-    # Variables para la hora editable
-    hour_var = tk.StringVar()
-    minute_var = tk.StringVar()
-    second_var = tk.StringVar()
-
-    def set_current_time():
-        now = datetime.now()
-        hour_var.set(f"{now.hour:02}")
-        minute_var.set(f"{now.minute:02}")
-        second_var.set(f"{now.second:02}")
-    set_current_time()
-
-    # Hora editable
-    if UI is not None:
-        UI.CTkLabel(card, text="Hora editable:", text_color="#a3c9f9", font=("Segoe UI", 14, "bold")).place(x=16, y=288)
-        refresh_time_btn = UI.CTkButton(
-            card,
-            text="Refrescar Hora",
-            command=set_current_time,
-            fg_color="#23272b",
-            hover_color="#2d3136",
-            text_color="#a3c9f9",
-            corner_radius=6,
-            width=110,
-            height=24
-        )
-        refresh_time_btn.place(x=16, y=320)
-    else:
-        tk.Label(card, text="Hora editable:", bg=card["bg"], fg="#a3c9f9", font=("Segoe UI", 10, "bold")).place(x=16, y=288)
-        refresh_time_btn = tk.Button(card, text="Refrescar Hora", font=("Segoe UI", 8, "bold"), bg="#23272b",
-                                     fg="#a3c9f9", relief="flat", command=set_current_time)
-        refresh_time_btn.place(x=16, y=320, width=110, height=23)
-
-    # Spinboxes (tk) conservados para exactitud y facilidad
-    entry_bg = "#23272b"; entry_fg = "#c9d1d9"; entry_border = "#373737"; active_bg = "#31363b"
-    spins = {
-        "hour":  tk.Spinbox(card, from_=0, to=23, wrap=True, textvariable=hour_var, width=3, font=("Segoe UI", 11, "bold"), justify="center",
-                       bg=entry_bg, fg=entry_fg, relief="flat", highlightbackground=entry_border, insertbackground=entry_fg, buttonbackground=active_bg),
-        "minute":tk.Spinbox(card, from_=0, to=59, wrap=True, textvariable=minute_var, width=3, font=("Segoe UI", 11, "bold"), justify="center",
-                       bg=entry_bg, fg=entry_fg, relief="flat", highlightbackground=entry_border, insertbackground=entry_fg, buttonbackground=active_bg),
-        "second":tk.Spinbox(card, from_=0, to=59, wrap=True, textvariable=second_var, width=3, font=("Segoe UI", 11, "bold"), justify="center",
-                       bg=entry_bg, fg=entry_fg, relief="flat", highlightbackground=entry_border, insertbackground=entry_fg, buttonbackground=active_bg)
-    }
-    spins["hour"].place(x=140, y=286, width=44, height=30)
-    tk.Label(card, text=":", bg=(card["bg"] if UI is None else "#2c2f33"), fg="#a3c9f9", font=("Segoe UI", 12, "bold")).place(x=190, y=286, height=30)
-    spins["minute"].place(x=204, y=286, width=44, height=30)
-    tk.Label(card, text=":", bg=(card["bg"] if UI is None else "#2c2f33"), fg="#a3c9f9", font=("Segoe UI", 12, "bold")).place(x=254, y=286, height=30)
-    spins["second"].place(x=268, y=286, width=44, height=30)
-
-    # Label pequeño de referencia (hora real)
-    if UI is not None:
-        UI.CTkLabel(card, text=f"(Hora real apertura: {login_time.strftime('%H:%M:%S')})",
-                    text_color="#a3c9f9", font=("Segoe UI", 12, "italic")).place(x=140, y=317)
-    else:
-        tk.Label(card, text=f"(Hora real apertura: {login_time.strftime('%H:%M:%S')})",
-                 bg=card["bg"], fg="#a3c9f9", font=("Segoe UI", 8, "italic")).place(x=140, y=317)
-
-    # Acción Registrar (no tocar SQL)
-    def on_register():
-        site_value = site_var.get()
-        activity_value = activity_var.get()
-        quantity_value = quantity_var.get()
-        camera_value = camera_var.get()
-        # Obtener texto según widget
-        try:
-            desc_value = desc_entry.get("1.0", tk.END).strip()
-        except Exception:
-            # CTkTextbox usa el mismo API
-            desc_value = desc_entry.get("1.0", tk.END).strip()
-        hour = int(hour_var.get())
-        minute = int(minute_var.get())
-        second = int(second_var.get())
-
-        try:
-            under_super.add_event(
-                username=username,
-                site=site_value,
-                activity=activity_value,
-                quantity=quantity_value,
-                camera=camera_value,
-                desc=desc_value,
-                hour=hour,
-                minute=minute,
-                second=second
-            )
-            # Limpiar campos
-            site_var.set("")
-            activity_var.set("")
-            quantity_var.set("")
-            camera_var.set("")
-            try:
-                desc_entry.delete("1.0", tk.END)
-            except Exception:
-                pass
-            # Dejar el foco listo para seguir registrando
-            try:
-                activity_menu.focus_set()
-            except Exception:
-                pass
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo guardar el evento:\n{e}")
-
-    # Botón de registrar
-    if UI is not None:
-        UI.CTkButton(
-            form,
-            text="Registrar Evento",
-            command=on_register,
-            fg_color="#4a90e2",
-            hover_color="#357ABD",
-            corner_radius=8,
-            width=200,
-            height=30
-        ).place(x=140, y=410)
-    else:
-        tk.Button(form, text="Registrar Evento", command=on_register, bg="#4a90e2", fg="white", relief="flat").place(x=170, y=410)
-
-    _register_singleton('register_form', form)
-    # No mainloop aquí; es un Toplevel dentro de la app
-
-def show_events(username):
-    # Intentar usar CustomTkinter para modernizar la UI (fallback a Tk)
-    UI = None
-    try:
-        import importlib
-        ctk = importlib.import_module('customtkinter')
-        try:
-            ctk.set_appearance_mode("dark")
-            ctk.set_default_color_theme("dark-blue")
-        except Exception:
-            pass
-        UI = ctk
-    except Exception:
-        UI = None
-    # Preferir tksheet para comportamiento tipo Excel; fallback a Treeview si no está disponible
-    USE_SHEET = False
+    # tksheet setup
     SheetClass = None
-    sheet = None
-    row_ids = []  # mapa de índice de fila -> ID_Eventos
     try:
         from tksheet import Sheet as _Sheet
         SheetClass = _Sheet
-        USE_SHEET = True
     except Exception:
-        USE_SHEET = False
-        SheetClass = None
-    def get_last_shift_start():
-        """
-        Busca en la base de datos la última hora de inicio de shift (evento 'START SHIFT')
-        para el usuario dado (usando su Nombre_usuario).
-        Retorna un valor datetime (o None si no hay shift iniciado).
-        """
-        try:
-            conn = under_super.get_connection()
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT e.FechaHora
-                FROM Eventos e
-                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
-                WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = %s
-                ORDER BY e.FechaHora DESC
-                LIMIT 1
-            """, (username, "START SHIFT"))
-
-            row = cur.fetchone()
-            cur.close()
-            conn.close()
-
-            if row and row[0]:
-                return row[0]
-            else:
-                return None
-
-        except Exception as e:
-            print(f"[ERROR] get_last_shift_start: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
-
-    def load_events():
-        try:
-            last_shift_time = get_last_shift_start()
-            if last_shift_time is None:
-                # Si nunca hizo "START SHIFT", no mostramos nada.
-                if USE_SHEET and sheet is not None:
-                    try:
-                        data = [["No hay shift activo ni historial."] + [""] * (len(columns)-1)]
-                        # Intentar API estándar; fallback seguro si falla
-                        try:
-                            # No resetear posiciones de columnas para conservar anchos
-                            sheet.set_sheet_data(data, reset_col_positions=False, reset_row_positions=True, redraw=True)
-                            apply_sheet_widths()
-                        except Exception:
-                            sheet.data = data
-                            try:
-                                sheet.redraw()
-                            except Exception:
-                                pass
-                            # Aplicar anchos tras redraw incluso en fallback
-                            apply_sheet_widths()
-                        row_ids.clear()
-                    except Exception:
-                        pass
-                else:
-                    tree.delete(*tree.get_children())
-                    tree.insert("", "end", values=["No hay shift activo ni historial."] + [""] * (len(columns)-1), tags=("oddrow",))
-                return
-
-            conn = under_super.get_connection()
-            cur = conn.cursor()
-            # Primero obtenemos los eventos del usuario (no traemos todavía nombre del sitio)
-            # Seleccionar el ID_Eventos junto con los campos que mostramos.
-            # Insertaremos cada fila en el Treeview usando iid=str(ID_Eventos) para
-            # poder identificar el registro de manera fiable al editar/eliminar.
-            cur.execute("""
-                SELECT 
-                    e.ID_Eventos,
-                    e.FechaHora,
-                    e.ID_Sitio,
-                    e.Nombre_Actividad,
-                    e.Cantidad,
-                    e.Camera,
-                    e.Descripcion
-                FROM Eventos e
-                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
-                WHERE u.Nombre_Usuario = %s AND e.FechaHora >= %s
-                ORDER BY e.FechaHora ASC
-            """, (username, last_shift_time))
-
-            eventos = cur.fetchall()
-
-            rows = []
-            for evento in eventos:
-                (
-                    id_evento,
-                    fecha_hora,
-                    id_sitio,
-                    nombre_actividad,
-                    cantidad,
-                    camera,
-                    descripcion
-                ) = evento
-
-                # Resolver Nombre_Sitio desde ID_Sitio
-                try:
-                    cur.execute("SELECT Nombre_Sitio FROM Sitios WHERE ID_Sitio = %s", (id_sitio,))
-                    sit_row = cur.fetchone()
-                    nombre_sitio = sit_row[0] if sit_row else "SIN SITIO"
-                except Exception:
-                    nombre_sitio = "SIN SITIO"
-
-                # Guardar una tupla que incluya el ID_Eventos como primer elemento para usarlo
-                # como iid cuando insertemos en el Treeview.
-                rows.append((
-                    id_evento,
-                    fecha_hora,
-                    nombre_sitio,
-                    nombre_actividad,
-                    cantidad,
-                    camera,
-                    descripcion
-                ))
-
-            # Poblar según widget
-            if USE_SHEET and sheet is not None:
-                try:
-                    display_rows = [[str(v) if v is not None else "" for v in r[1:]] for r in rows]
-                    if not display_rows:
-                        display_rows = [["No hay eventos en este turno."] + [""] * (len(columns)-1)]
-                        row_ids.clear()
-                    else:
-                        row_ids[:] = [r[0] for r in rows]
-                    try:
-                        # No resetear columnas: preserva el ancho manual
-                        sheet.set_sheet_data(display_rows, reset_col_positions=False, reset_row_positions=True, redraw=True)
-                        apply_sheet_widths()
-                    except Exception:
-                        sheet.data = display_rows
-                        try:
-                            sheet.redraw()
-                        except Exception:
-                            pass
-                        apply_sheet_widths()
-                except Exception as _e:
-                    print(f"[ERROR] tksheet load: {_e}")
-            else:
-                tree.delete(*tree.get_children())  # limpiar antes de insertar
-                if not rows:
-                    tree.insert("", "end", values=["No hay eventos en este turno."] + [""] * (len(columns)-1), tags=("oddrow",))
-                else:
-                    for idx, row in enumerate(rows):
-                        # row: (ID_Eventos, FechaHora, Nombre_Sitio, Nombre_Actividad, ...)
-                        id_evento = row[0]
-                        display_values = [str(v) if v is not None else "" for v in row[1:]]
-                        tag = "evenrow" if idx % 2 == 0 else "oddrow"
-                        # Insertar usando iid para poder recuperar el PK fácilmente
-                        try:
-                            tree.insert("", "end", iid=str(id_evento), values=display_values, tags=(tag,))
-                        except Exception:
-                            # Fallback por si el iid ya existe o causa conflicto
-                            tree.insert("", "end", values=display_values, tags=(tag,))
-
-            cur.close()
-            conn.close()
-        except Exception as e:
-            print(f"[ERROR] load_events: {e}")
-            traceback.print_exc()
-            return []
-
-    def edit_selected():
-        # Selección según widget
-        selected_row_index = None
-        values = []
-        item_id = None
-        if USE_SHEET and sheet is not None:
-            try:
-                sel_rows = sheet.get_selected_rows()
-            except Exception:
-                sel_rows = []
-            # tksheet puede devolver un set; tomar un elemento de forma segura
-            if sel_rows:
-                try:
-                    selected_row_index = next(iter(sel_rows))
-                except Exception:
-                    try:
-                        selected_row_index = sel_rows[0]
-                    except Exception:
-                        selected_row_index = None
-            else:
-                try:
-                    cur = sheet.get_currently_selected()
-                    if isinstance(cur, dict) and 'row' in cur:
-                        selected_row_index = cur['row']
-                except Exception:
-                    pass
-            if selected_row_index is None:
-                messagebox.showwarning("Atención", "Seleccione un registro para editar.")
-                return
-            try:
-                values = sheet.get_row_data(selected_row_index)
-            except Exception:
-                values = []
-            if not values:
-                return
-            try:
-                item_id = str(row_ids[selected_row_index])
-            except Exception:
-                item_id = None
-        else:
-            sel = tree.selection()
-            if not sel:
-                messagebox.showwarning("Atención", "Seleccione un registro para editar.")
-                return
-            item_id = sel[0]
-            # Recuperar valores mostrados (sin el ID_Eventos que llevamos en el iid)
-            item = tree.item(item_id)
-            values = item.get("values", [])
-            if not values:
-                return
-
-        # Ventana de edición moderna, similar al estilo de la ventana de eventos (CTk si disponible)
-        if UI is not None:
-            edit_win = UI.CTkToplevel(top)
-            try:
-                edit_win.configure(fg_color="#23272a")
-            except Exception:
-                pass
-        else:
-            edit_win = tk.Toplevel(top)
-            edit_win.configure(bg="#23272a")
-        edit_win.title("Editar Registro")
-        edit_win.geometry("480x410")
-        edit_win.resizable(False, False)
-
-        # Encabezado estilizado
-        if UI is not None:
-            header = UI.CTkLabel(
-                edit_win,
-                text="Editar registro de evento",
-                text_color="#00bfae",
-                font=("Segoe UI", 16, "bold"),
-            )
-            header.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(12,4))
-        else:
-            header = tk.Label(
-                edit_win,
-                text="Editar registro de evento",
-                bg="#23272a",
-                fg="#00bfae",
-                font=("Segoe UI", 16, "bold"),
-                pady=16
-            )
-            header.grid(row=0, column=0, columnspan=2, sticky="ew")
-
-        style_label = {
-            "bg": "#23272a",
-            "fg": "#eeeeee",
-            "font": ("Segoe UI", 11, "bold"),
-            "anchor": "w"
-        }
-        style_entry = {
-            "bg": "#2c2f33",
-            "fg": "#00fff7",
-            "insertbackground": "#00bfae",
-            "font": ("Segoe UI", 11),
-            "relief": "flat",
-            "highlightbackground": "#00bfae",
-            "highlightcolor": "#00bfae",
-            "highlightthickness": 1,
-            "bd": 1
-        }
-
-        entries = {}
-        # Helpers to pass info from the 'Descripcion' widget block to save_changes
-        description_helpers = {}
-        for i, cname in enumerate(columns):
-            if UI is not None:
-                lbl = UI.CTkLabel(edit_win, text=cname + ":", text_color="#eeeeee", font=("Segoe UI", 11, "bold"))
-                lbl.grid(row=i + 1, column=0, sticky="w", padx=(18, 6), pady=(8,4))
-            else:
-                lbl = tk.Label(edit_win, text=cname + ":", **style_label)
-                lbl.grid(row=i + 1, column=0, sticky="w", padx=(18, 6), pady=(8,4))
-
-            # El sitio no es editable, mostrarlo solo como un campo no editable.
-            if cname.lower() in ("nombre_sitio"):
-                current_value = str(values[i]) if i < len(values) else ""
-                # Mostrarlo como Label en vez de Combobox o Entry, y "entregarlo" igual a entries
-                if UI is not None:
-                    e = UI.CTkLabel(edit_win, text=current_value, text_color="#bbbbbb", font=("Segoe UI", 11, "italic"))
-                    e.grid(row=i + 1, column=1, padx=(6, 18), pady=(8,4), sticky="ew")
-                else:
-                    e = tk.Label(edit_win, text=current_value, bg="#2c2f33", fg="#bbbbbb",
-                                 font=("Segoe UI", 11, "italic"), anchor="w", relief="flat")
-                    e.grid(row=i + 1, column=1, padx=(6, 18), pady=(8,4), sticky="ew")
-                # Los Labels no necesitan set(), ya tienen el texto asignado
-            elif cname.lower() in ("nombre_actividad"):
-                # Mostrar Nombre_Actividad como Label no-editable para evitar violaciones
-                # de integridad referencial (FK) y problemas en los comboboxes que borran
-                # el valor actual en algunos temas. Si deseas habilitar edición, podemos
-                # convertirlo en un Combobox controlado que devuelva directamente el ID.
-                current_value = str(values[i]) if i < len(values) else ""
-                if UI is not None:
-                    e = UI.CTkLabel(edit_win, text=current_value, text_color="#bbbbbb", font=("Segoe UI", 11, "italic"))
-                    e.grid(row=i + 1, column=1, padx=(6, 18), pady=(8,4), sticky="ew")
-                else:
-                    e = tk.Label(edit_win, text=current_value, bg="#2c2f33", fg="#bbbbbb",
-                                 font=("Segoe UI", 11, "italic"), anchor="w", relief="flat")
-                    e.grid(row=i + 1, column=1, padx=(6, 18), pady=(8,4), sticky="ew")
-            else:
-                if UI is not None:
-                    e = UI.CTkEntry(edit_win, fg_color="#2c2f33", text_color="#00fff7", border_color="#00bfae", corner_radius=4, width=320)
-                    e.grid(row=i + 1, column=1, padx=(6, 18), pady=(8,4), sticky="ew")
-                    try:
-                        e.insert(0, str(values[i]) if i < len(values) else "")
-                    except Exception:
-                        pass
-                else:
-                    e = tk.Entry(edit_win, width=35, **style_entry)
-                    e.grid(row=i + 1, column=1, padx=(6, 18), pady=(8,4))
-                    e.insert(0, str(values[i]) if i < len(values) else "")
-
-
-            # Si el campo es 'Descripcion', debajo del Entry poner 3 Spinboxes (sólo visual, no enlazados a nada)
-            if cname.lower() == "descripcion":
-                # Ubica el campo Entry actual y calcula en grid su fila+1 para estos nuevos widgets
-                spin_row = i + 2
-
-                spin_style = {
-                    "width": 3,
-                    "font": ("Segoe UI", 11, "bold"),
-                    "justify": "center",
-                    "bg": "#23272b",
-                    "fg": "#c9d1d9",
-                    "relief": "flat",
-                    "highlightbackground": "#373737",
-                    "insertbackground": "#c9d1d9"
-                }
-
-                # Crear un Frame dedicado para los spinboxes y colocarlo en una sola celda grid
-                spin_frame = tk.Frame(edit_win, bg=("#23272a"))
-                # Reducir el padding izquierdo para desplazar el grupo hacia la izquierda
-                spin_frame.grid(row=spin_row, column=1, sticky="w", padx=(0, 12), pady=(0, 2))
-
-                # Variables vinculadas para poder actualizar desde el botón
-                spin_hour_var = tk.StringVar()
-                spin_min_var = tk.StringVar()
-                spin_sec_var = tk.StringVar()
-                # Checkbox variable para habilitar edición de hora (por defecto desactivado)
-                desc_time_enabled = tk.BooleanVar(value=False)
-                # Exponer variables para que save_changes() pueda usarlas
-                description_helpers['desc_enabled_var'] = desc_time_enabled
-                description_helpers['spin_h_var'] = spin_hour_var
-                description_helpers['spin_m_var'] = spin_min_var
-                description_helpers['spin_s_var'] = spin_sec_var
-
-                def set_spin_time():
-                    now = datetime.now()
-                    spin_hour_var.set(str(now.hour).zfill(2))
-                    spin_min_var.set(str(now.minute).zfill(2))
-                    spin_sec_var.set(str(now.second).zfill(2))
-
-                # Slightly wider so two-digit hours are always visible
-                spin_style_display = dict(spin_style)
-                spin_style_display['width'] = 4
-                # Checkbox para activar/desactivar edición de hora (colocado a la izquierda)
-                def toggle_desc_time():
-                    enabled = desc_time_enabled.get()
-                    new_state = 'normal' if enabled else 'disabled'
-                    # Use configure for CTk and Tk widgets for consistency
-                    try:
-                        spin_hour.configure(state=new_state)
-                    except Exception:
-                        spin_hour.config(state=new_state)
-                    try:
-                        spin_minute.configure(state=new_state)
-                    except Exception:
-                        spin_minute.config(state=new_state)
-                    try:
-                        spin_second.configure(state=new_state)
-                    except Exception:
-                        spin_second.config(state=new_state)
-                    try:
-                        refresh_btn.configure(state=('normal' if enabled else 'disabled'))
-                    except Exception:
-                        refresh_btn.config(state=('normal' if enabled else 'disabled'))
-                    if enabled:
-                        set_spin_time()
-
-
-                if UI is not None:
-                    chk = UI.CTkSwitch(spin_frame, text="Agregar hora", variable=desc_time_enabled, command=toggle_desc_time,
-                                        fg_color="#4a90e2", progress_color="#00bfae", text_color="#a3c9f9")
-                    chk.pack(side="left", padx=(0,8))
-                else:
-                    chk = tk.Checkbutton(spin_frame, text="Agregar hora", variable=desc_time_enabled, command=toggle_desc_time,
-                                         bg="#23272a", fg="#a3c9f9", selectcolor="#23272a", font=("Segoe UI", 10, "bold"))
-                    # menos espacio entre checkbox y spinboxes
-                    chk.pack(side="left", padx=(0,4))
-
-                spin_hour = tk.Spinbox(spin_frame, from_=0, to=23, textvariable=spin_hour_var, **spin_style_display)
-                # explicit config (some platforms ignore bg/fg on construction)
-                spin_hour.config(background=spin_style_display.get('bg'), foreground=spin_style_display.get('fg'),
-                                 insertbackground=spin_style_display.get('insertbackground'), bd=0, highlightthickness=1,
-                                 highlightbackground=spin_style_display.get('highlightbackground'))
-                spin_hour.pack(side="left")
-                tk.Label(spin_frame, text=":", bg=edit_win['bg'], fg="#a3c9f9", font=("Segoe UI", 12, "bold")).pack(side="left", padx=(4,2))
-                
-                spin_minute = tk.Spinbox(spin_frame, from_=0, to=59, textvariable=spin_min_var, **spin_style_display)
-                spin_minute.config(background=spin_style_display.get('bg'), foreground=spin_style_display.get('fg'),
-                                   insertbackground=spin_style_display.get('insertbackground'), bd=0, highlightthickness=1,
-                                   highlightbackground=spin_style_display.get('highlightbackground'))
-                spin_minute.pack(side="left")
-                tk.Label(spin_frame, text=":", bg=edit_win['bg'], fg="#a3c9f9", font=("Segoe UI", 12, "bold")).pack(side="left", padx=(4,2))
-                
-                spin_second = tk.Spinbox(spin_frame, from_=0, to=59, textvariable=spin_sec_var, **spin_style_display)
-                spin_second.config(background=spin_style_display.get('bg'), foreground=spin_style_display.get('fg'),
-                                    insertbackground=spin_style_display.get('insertbackground'), bd=0, highlightthickness=1,
-                                    highlightbackground=spin_style_display.get('highlightbackground'))
-                spin_second.pack(side="left")
-
-                if UI is not None:
-                    refresh_btn = UI.CTkButton(
-                        spin_frame,
-                        text="⟳",
-                        command=set_spin_time,
-                        width=28,
-                        height=24,
-                        fg_color="#2d3136",
-                        hover_color="#3a3f44",
-                        text_color="#a3c9f9",
-                        state=("disabled" if desc_time_enabled.get() else "normal")
-                    )
-                    refresh_btn.pack(side="left", padx=(8,0))
-                else:
-                    refresh_btn = tk.Button(
-                        spin_frame,
-                        text="⟳",
-                        command=set_spin_time,
-                        state=('disabled' if desc_time_enabled.get() else 'normal'),
-                        bg="#23272a", fg="#a3c9f9", relief="flat"
-                    )
-                    refresh_btn.pack(side="left", padx=(6,0))
-
-                # Asegurar que el estado de los spinboxes y del botón estén sincronizados inicialmente
-                try:
-                    toggle_desc_time()
-                except Exception:
-                    pass
-
-                # Inicializar y forzar el texto dentro de los Spinbox (algunos entornos no actualizan solo con textvariable)
-                try:
-                    set_spin_time()
-                    spin_hour.delete(0, 'end'); spin_hour.insert(0, spin_hour_var.get())
-                    spin_minute.delete(0, 'end'); spin_minute.insert(0, spin_min_var.get())
-                    spin_second.delete(0, 'end'); spin_second.insert(0, spin_sec_var.get())
-                    spin_frame.update_idletasks()
-                    print(f"[DEBUG] spin displayed: {spin_hour_var.get()}:{spin_min_var.get()}:{spin_sec_var.get()}")
-                except Exception as e:
-                    print(f"[DEBUG] error updating spin display: {e}")
-                # Debug log (removable)
-                try:
-                    print(f"[DEBUG] spin values: {spin_hour_var.get()}:{spin_min_var.get()}:{spin_sec_var.get()}")
-                except Exception:
-                    pass
-
-            entries[cname] = e
-
-        # Fondo y bordes extra (podrías agregar un Frame para mejorar aspecto)
-        for child in edit_win.winfo_children():
-            child.grid_configure(pady=4)
-
-        def save_changes():
-            try:
-                # 1️⃣ Recolectar valores del formulario
-                updated_values = {}
-                for i, cname in enumerate(columns):
-                    widget = entries[cname]
-                    # Nombre_Sitio y Nombre_Actividad pueden ser Labels (no-editable)
-                    if cname.lower() == "nombre_sitio":
-                        # Label uses cget('text')
-                        try:
-                            updated_values[cname] = widget.cget("text")
-                        except Exception:
-                            # Fallback si no es Label
-                            updated_values[cname] = widget.get() if hasattr(widget, "get") else str(widget)
-                    elif cname.lower() == "nombre_actividad":
-                        try:
-                            updated_values[cname] = widget.cget("text")
-                        except Exception:
-                            updated_values[cname] = widget.get() if hasattr(widget, "get") else str(widget)
-                    else:
-                        updated_values[cname] = widget.get() if hasattr(widget, "get") else str(widget)
-
-                # 2️⃣ Conectar a la BD
-                conn = under_super.get_connection()
-                cur = conn.cursor()
-
-                # 3️⃣ Normalizar el valor de sitio antes de hacer UPDATE.
-                # El Treeview muestra el Nombre_Sitio en la columna, pero el DB necesita ID_Sitio.
-                # Aceptamos que la clave en updated_values pueda ser 'Nombre_Sitio' o 'ID_Sitio'
-                site_input = None
-                if 'Nombre_Sitio' in updated_values and updated_values.get('Nombre_Sitio'):
-                    site_input = str(updated_values.get('Nombre_Sitio')).strip()
-                elif 'ID_Sitio' in updated_values and updated_values.get('ID_Sitio'):
-                    # Si la UI puso el nombre en la columna llamada ID_Sitio (histórico), úsalo
-                    site_input = str(updated_values.get('ID_Sitio')).strip()
-
-                if site_input:
-                    # Si parece un número (ID), convertirlo
-                    if site_input.isdigit():
-                        try:
-                            updated_values['ID_Sitio'] = int(site_input)
-                        except Exception:
-                            messagebox.showerror("Error", "ID_Sitio inválido.")
-                            cur.close()
-                            conn.close()
-                            return
-                    else:
-                        # Interpretar como Nombre_Sitio y buscar su ID
-                        try:
-                            cur.execute("SELECT ID_Sitio FROM Sitios WHERE Nombre_Sitio = %s", (site_input,))
-                            row = cur.fetchone()
-                            if not row:
-                                messagebox.showerror("Error", f"No se encontró el sitio '{site_input}' en la base de datos.")
-                                cur.close()
-                                conn.close()
-                                return
-                            updated_values['ID_Sitio'] = row[0]
-                        except Exception as e:
-                            print(f"[ERROR] resolving Nombre_Sitio: {e}")
-                            cur.close()
-                            conn.close()
-                            return
-                else:
-                    # No se proporcionó información de sitio; dejamos sin cambios si no estaba en update_columns
-                    pass
-
-                # 4️⃣ Usar el ID_Eventos que guardamos en el iid del Treeview
-                try:
-                    pk_val = int(item_id)
-                except Exception:
-                    messagebox.showerror("Error", "No se pudo determinar el ID del evento seleccionado.")
-                    cur.close()
-                    conn.close()
-                    return
-
-                # 4.5️⃣ Si el checkbox "Agregar hora" está activo, inyectar la hora de los Spinbox en la Descripción
-                try:
-                    desc_enabled_var = description_helpers.get('desc_enabled_var') if 'desc_enabled_var' in description_helpers else None
-                    if desc_enabled_var is not None and bool(desc_enabled_var.get()):
-                        # Leer valores de los spinboxes
-                        sh = description_helpers.get('spin_h_var').get() if description_helpers.get('spin_h_var') else ''
-                        sm = description_helpers.get('spin_m_var').get() if description_helpers.get('spin_m_var') else ''
-                        ss_ = description_helpers.get('spin_s_var').get() if description_helpers.get('spin_s_var') else ''
-                        try:
-                            hh = max(0, min(23, int(str(sh).strip() or '0')))
-                            mm = max(0, min(59, int(str(sm).strip() or '0')))
-                            ss = max(0, min(59, int(str(ss_).strip() or '0')))
-                        except Exception:
-                            hh, mm, ss = 0, 0, 0
-
-                        hms = f"{hh:02}:{mm:02}:{ss:02}"
-                        # Tomar la descripción actual del diccionario actualizado (o vacía)
-                        desc_text_pre = (updated_values.get('Descripcion') or '').strip()
-                        if re.search(r"\[(\d{2}:\d{2}:\d{2})\]\s*$", desc_text_pre):
-                            # Reemplazar SOLO el bloque final [HH:MM:SS]
-                            desc_text_pre = re.sub(r"\[(\d{2}:\d{2}:\d{2})\]\s*$", f"[{hms}]", desc_text_pre)
-                        else:
-                            # Agregar al final separado por espacio
-                            desc_text_pre = (desc_text_pre + " ").strip() + f" [{hms}]"
-
-                        updated_values['Descripcion'] = desc_text_pre
-                except Exception:
-                    # No bloquear por problemas al inyectar hora desde spinboxes
-                    pass
-
-                # 5️⃣ No ajustar hora por zona aquí; se hará en open_report_window.
-                # Mantener exactamente la hora ingresada en los spinboxes dentro de Descripcion.
-                # (El bloque de ajuste por Time_Zone fue retirado por requerimiento.)
-
-                # 6️⃣ Definir columnas editables (no incluir Nombre_Actividad porque es FK y no editable aquí)
-                editable_cols = ['FechaHora', 'Cantidad', 'Camera', 'Descripcion', 'ID_Sitio']
-                update_columns = [c for c in editable_cols if c in updated_values]
-
-                if not update_columns:
-                    cur.close()
-                    conn.close()
-                    messagebox.showinfo("Sin cambios", "No hay campos editables para actualizar.")
-                    return
-
-                # 7️⃣ Construir y ejecutar UPDATE dinámico
-                set_clause = ", ".join(f"`{c}` = %s" for c in update_columns)
-                sql = f"UPDATE `eventos` SET {set_clause} WHERE `ID_Eventos` = %s"
-                params = [updated_values[c] for c in update_columns] + [pk_val]
-
-                print(f"[DEBUG] SQL={sql}")
-                print(f"[DEBUG] PARAMS={params}")
-
-                cur.execute(sql, params)
-                conn.commit()
-
-                # 8️⃣ Mostrar resultado
-                if cur.rowcount == 0:
-                    messagebox.showwarning("Sin cambios", "No se encontró el registro o no hubo modificaciones.")
-                else:
-                    print(f"[DEBUG] Registro actualizado correctamente. Filas afectadas: {cur.rowcount}")
-
-                cur.close()
-                conn.close()
-                load_events()
-                edit_win.destroy()
-
-            except Exception as e:
-                try:
-                    conn.close()
-                except:
-                    pass
-                print(f"[ERROR] save_changes exception:\n{traceback.format_exc()}")
-                messagebox.showerror("Error", f"No se pudo guardar el registro:\n{e}")
-
-
-                load_events()
-                print(f"[DEBUG] Éxito", "Registro actualizado correctamente.")
-                edit_win.destroy()
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo guardar los cambios:\n{e}")
-                traceback.print_exc()
-
-        # Botón Guardar: CTk si disponible, ttk fallback
-        if UI is not None:
-            guardar_btn = UI.CTkButton(
-                edit_win, text="Guardar", command=save_changes, fg_color="#3e8e7e", hover_color="#2f6b5e"
-            )
-            guardar_btn.grid(row=len(columns)+2, column=0, columnspan=2, pady=(18,10), padx=30, sticky="ew")
-        else:
-            # Crear un estilo uniforme para el botón usando ttk y ubicarlo centrado abajo
-            style = ttk.Style(edit_win)
-            style.configure("Accent.TButton",
-                            background="#3e4a5e",    # fosco, azulado
-                            foreground="#ffffff",
-                            font=("Segoe UI", 11, "bold"),
-                            padding=8,
-                            borderwidth=0,
-                            focusthickness=3,
-                            focuscolor="#5dade2")
-            style.map("Accent.TButton",
-                      background=[('active', "#445670")],
-                      relief=[("pressed", "groove"), ("!pressed", "flat")])
-            guardar_btn = ttk.Button(
-                edit_win, text="Guardar", command=save_changes, style="Accent.TButton"
-            )
-            # Mover el botón una fila más abajo para no solaparse con los spinboxes (descripcion usa i+2)
-            guardar_btn.grid(row=len(columns)+2, column=0, columnspan=2, pady=(18,10), padx=30, sticky="ew")
-
-    def delete_selected():
-        # PK según widget
-        item_id = None
-        if USE_SHEET and sheet is not None:
-            try:
-                sel_rows = sheet.get_selected_rows()
-            except Exception:
-                sel_rows = []
-            if not sel_rows:
-                # intentar con la celda/posición actual
-                try:
-                    cur = sheet.get_currently_selected()
-                    if isinstance(cur, dict) and 'row' in cur and cur['row'] is not None:
-                        sel_rows = {cur['row']}
-                except Exception:
-                    pass
-            if not sel_rows:
-                messagebox.showwarning("Atención", "Seleccione un registro para eliminar.")
-                return
-            # tomar el primer índice de forma segura (soporta set/list/tuple)
-            try:
-                first_idx = next(iter(sel_rows))
-            except Exception:
-                try:
-                    first_idx = sel_rows[0]
-                except Exception:
-                    first_idx = None
-            if first_idx is None:
-                messagebox.showwarning("Atención", "No se pudo determinar el registro seleccionado.")
-                return
-            try:
-                item_id = str(row_ids[first_idx])
-            except Exception:
-                messagebox.showwarning("Atención", "No se pudo determinar el registro seleccionado.")
-                return
-        else:
-            sel = tree.selection()
-            if not sel:
-                messagebox.showwarning("Atención", "Seleccione un registro para eliminar.")
-                return
-            item_id = sel[0]
-
-        if not messagebox.askyesno("Confirmar", f"¿Mover registro ID_Eventos={item_id} a Papelera?"):
-            return
-
-        try:
-            # Usar sistema de backup seguro
-            ok = safe_delete(
-                table_name="Eventos",
-                pk_column="ID_Eventos",
-                pk_value=item_id,
-                deleted_by=username,
-                reason="Eliminado desde show_events"
-            )
-            
-            if ok:
-                load_events()
-                messagebox.showinfo("Éxito", "✅ Registro movido a Papelera correctamente.")
-            else:
-                messagebox.showerror("Error", "No se pudo mover el registro a Papelera")
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo eliminar: {e}")
-            traceback.print_exc()
-
-    # -------- ventana --------
-    ex = _focus_singleton('events')
-    if ex:
-        return ex
-    # Usar Toplevel (CTk si está disponible) para no crear otro root y escopar estilos a esta ventana
-    if UI is not None:
-        top = UI.CTkToplevel()
-        try:
-            top.configure(fg_color="#2c2f33")
-        except Exception:
-            pass
+        messagebox.showerror("Error", "tksheet no está instalado.\nInstala con: pip install tksheet", parent=parent_top)
+        return
+    
+    # Crear frame principal como overlay
+    if parent_ui is not None:
+        panel_frame = parent_ui.CTkFrame(parent_top, fg_color="#1e1e1e", corner_radius=0)
     else:
-        top = tk.Toplevel()
-        top.configure(bg="#2c2f33")
-    top.title(f"Eventos de {username}")
-    top.geometry("790x380")
-
-    # Crear estilos con nombre único por ventana para no tocar estilos globales (aplica a ttk.Treeview)
-    style = ttk.Style()
-    events_style = f"Events.{id(top)}"
-    style.configure(f"{events_style}.Treeview",
-                    background="#23272a",
-                    foreground="#e0e0e0",
-                    fieldbackground="#23272a",
-                    rowheight=26,
-                    bordercolor="#23272a",
-                    borderwidth=0)
-    style.configure(f"{events_style}.Treeview.Heading",
-                    background="#23272a",
-                    foreground="#a3c9f9",
+        panel_frame = tk.Frame(parent_top, bg="#1e1e1e")
+    panel_frame.place(x=0, y=0, relwidth=1, relheight=1)
+    
+    # Header
+    if parent_ui is not None:
+        header = parent_ui.CTkFrame(panel_frame, fg_color="#23272a", corner_radius=0, height=70)
+    else:
+        header = tk.Frame(panel_frame, bg="#23272a", height=70)
+    header.pack(fill="x", padx=0, pady=0)
+    header.pack_propagate(False)
+    
+    # Variable para rastrear modo actual (covers, daily, specials)
+    current_view_mode = ['covers']  # Lista mutable para usar en closures
+    
+    # Título y botones
+    if parent_ui is not None:
+        title_label = parent_ui.CTkLabel(header, text="📋 Lista de Covers Programados", 
+                   font=("Segoe UI", 20, "bold"),
+                   text_color="#4a90e2")
+        title_label.pack(side="left", padx=20, pady=20)
+        
+        parent_ui.CTkButton(header, text="❌ Cerrar", 
+                    command=lambda: close_panel(),
+                    fg_color="#d32f2f", hover_color="#b71c1c", 
+                    width=100, height=40,
+                    font=("Segoe UI", 12, "bold")).pack(side="right", padx=10, pady=15)
+        
+        refresh_btn = parent_ui.CTkButton(header, text="🔄 Refrescar", 
+                    command=lambda: refresh_current_view(),
+                    fg_color="#4D6068", hover_color="#27a3e0", 
+                    width=120, height=40,
+                    font=("Segoe UI", 12, "bold"))
+        refresh_btn.pack(side="right", padx=10, pady=15)
+        
+        # Botón Ver Covers (para volver)
+        covers_btn = parent_ui.CTkButton(header, text="📋 Ver Covers", 
+                    command=lambda: switch_to_covers(),
+                    fg_color="#00796b", hover_color="#009688", 
+                    width=140, height=40,
+                    font=("Segoe UI", 12, "bold"))
+        covers_btn.pack(side="right", padx=5, pady=15)
+        covers_btn.pack_forget()  # Inicialmente oculto
+    else:
+        title_label = tk.Label(header, text="📋 Lista de Covers Programados", bg="#23272a", fg="#4a90e2",
+                font=("Segoe UI", 18, "bold"))
+        title_label.pack(side="left", padx=20, pady=20)
+        
+        tk.Button(header, text="❌ Cerrar", command=lambda: close_panel(),
+                 bg="#d32f2f", fg="white", font=("Segoe UI", 12, "bold"), 
+                 relief="flat", width=10).pack(side="right", padx=10, pady=15)
+        
+        refresh_btn = tk.Button(header, text="🔄 Refrescar", command=lambda: refresh_current_view(),
+                 bg="#666666", fg="white", font=("Segoe UI", 12, "bold"), 
+                 relief="flat", width=12)
+        refresh_btn.pack(side="right", padx=10, pady=15)
+        
+        # Botón Ver Specials
+        specials_btn = tk.Button(header, text="⭐ Ver Specials", 
+                    command=lambda: switch_to_specials(),
+                    bg="#7b1fa2", fg="white", 
+                    relief="flat", width=14,
                     font=("Segoe UI", 10, "bold"))
-    style.map(f"{events_style}.Treeview", background=[("selected", "#4a90e2")], foreground=[("selected", "#ffffff")])
-
-    # (Si usamos ttk.Button en fallback TK, aplicamos estilos; en CTk usaremos CTkButton y no necesitan ttk.Style)
-    if UI is None:
-        style.configure(f"{events_style}.TButton",
-                        background="#314052",
-                        foreground="#e0e0e0",
-                        borderwidth=0,
-                        focusthickness=1,
-                        focuscolor="#4a90e2")
-        style.map(f"{events_style}.TButton",
-                  background=[("active", "#4a90e2")],
-                  foreground=[("active", "#ffffff")])
-
-    # (Treeview se creará dentro del frame 'content' más abajo para que se muestre correctamente)
-
-    # Disposición: pila vertical -> [área de contenido (Treeview+Scrollbar)] luego [fila de botones]
-    # Usamos grid en 'top' para evitar que pack coloque widgets en columnas laterales.
+        specials_btn.pack(side="right", padx=5, pady=15)
+        
+        # Botón Ver Daily
+        daily_btn = tk.Button(header, text="📝 Ver Daily", 
+                    command=lambda: switch_to_daily(),
+                    bg="#1976d2", fg="white", 
+                    relief="flat", width=14,
+                    font=("Segoe UI", 10, "bold"))
+        daily_btn.pack(side="right", padx=5, pady=15)
+        
+        # Botón Ver Covers (para volver)
+        covers_btn = tk.Button(header, text="📋 Ver Covers", 
+                    command=lambda: switch_to_covers(),
+                    bg="#00796b", fg="white", 
+                    relief="flat", width=14,
+                    font=("Segoe UI", 10, "bold"))
+        covers_btn.pack(side="right", padx=5, pady=15)
+        covers_btn.pack_forget()  # Inicialmente oculto
+    
+    # Separador
     try:
-        top.grid_rowconfigure(0, weight=1)
-        top.grid_rowconfigure(1, weight=0)
-        top.grid_columnconfigure(0, weight=1)
+        ttk.Separator(panel_frame, orient="horizontal").pack(fill="x")
     except Exception:
         pass
-
-    # Frame de contenido que contendrá el Treeview y su Scrollbar, lado a lado
-    if UI is not None:
-        content = UI.CTkFrame(top, fg_color="#2c2f33")
+    
+    # Container principal
+    if parent_ui is not None:
+        container = parent_ui.CTkFrame(panel_frame, fg_color="#2c2f33")
     else:
-        content = tk.Frame(top, bg="#2c2f33")
-    content.grid(row=0, column=0, sticky="nsew", padx=10, pady=(10,5))
-
-    # Crear grid de datos: tksheet si está disponible; si no, Treeview clásico
-    global tree
-    columns = ("FechaHora", "Nombre_Sitio", "Nombre_Actividad", "Cantidad", "Camera", "Descripcion")
-    # Anchos personalizados por columna (en píxeles) para ambos modos: tksheet y Treeview
-    custom_widths = {
-        "FechaHora": 140,
-        "Nombre_Sitio": 200,
-        "Nombre_Actividad": 115,
-        "Cantidad": 55,
-        "Camera": 55,
-        "Descripcion": 165,
-    }
-
-    # Helper para aplicar anchos en tksheet, reusado tras cargas/refrescos
-    def apply_sheet_widths():
+        container = tk.Frame(panel_frame, bg="#2c2f33")
+    container.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+    
+    # Frame para tksheet
+    if parent_ui is not None:
+        sheet_frame = parent_ui.CTkFrame(container, fg_color="#2c2f33")
+    else:
+        sheet_frame = tk.Frame(container, bg="#2c2f33")
+    sheet_frame.pack(fill="both", expand=True, padx=10, pady=10)
+    
+    # Columnas (agregamos # para mostrar posición)
+    columns = ["#", "Usuario", "Hora Solicitud", "Estación", "Razón", "Aprobado"]
+    
+    # Crear tksheet
+    sheet = SheetClass(
+        sheet_frame,
+        headers=columns,
+        theme="dark blue",
+        height=500,
+        width=1050,
+        show_selected_cells_border=True,
+        show_row_index=False,
+        show_top_left=False,
+        empty_horizontal=0,
+        empty_vertical=0
+    )
+    
+    # Configurar bindings (solo lectura)
+    sheet.enable_bindings([
+        "single_select",
+        "drag_select",
+        "row_select",
+        "column_select",
+        "column_width_resize",
+        "double_click_column_resize",
+        "arrowkeys",
+        "copy",
+        "select_all"
+    ])
+    
+    sheet.pack(fill="both", expand=True)
+    sheet.change_theme("dark blue")
+    
+    # Anchos de columna personalizados
+    sheet.column_width(column=0, width=50)   # #
+    sheet.column_width(column=1, width=150)  # Usuario
+    sheet.column_width(column=2, width=180)  # Hora Solicitud
+    sheet.column_width(column=3, width=100)  # Estación
+    sheet.column_width(column=4, width=350)  # Razón
+    sheet.column_width(column=5, width=100)  # Aprobado
+    
+    def load_covers_data():
+        """Carga TODOS los covers programados activos (is_Active = 1) de todos los usuarios"""
         try:
-            if sheet is None:
-                return
-            header_names = list(columns)
-            for cidx, cname in enumerate(header_names):
-                w = custom_widths.get(cname)
-                if w:
-                    try:
-                        sheet.column_width(cidx, int(w))
-                    except Exception:
-                        try:
-                            sheet.set_column_width(cidx, int(w))
-                        except Exception:
-                            pass
-            try:
-                sheet.redraw()
-            except Exception:
-                pass
-        except Exception:
-            pass
-    if USE_SHEET and SheetClass is not None:
-        try:
-            sheet = SheetClass(content, data=[[]], headers=list(columns))
-            # Mantener colores de header y estilo oscuro
-            try:
-                sheet.set_options(
-                    header_bg="#23272a",
-                    header_fg="#a3c9f9",
-                    header_border_color="#23272a",
-                    top_left_bg="#23272a",
-                    table_bg="#23272a",
-                    table_fg="#e0e0e0",
-                    index_bg="#23272a",
-                    index_fg="#a3c9f9",
-                    selected_rows_bg="#4a90e2",
-                    selected_rows_fg="#ffffff",
-                )
-            except Exception:
-                pass
-            try:
-                sheet.enable_bindings((
-                    "single_select",
-                    "row_select",
-                    "column_width_resize",
-                    "rc_select",
-                    "copy",
-                    "select_all",
-                ))
-            except Exception:
-                pass
-            sheet.pack(side="left", expand=True, fill="both")
-            # Aplicar anchos personalizados iniciales en tksheet
-            apply_sheet_widths()
-        except Exception:
-            USE_SHEET = False
-            sheet = None
-    if not USE_SHEET:
-        tree = ttk.Treeview(
-            content,
-            columns=columns,
-            show="headings",
-            style=f"{events_style}.Treeview",
-            selectmode="browse",
-        )
-        for col in columns:
-            tree.heading(col, text=col, anchor="center")
-            # Ancho inicial fijo por columna; no auto-ajustar (stretch=False)
-            tree.column(col, width=150, anchor="w", stretch=False)
-            tree.heading(col, anchor="center")
-        tree.pack(side="left", expand=True, fill="both")
-        try:
-            if UI is not None:
-                scrollbar = UI.CTkScrollbar(content, orientation="vertical", command=tree.yview)
-            else:
-                scrollbar = tk.Scrollbar(content, orient="vertical")
-                scrollbar.config(command=tree.yview)
-            scrollbar.pack(side="right", fill="y")
-            tree.configure(yscrollcommand=scrollbar.set)
-        except Exception:
-            pass
-        # Scrollbar horizontal para permitir anchos independientes
-        try:
-            if UI is not None:
-                xscrollbar = UI.CTkScrollbar(content, orientation="horizontal", command=tree.xview)
-            else:
-                xscrollbar = tk.Scrollbar(content, orient="horizontal")
-                xscrollbar.config(command=tree.xview)
-            xscrollbar.pack(side="bottom", fill="x")
-            tree.configure(xscrollcommand=xscrollbar.set)
-        except Exception:
-            pass
-        try:
-            tree.tag_configure("oddrow", background="#3a3f44", foreground="#e0e0e0")
-            tree.tag_configure("evenrow", background="#2f343a", foreground="#e0e0e0")
-        except Exception:
-            pass
-
-    # Click derecho sobre encabezado para ajustar ancho por píxeles (independiente)
-    if not USE_SHEET and tree is not None:
-        # Aplicar anchos personalizados
-        for col_name in columns:
-            if col_name in custom_widths:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            # Obtener TODOS los covers programados activos (is_Active = 1)
+            cur.execute("""
+                SELECT ID_user, Time_request, Station, Reason, Approved
+                FROM covers_programados
+                WHERE is_Active = 1
+                ORDER BY Time_request ASC
+            """)
+            
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            # Preparar datos para mostrar
+            data = []
+            user_row_index = None
+            for idx, row in enumerate(rows, start=1):
+                id_user = row[0] if row[0] else ""
+                time_request = str(row[1]) if row[1] else ""
+                station = str(row[2]) if row[2] else ""
+                reason = row[3] if row[3] else ""
+                approved = "✅ Sí" if row[4] == 1 else "❌ No"
+                
+                data.append([str(idx), id_user, time_request, station, reason, approved])
+                
+                # Guardar índice si es el usuario actual
+                if id_user == username:
+                    user_row_index = idx - 1  # 0-indexed para tksheet
+            
+            if not data:
+                data = [["No hay covers programados activos"] + [""] * 5]
+            
+            sheet.set_sheet_data(data)
+            
+            # Resaltar fila del usuario actual en verde
+            if user_row_index is not None:
                 try:
-                    tree.column(col_name, width=custom_widths[col_name], stretch=False)
-                except Exception:
-                    pass
-        
-        def _on_tree_header_rc(event):
-            try:
-                region = tree.identify_region(event.x, event.y)
-                if region == "heading":
-                    col_id = tree.identify_column(event.x)  # '#1', '#2', ...
-                    try:
-                        idx = int(col_id.lstrip('#')) - 1
-                    except Exception:
-                        idx = None
-                    if idx is not None and 0 <= idx < len(columns):
-                        col_name = columns[idx]
-                        try:
-                            cur_w = tree.column(col_name, option='width')
-                        except Exception:
-                            cur_w = custom_widths.get(col_name, 135)
-                        w = simpledialog.askinteger(
-                            "Ancho de columna",
-                            f"Ancho en píxeles para '{col_name}':",
-                            initialvalue=int(cur_w) if isinstance(cur_w, int) else custom_widths.get(col_name, 135),
-                            minvalue=40,
-                            maxvalue=3000,
-                            parent=top
-                        )
-                        if w:
-                            try:
-                                tree.column(col_name, width=int(w), stretch=False)
-                            except Exception:
-                                pass
-                return "break"
-            except Exception:
-                return "break"
-
+                    sheet.highlight_rows([user_row_index], bg="#2e7d32", fg="white")
+                except Exception as e:
+                    print(f"[WARNING] Could not highlight user row: {e}")
+            
+            sheet.redraw()
+            
+            print(f"[DEBUG] Loaded {len(rows)} active covers (all users)")
+            if user_row_index is not None:
+                print(f"[DEBUG] Current user '{username}' is at position #{user_row_index + 1}")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Error cargando covers:\n{e}", parent=parent_top)
+            print(f"[ERROR] load_covers_data: {e}")
+            traceback.print_exc()
+    
+    def load_daily_events():
+        """Carga eventos del turno actual del usuario (modo Daily)"""
         try:
-            tree.bind("<Button-3>", _on_tree_header_rc)
-        except Exception:
-            pass
-
-    # Barra de botones inferior (CTk si disponible), ocupa todo el ancho y queda debajo del área de contenido
-    if UI is not None:
-        btn_frame = UI.CTkFrame(top, fg_color="#2c2f33")
-        btn_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(0,10))
-        UI.CTkButton(btn_frame, text="Refrescar", command=load_events, width=110).pack(side="left", padx=5)
-        UI.CTkButton(btn_frame, text="Editar", command=edit_selected, width=110).pack(side="left", padx=5)
-        UI.CTkButton(btn_frame, text="Eliminar", command=delete_selected, width=110, fg_color="#d32f2f", hover_color="#b71c1c").pack(side="left", padx=5)
-    else:
-        btn_frame = tk.Frame(top, bg="#2c2f33")
-        btn_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(0,10))
-        ttk.Button(btn_frame, text="Refrescar", command=load_events, style=f"{events_style}.TButton").pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Editar", command=edit_selected, style=f"{events_style}.TButton").pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Eliminar", command=delete_selected, style=f"{events_style}.TButton").pack(side="left", padx=5)
-
-    _register_singleton('events', top)
-    load_events()  # primera carga
-    # No llamamos top.mainloop() porque esta ventana es un Toplevel dentro de la app
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            # Obtener eventos del día actual del usuario
+            cur.execute("""
+                SELECT e.FechaHora, s.Nombre_Sitio, e.Nombre_Actividad, 
+                       e.Cantidad, e.Camera, e.Descripcion
+                FROM Eventos e
+                LEFT JOIN Sitios s ON e.ID_Sitio = s.ID_Sitio
+                LEFT JOIN user u ON e.ID_Usuario = u.ID_Usuario
+                WHERE u.Nombre_Usuario = %s 
+                  AND DATE(e.FechaHora) = CURDATE()
+                ORDER BY e.FechaHora DESC
+            """, (username,))
+            
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            # Preparar datos
+            data = []
+            for idx, row in enumerate(rows, start=1):
+                fecha_hora = str(row[0]) if row[0] else ""
+                sitio = row[1] if row[1] else ""
+                actividad = row[2] if row[2] else ""
+                cantidad = str(row[3]) if row[3] else ""
+                camera = row[4] if row[4] else ""
+                descripcion = row[5] if row[5] else ""
+                
+                data.append([str(idx), fecha_hora, sitio, actividad, cantidad, camera, descripcion])
+            
+            if not data:
+                data = [["No hay eventos registrados hoy"] + [""] * 6]
+            
+            sheet.set_sheet_data(data)
+            sheet.redraw()
+            
+            print(f"[DEBUG] Loaded {len(rows)} daily events for {username}")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Error cargando eventos daily:\n{e}", parent=parent_top)
+            print(f"[ERROR] load_daily_events: {e}")
+            traceback.print_exc()
+    
+    def load_specials_events():
+        """Carga eventos especiales del turno actual del usuario (modo Specials)"""
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            # Obtener eventos especiales del día actual del usuario
+            cur.execute("""
+                SELECT e.FechaHora, s.Nombre_Sitio, e.Nombre_Actividad, 
+                       e.Cantidad, e.Camera, e.Descripcion, e.Marks
+                FROM Eventos e
+                LEFT JOIN Sitios s ON e.ID_Sitio = s.ID_Sitio
+                LEFT JOIN user u ON e.ID_Usuario = u.ID_Usuario
+                WHERE u.Nombre_Usuario = %s 
+                  AND DATE(e.FechaHora) = CURDATE()
+                  AND e.Marks IS NOT NULL AND e.Marks != ''
+                ORDER BY e.FechaHora DESC
+            """, (username,))
+            
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            # Preparar datos
+            data = []
+            for idx, row in enumerate(rows, start=1):
+                fecha_hora = str(row[0]) if row[0] else ""
+                sitio = row[1] if row[1] else ""
+                actividad = row[2] if row[2] else ""
+                cantidad = str(row[3]) if row[3] else ""
+                camera = row[4] if row[4] else ""
+                descripcion = row[5] if row[5] else ""
+                marks = row[6] if row[6] else ""
+                
+                data.append([str(idx), fecha_hora, sitio, actividad, cantidad, camera, descripcion, marks])
+            
+            if not data:
+                data = [["No hay eventos especiales registrados hoy"] + [""] * 7]
+            
+            sheet.set_sheet_data(data)
+            sheet.redraw()
+            
+            print(f"[DEBUG] Loaded {len(rows)} special events for {username}")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Error cargando eventos specials:\n{e}", parent=parent_top)
+            print(f"[ERROR] load_specials_events: {e}")
+            traceback.print_exc()
+    
+    def switch_to_daily():
+        """Cambia la vista a Daily mode"""
+        current_view_mode[0] = 'daily'
+        
+        # Actualizar título
+        if parent_ui is not None:
+            title_label.configure(text="📝 Eventos Daily - Hoy")
+        else:
+            title_label.configure(text="📝 Eventos Daily - Hoy")
+        
+        # Actualizar columnas del sheet
+        daily_columns = ["#", "Fecha/Hora", "Sitio", "Actividad", "Cantidad", "Cámara", "Descripción"]
+        sheet.headers(daily_columns)
+        sheet.redraw()
+        
+        # Ajustar anchos de columna (7 columnas: índices 0-6)
+        try:
+            sheet.column_width(column=0, width=50)
+            sheet.column_width(column=1, width=150)
+            sheet.column_width(column=2, width=180)
+            sheet.column_width(column=3, width=120)
+            sheet.column_width(column=4, width=80)
+            sheet.column_width(column=5, width=100)
+            sheet.column_width(column=6, width=250)
+        except Exception as e:
+            print(f"[WARNING] Error setting column widths: {e}")
+        
+        # Mostrar botón "Ver Covers", ocultar "Ver Daily"
+        if parent_ui is not None:
+            covers_btn.pack(side="right", padx=5, pady=15, before=refresh_btn)
+            daily_btn.pack_forget()
+        else:
+            covers_btn.pack(side="right", padx=5, pady=15, before=refresh_btn)
+            daily_btn.pack_forget()
+        
+        # Cargar datos
+        load_daily_events()
+        
+        print("[DEBUG] Switched to Daily view")
+    
+    def switch_to_specials():
+        """Cambia la vista a Specials mode"""
+        current_view_mode[0] = 'specials'
+        
+        # Actualizar título
+        if parent_ui is not None:
+            title_label.configure(text="⭐ Eventos Specials - Hoy")
+        else:
+            title_label.configure(text="⭐ Eventos Specials - Hoy")
+        
+        # Actualizar columnas del sheet
+        specials_columns = ["#", "Fecha/Hora", "Sitio", "Actividad", "Cantidad", "Cámara", "Descripción", "Marks"]
+        sheet.headers(specials_columns)
+        sheet.redraw()
+        
+        # Ajustar anchos de columna (8 columnas: índices 0-7)
+        try:
+            sheet.column_width(column=0, width=50)
+            sheet.column_width(column=1, width=140)
+            sheet.column_width(column=2, width=150)
+            sheet.column_width(column=3, width=120)
+            sheet.column_width(column=4, width=70)
+            sheet.column_width(column=5, width=90)
+            sheet.column_width(column=6, width=200)
+            sheet.column_width(column=7, width=100)
+        except Exception as e:
+            print(f"[WARNING] Error setting column widths: {e}")
+        
+        # Mostrar botón "Ver Covers", ocultar "Ver Specials"
+        if parent_ui is not None:
+            covers_btn.pack(side="right", padx=5, pady=15, before=refresh_btn)
+            specials_btn.pack_forget()
+        else:
+            covers_btn.pack(side="right", padx=5, pady=15, before=refresh_btn)
+            specials_btn.pack_forget()
+        
+        # Cargar datos
+        load_specials_events()
+        
+        print("[DEBUG] Switched to Specials view")
+    
+    def switch_to_covers():
+        """Cambia la vista de vuelta a Covers mode"""
+        current_view_mode[0] = 'covers'
+        
+        # Actualizar título
+        if parent_ui is not None:
+            title_label.configure(text="📋 Lista de Covers Programados")
+        else:
+            title_label.configure(text="📋 Lista de Covers Programados")
+        
+        # Actualizar columnas del sheet
+        covers_columns = ["#", "Usuario", "Hora Solicitud", "Estación", "Razón", "Aprobado"]
+        sheet.headers(covers_columns)
+        sheet.redraw()
+        
+        # Ajustar anchos de columna (6 columnas: índices 0-5)
+        try:
+            sheet.column_width(column=0, width=50)
+            sheet.column_width(column=1, width=150)
+            sheet.column_width(column=2, width=180)
+            sheet.column_width(column=3, width=100)
+            sheet.column_width(column=4, width=350)
+            sheet.column_width(column=5, width=100)
+        except Exception as e:
+            print(f"[WARNING] Error setting column widths: {e}")
+        
+        # Ocultar botón "Ver Covers" y mostrar Daily/Specials
+        if parent_ui is not None:
+            covers_btn.pack_forget()
+            daily_btn.pack(side="right", padx=5, pady=15, before=refresh_btn)
+            specials_btn.pack(side="right", padx=5, pady=15, before=refresh_btn)
+        else:
+            covers_btn.pack_forget()
+            daily_btn.pack(side="right", padx=5, pady=15, before=refresh_btn)
+            specials_btn.pack(side="right", padx=5, pady=15, before=refresh_btn)
+        
+        # Cargar datos
+        load_covers_data()
+        
+        print("[DEBUG] Switched to Covers view")
+    
+    def refresh_current_view():
+        """Refresca la vista actual según el modo activo"""
+        mode = current_view_mode[0]
+        if mode == 'daily':
+            load_daily_events()
+        elif mode == 'specials':
+            load_specials_events()
+        else:  # covers
+            load_covers_data()
+        
+        print(f"[DEBUG] Refreshed {mode} view")
+    
+    # Variable para almacenar el ID del job de auto-refresh
+    refresh_job = [None]
+    
+    def auto_refresh():
+        """Refresca automáticamente los datos cada 10 segundos según modo actual"""
+        try:
+            refresh_current_view()
+        except Exception as e:
+            print(f"[ERROR] auto_refresh: {e}")
+        
+        # Programar siguiente refresh
+        refresh_job[0] = parent_top.after(10000, auto_refresh)
+    
+    def close_panel():
+        """Cierra el panel y cancela el auto-refresh"""
+        try:
+            # Cancelar job de auto-refresh si existe
+            if refresh_job[0] is not None:
+                parent_top.after_cancel(refresh_job[0])
+                refresh_job[0] = None
+            
+            # Destruir el panel
+            panel_frame.destroy()
+            print("[DEBUG] Covers panel closed")
+        except Exception as e:
+            print(f"[ERROR] close_panel: {e}")
+    
+    # Cargar datos inicialmente
+    load_covers_data()
+    
+    # Iniciar auto-refresh
+    auto_refresh()
+    
+    print(f"[DEBUG] Covers programados panel opened for {username}")
 
 
 def open_hybrid_events(username, session_id=None, station=None, root=None):
+    station = station or under_super.get_station(username)
     """
     🚀 VENTANA HÍBRIDA: Registro + Visualización de Eventos
     
@@ -5827,6 +5345,12 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         return
 
     # Crear ventana principal
+    # ⭐ Asegurar que existe un root oculto antes de crear Toplevel
+    if tk._default_root is None:
+        hidden_root = tk.Tk()
+        hidden_root.withdraw()  # Ocultar completamente
+        tk._default_root = hidden_root
+    
     if UI is not None:
         top = UI.CTkToplevel()
         top.configure(fg_color="#1e1e1e")
@@ -5835,7 +5359,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         top.configure(bg="#1e1e1e")
     
     top.title(f"📊 Eventos - {username}")
-    top.geometry("1170x800")  # Ancho reducido al eliminar columna "Out at"
+    top.geometry("1190x800")  # Ancho reducido al eliminar columna "Out at"
     top.resizable(True, True)
 
     # ⭐ VARIABLE DE MODO: 'daily', 'specials' o 'covers'
@@ -5847,10 +5371,10 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     pending_changes = []  # Lista de índices de filas con cambios sin guardar
 
     # Columnas de la hoja (DAILY)
-    columns_daily = ["FechaHora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripción"]
+    columns_daily = ["Fecha Hora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripción"]
     
     # Columnas para SPECIALS (sin ID ni Usuario - son irrelevantes)
-    columns_specials = ["FechaHora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "TZ", "Marca"]
+    columns_specials = ["Fecha Hora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "TZ", "Marca"]
     
     # Columnas para COVERS (sin ID - solo información relevante)
     columns_covers = ["Nombre_Usuarios", "Cover in", "Cover out", "Motivo", "Covered by", "Activo"]
@@ -5860,7 +5384,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     
     # Anchos personalizados para DAILY
     custom_widths_daily = {
-        "FechaHora": 140,
+        " ": 140,
         "Sitio": 260,
         "Actividad": 170,
         "Cantidad": 80,
@@ -5870,7 +5394,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     
     # Anchos personalizados para SPECIALS (sin ID ni Usuario)
     custom_widths_specials = {
-        "FechaHora": 120,
+        " ": 120,
         "Sitio": 277,
         "Actividad": 150,
         "Cantidad": 60,
@@ -5956,17 +5480,13 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             print(f"[ERROR] update_shift_button: {e}")
     
     # ⭐ FUNCIÓN: Manejar botón Cover
-    def handle_cover_button():
+    def handle_cover_button(username):
         """Abre la ventana de Cover mode"""
         try:
             # Llamar a cover_mode con los parámetros necesarios
             # Si no tenemos session_id/station/root, usar valores por defecto
-            cover_mode(
-                session_id if session_id is not None else "",
-                station if station is not None else "",
-                root if root is not None else top,
-                username
-            )
+            cover_mode(username, session_id, station, root=top)
+
         except Exception as e:
             messagebox.showerror("Error", f"Error al abrir Cover:\n{e}", parent=top)
             print(f"[ERROR] handle_cover_button: {e}")
@@ -6020,6 +5540,10 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 enviar_btn.pack_forget()
             if accion_btn:
                 accion_btn.pack_forget()
+            
+            # ⭐ Mostrar frame de posición en cola
+            cover_queue_frame.pack(fill="x", padx=10, pady=(10, 5), before=sheet_frame)
+            
             load_data()
         
         UI.CTkButton(header, text="📋 Ver Covers", 
@@ -6029,10 +5553,24 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     font=("Segoe UI", 12, "bold")).pack(side="right", padx=5, pady=15)
         
         # ⭐ Botón Registrar Cover a la derecha (al lado de Ver Covers)
-        UI.CTkButton(header, text="⚙️ Registrar Cover", command=handle_cover_button,
+        UI.CTkButton(header, text="👥 Registrar Cover", command=lambda: handle_cover_button(username),
                     fg_color="#4D6068", hover_color="#f57c00", 
                     width=150, height=40,
                     font=("Segoe UI", 12, "bold")).pack(side="right", padx=5, pady=15)
+        
+                # ⭐ Botón Solicitar Cover a la derecha (al lado de Ver Covers)
+        from datetime import datetime
+        UI.CTkButton(header, text="❓ Solicitar Cover", 
+                    command=lambda: under_super.request_covers(
+                        username, 
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Necesito un cover", 
+                        1  # aprvoved=1 porque es una solicitud aprobada, pero con posibilidad de denegar
+                    ),
+                    fg_color="#4D6068", hover_color="#f57c00", 
+                    width=150, height=40,
+                    font=("Segoe UI", 12, "bold")).pack(side="right", padx=5, pady=15)
+        
     else:
         # Fallback Tkinter
         # ⭐ Botones Refrescar y Eliminar a la izquierda (movidos desde toolbar)
@@ -6082,6 +5620,10 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 enviar_btn.pack_forget()
             if accion_btn:
                 accion_btn.pack_forget()
+            
+            # ⭐ Mostrar frame de posición en cola
+            cover_queue_frame.pack(fill="x", padx=10, pady=(10, 5), before=sheet_frame)
+            
             load_data()
         
         tk.Button(header, text="📋 Ver Covers",
@@ -6104,6 +5646,35 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         ttk.Separator(top, orient="horizontal").pack(fill="x")
     except Exception:
         pass
+
+    # ⭐ Frame para Label de posición en cola de covers
+    if UI is not None:
+        cover_queue_frame = UI.CTkFrame(top, fg_color="#1e3a4c", corner_radius=8, height=50)
+    else:
+        cover_queue_frame = tk.Frame(top, bg="#1e3a4c", height=50)
+    cover_queue_frame.pack(fill="x", padx=10, pady=(10, 5))
+    cover_queue_frame.pack_propagate(False)
+
+    # Label de posición en cola (se mostrará solo en modo covers)
+    if UI is not None:
+        cover_queue_label = UI.CTkLabel(
+            cover_queue_frame,
+            text="Calculando posición en cola...",
+            text_color="#00bfae",
+            font=("Segoe UI", 13, "bold")
+        )
+    else:
+        cover_queue_label = tk.Label(
+            cover_queue_frame,
+            text="Calculando posición en cola...",
+            bg="#1e3a4c",
+            fg="#00bfae",
+            font=("Segoe UI", 13, "bold")
+        )
+    cover_queue_label.pack(pady=10)
+    
+    # Ocultar el frame inicialmente (solo se muestra en modo covers)
+    cover_queue_frame.pack_forget()
 
     # Frame para tksheet
     if UI is not None:
@@ -6198,12 +5769,12 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     spacer.pack(side="left", padx=0, pady=0)
     spacer.pack_propagate(False)
 
-    # Campo FechaHora (150px) - Exacto al ancho de columna
+    # Campo   (150px) - Exacto al ancho de columna
     fecha_frame = tk.Frame(entry_frame, bg="#23272a", width=150, height=57)
     fecha_frame.pack(side="left", padx=0, pady=5)
     fecha_frame.pack_propagate(False)
     
-    # Label para FechaHora (centrado)
+    # Label para   (centrado)
     tk.Label(fecha_frame, text="Fecha/Hora", bg="#23272a", fg="#a3c9f9",
             font=("Segoe UI", 9, "bold")).pack(anchor="center", padx=2, pady=(0, 2))
     
@@ -6936,7 +6507,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             conn = under_super.get_connection()
             cur = conn.cursor()
             cur.execute("""
-                SELECT e.FechaHora
+                SELECT e.FechaHora 
                 FROM Eventos e
                 INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
                 WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = %s
@@ -7053,392 +6624,392 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             traceback.print_exc()
 
     def load_specials():
-        """Carga eventos de grupos especiales (AS, KG, HUD, PE, SCH, WAG, LT, DT) desde el último START SHIFT (MODO SPECIALS)"""
-        nonlocal row_data_cache, row_ids, pending_changes
-        
-        try:
-            # Obtener último START SHIFT del supervisor
-            last_shift_time = get_last_shift_start()
-            if last_shift_time is None:
-                data = [["No hay shift activo"] + [""] * (len(columns)-1)]
-                sheet.set_sheet_data(data)
-                apply_sheet_widths()
-                row_data_cache.clear()
-                row_ids.clear()
-                pending_changes.clear()
-                return
+            """Carga eventos de grupos especiales (AS, KG, HUD, PE, SCH, WAG, LT, DT) desde el último START SHIFT (MODO SPECIALS)"""
+            nonlocal row_data_cache, row_ids, pending_changes
+            
+            try:
+                # Obtener último START SHIFT del supervisor
+                last_shift_time = get_last_shift_start()
+                if last_shift_time is None:
+                    data = [["No hay shift activo"] + [""] * (len(columns)-1)]
+                    sheet.set_sheet_data(data)
+                    apply_sheet_widths()
+                    row_data_cache.clear()
+                    row_ids.clear()
+                    pending_changes.clear()
+                    return
 
-            # Grupos especiales a filtrar (como open_report_window)
-            grupos_especiales = ("AS", "KG", "HUD", "PE", "SCH", "WAG", "LT", "DT")
-            
-            conn = under_super.get_connection()
-            cur = conn.cursor()
-            
-            # Obtener ID_Usuario del supervisor
-            cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
-            user_row = cur.fetchone()
-            if not user_row:
-                messagebox.showerror("Error", f"Usuario '{username}' no encontrado.", parent=top)
-                cur.close()
-                conn.close()
-                return
-            user_id = int(user_row[0])
-            
-            # Query: EVENTOS de grupos especiales desde START SHIFT hasta AHORA
-            query = """
-                SELECT
-                    e.ID_Eventos,
-                    e.FechaHora,
-                    e.ID_Sitio,
-                    e.Nombre_Actividad,
-                    e.Cantidad,
-                    e.Camera,
-                    e.Descripcion,
-                    u.Nombre_Usuario
-                FROM Eventos AS e
-                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
-                WHERE u.Nombre_Usuario = %s
-                AND e.ID_Sitio IN (
-                    SELECT st.ID_Sitio
-                    FROM Sitios st
-                    WHERE st.ID_Grupo IN (%s, %s, %s, %s, %s, %s, %s, %s)
-                )
-                AND e.FechaHora >= %s
-                ORDER BY e.FechaHora ASC
-            """
-            
-            cur.execute(query, (username, *grupos_especiales, last_shift_time))
-            rows = cur.fetchall()
-            
-            # ⭐ Load timezone offset configuration
-            tz_adjust = load_tz_config()
-            
-            # Resolver nombres de sitios y zonas horarias
-            time_zone_cache = {}
-            processed = []
-            
-            for r in rows:
-                id_evento = r[0]
-                fecha_hora = r[1]
-                id_sitio = r[2]
-                nombre_actividad = r[3]
-                cantidad = r[4]
-                camera = r[5]
-                descripcion = r[6]
-                usuario = r[7]
+                # Grupos especiales a filtrar (como open_report_window)
+                grupos_especiales = ("AS", "KG", "HUD", "PE", "SCH", "WAG", "LT", "DT")
                 
-                # ⭐ GUARDAR VALORES ORIGINALES (antes de ajustes de timezone)
-                fecha_hora_original = r[1]  # Fecha original de BD
-                descripcion_original = str(r[6]) if r[6] else ""  # Guardar copia del valor original
-                usuario_original = usuario  # Usuario original de BD
+                conn = under_super.get_connection()
+                cur = conn.cursor()
                 
-                # Resolver nombre de sitio y zona horaria
-                nombre_sitio = ""
-                tz = ""
-                if id_sitio is not None and str(id_sitio).strip() != "":
-                    if id_sitio in time_zone_cache:
-                        nombre_sitio, tz = time_zone_cache[id_sitio]
-                    else:
-                        try:
-                            cur.execute("SELECT Nombre_Sitio, Time_Zone FROM Sitios WHERE ID_Sitio = %s", (id_sitio,))
-                            sit = cur.fetchone()
-                            nombre_sitio = sit[0] if sit and sit[0] else ""
-                            tz = sit[1] if sit and len(sit) > 1 and sit[1] else ""
-                        except Exception:
-                            nombre_sitio = ""
-                            tz = ""
-                        time_zone_cache[id_sitio] = (nombre_sitio, tz)
+                # Obtener ID_Usuario del supervisor
+                cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
+                user_row = cur.fetchone()
+                if not user_row:
+                    messagebox.showerror("Error", f"Usuario '{username}' no encontrado.", parent=top)
+                    cur.close()
+                    conn.close()
+                    return
+                user_id = int(user_row[0])
                 
-                # Formato visual para ID_Sitio (mostrar nombre + ID)
-                if id_sitio and nombre_sitio:
-                    display_site = f"{nombre_sitio} ({id_sitio})"
-                elif id_sitio:
-                    display_site = str(id_sitio)
-                else:
-                    display_site = nombre_sitio or ""
-                
-                # ⭐ Formatear fecha/hora CON ajuste de zona horaria
-                try:
-                    # Get timezone offset for this site
-                    tz_offset_hours = tz_adjust.get((tz or '').upper(), 0)
-                    
-                    # Apply offset to datetime
-                    if isinstance(fecha_hora, str):
-                        fh = datetime.strptime(fecha_hora[:19], "%Y-%m-%d %H:%M:%S")
-                    else:
-                        fh = fecha_hora
-                    
-                    fh_adjusted = fh + timedelta(hours=tz_offset_hours)
-                    fecha_str = fh_adjusted.strftime("%Y-%m-%d %H:%M:%S")
-                except Exception:
-                    fecha_str = fecha_hora.strftime("%Y-%m-%d %H:%M:%S") if fecha_hora else ""
-                
-                # ⭐ Ajustar timestamps dentro de la descripción
-                # Soporta formatos: [HH:MM:SS], [H:MM:SS], HH:MM:SS, H:MM:SS, [HH:MM], [H:MM], HH:MM, H:MM
-                if descripcion:
-                    try:
-                        desc_text = str(descripcion)
-                        
-                        # Normalizar formato: convertir [Timestamp: XX:XX:XX] a [XX:XX:XX]
-                        # Soporta HH:MM:SS y H:MM:SS
-                        desc_text = re.sub(r"\[?\s*Timestamp:\s*(\d{1,2}:\d{2}:\d{2})\s*\]?", r"[\1]", desc_text, flags=re.IGNORECASE)
-                        # Soporta HH:MM y H:MM
-                        desc_text = re.sub(r"\[?\s*Timestamp:\s*(\d{1,2}:\d{2})\s*\]?", r"[\1]", desc_text, flags=re.IGNORECASE)
-                        
-                        # Función para ajustar un timestamp (soporta H:MM, HH:MM, H:MM:SS, HH:MM:SS)
-                        def adjust_timestamp(match):
-                            raw_time = match.group(1) if match.lastindex >= 1 else match.group(0)
-                            # Guardar si tiene corchetes al inicio
-                            has_brackets = match.group(0).startswith('[')
-                            
-                            try:
-                                # Usar la fecha del evento como base
-                                base_date = fh.date() if 'fh' in locals() and isinstance(fh, datetime) else datetime.now().date()
-                                
-                                # Parsear el tiempo (puede ser H:MM:SS, HH:MM:SS, H:MM o HH:MM)
-                                time_parts = raw_time.split(":")
-                                if len(time_parts) == 3:
-                                    # Formato H:MM:SS o HH:MM:SS
-                                    hh, mm, ss = [int(x) for x in time_parts]
-                                elif len(time_parts) == 2:
-                                    # Formato H:MM o HH:MM (asumir segundos = 00)
-                                    hh, mm = [int(x) for x in time_parts]
-                                    ss = 0
-                                elif len(time_parts) == 1:
-                                    # Formato H (solo hora, asumir minutos y segundos = 00)
-                                    hh = int(time_parts[0])
-                                    mm = 0
-                                    ss = 0
-                                else:
-                                    return match.group(0)  # Formato no reconocido
-                                
-                                # Validar rangos
-                                if not (0 <= hh <= 23 and 0 <= mm <= 59 and 0 <= ss <= 59):
-                                    return match.group(0)  # Valores fuera de rango
-                                
-                                desc_dt = datetime.combine(base_date, datetime.min.time()) + timedelta(hours=hh, minutes=mm, seconds=ss)
-                                
-                                # Aplicar el mismo offset de zona horaria
-                                desc_dt_adjusted = desc_dt + timedelta(hours=tz_offset_hours)
-                                
-                                # Mantener el formato original (con o sin ceros a la izquierda)
-                                if len(time_parts) == 3:
-                                    # Formato con segundos
-                                    if len(time_parts[0]) == 1:
-                                        # Formato H:MM:SS (sin cero a la izquierda)
-                                        desc_time_adjusted_str = f"{desc_dt_adjusted.hour}:{desc_dt_adjusted.minute:02d}:{desc_dt_adjusted.second:02d}"
-                                    else:
-                                        # Formato HH:MM:SS (con cero a la izquierda)
-                                        desc_time_adjusted_str = desc_dt_adjusted.strftime("%H:%M:%S")
-                                elif len(time_parts) == 2:
-                                    # Formato sin segundos
-                                    if len(time_parts[0]) == 1:
-                                        # Formato H:MM (sin cero a la izquierda)
-                                        desc_time_adjusted_str = f"{desc_dt_adjusted.hour}:{desc_dt_adjusted.minute:02d}"
-                                    else:
-                                        # Formato HH:MM (con cero a la izquierda)
-                                        desc_time_adjusted_str = desc_dt_adjusted.strftime("%H:%M")
-                                else:
-                                    # Formato solo hora
-                                    desc_time_adjusted_str = desc_dt_adjusted.strftime("%H:%M")
-                                
-                                # Mantener el formato original (con o sin corchetes)
-                                if has_brackets:
-                                    return f"[{desc_time_adjusted_str}]"
-                                else:
-                                    return desc_time_adjusted_str
-                            except Exception as e:
-                                print(f"[DEBUG] Error ajustando timestamp '{raw_time}': {e}")
-                                return match.group(0)  # Retornar original si hay error
-                        
-                        # ⭐ ORDEN DE PROCESAMIENTO: Del más específico al más general
-                        
-                        # 1. Timestamps con corchetes y segundos: [HH:MM:SS] o [H:MM:SS]
-                        desc_text_adjusted = re.sub(r"\[(\d{1,2}:\d{2}:\d{2})\]", adjust_timestamp, desc_text)
-                        
-                        # 2. Timestamps con corchetes sin segundos: [HH:MM] o [H:MM]
-                        desc_text_adjusted = re.sub(r"\[(\d{1,2}:\d{2})\]", adjust_timestamp, desc_text_adjusted)
-                        
-                        # 3. Timestamps SIN corchetes con segundos: HH:MM:SS o H:MM:SS
-                        # Lookahead/lookbehind para evitar coincidir con fechas completas o timestamps ya procesados
-                        desc_text_adjusted = re.sub(
-                            r"(?<!\d)(\d{1,2}:\d{2}:\d{2})(?!\])",  # No debe tener ] después
-                            adjust_timestamp,
-                            desc_text_adjusted
-                        )
-                        
-                        # 4. Timestamps SIN corchetes sin segundos: HH:MM o H:MM
-                        # Evitar coincidir con HH:MM:SS (que ya fueron procesados)
-                        desc_text_adjusted = re.sub(
-                            r"(?<!\d)(\d{1,2}:\d{2})(?!:\d|\])",  # No debe tener :dígito después ni ]
-                            adjust_timestamp,
-                            desc_text_adjusted
-                        )
-                        
-                        descripcion = desc_text_adjusted
-                        
-                    except Exception:
-                        # Mantener descripción original si hay error
-                        pass
-                
-                # ⭐ VERIFICAR ESTADO EN TABLA SPECIALS (3 estados posibles)
-                mark_display = ""  # Por defecto: vacío (sin enviar)
-                mark_color = None  # None = sin color, "green" = enviado, "amber" = pendiente
-                
-                try:
-                    # ⭐ Buscar usando la fecha AJUSTADA (con timezone) porque así se guarda en specials
-                    # fecha_str ya tiene el ajuste de timezone aplicado
-                    
-                    # Debug: Mostrar valores de búsqueda
-                    print(f"[DEBUG] Buscando en specials:")
-                    print(f"  FechaHora: {fecha_str} (ajustada con timezone)")
-                    print(f"  Usuario: {usuario_original}")
-                    print(f"  Actividad: {nombre_actividad}")
-                    print(f"  ID_Sitio: {id_sitio}")
-                    
-                    # Buscar si existe en specials (usando LOWER para case-insensitive)
-                    cur.execute(
-                        """
-                        SELECT ID_special, Supervisor, FechaHora, ID_Sitio, Nombre_Actividad, 
-                               Cantidad, Camera, Descripcion
-                        FROM specials
-                        WHERE FechaHora = %s
-                          AND LOWER(Usuario) = LOWER(%s)
-                          AND Nombre_Actividad = %s
-                          AND IFNULL(ID_Sitio, 0) = IFNULL(%s, 0)
-                        LIMIT 1
-                        """,
-                        (fecha_str, usuario_original, nombre_actividad, id_sitio),
+                # Query: EVENTOS de grupos especiales desde START SHIFT hasta AHORA
+                query = """
+                    SELECT
+                        e.ID_Eventos,
+                        e.FechaHora,
+                        e.ID_Sitio,
+                        e.Nombre_Actividad,
+                        e.Cantidad,
+                        e.Camera,
+                        e.Descripcion,
+                        u.Nombre_Usuario
+                    FROM Eventos AS e
+                    INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
+                    WHERE u.Nombre_Usuario = %s
+                    AND e.ID_Sitio IN (
+                        SELECT st.ID_Sitio
+                        FROM Sitios st
+                        WHERE st.ID_Grupo IN (%s, %s, %s, %s, %s, %s, %s, %s)
                     )
-                    special_row = cur.fetchone()
+                    AND e.FechaHora >= %s
+                    ORDER BY e.FechaHora ASC
+                """
+                
+                cur.execute(query, (username, *grupos_especiales, last_shift_time))
+                rows = cur.fetchall()
+                
+                # ⭐ Load timezone offset configuration
+                tz_adjust = load_tz_config()
+                
+                # Resolver nombres de sitios y zonas horarias
+                time_zone_cache = {}
+                processed = []
+                
+                for r in rows:
+                    id_evento = r[0]
+                    fecha_hora = r[1]
+                    id_sitio = r[2]
+                    nombre_actividad = r[3]
+                    cantidad = r[4]
+                    camera = r[5]
+                    descripcion = r[6]
+                    usuario = r[7]
                     
-                    if special_row:
-                        print(f"[DEBUG] ✅ ENCONTRADO en specials: ID={special_row[0]}, Supervisor={special_row[1]}")
+                    # ⭐ GUARDAR VALORES ORIGINALES (antes de ajustes de timezone)
+                    fecha_hora_original = r[1]  # Fecha original de BD
+                    descripcion_original = str(r[6]) if r[6] else ""  # Guardar copia del valor original
+                    usuario_original = usuario  # Usuario original de BD
+                    
+                    # Resolver nombre de sitio y zona horaria
+                    nombre_sitio = ""
+                    tz = ""
+                    if id_sitio is not None and str(id_sitio).strip() != "":
+                        if id_sitio in time_zone_cache:
+                            nombre_sitio, tz = time_zone_cache[id_sitio]
+                        else:
+                            try:
+                                cur.execute("SELECT Nombre_Sitio, Time_Zone FROM Sitios WHERE ID_Sitio = %s", (id_sitio,))
+                                sit = cur.fetchone()
+                                nombre_sitio = sit[0] if sit and sit[0] else ""
+                                tz = sit[1] if sit and len(sit) > 1 and sit[1] else ""
+                            except Exception:
+                                nombre_sitio = ""
+                                tz = ""
+                            time_zone_cache[id_sitio] = (nombre_sitio, tz)
+                    
+                    # Formato visual para ID_Sitio (mostrar nombre + ID)
+                    if id_sitio and nombre_sitio:
+                        display_site = f"{nombre_sitio} ({id_sitio})"
+                    elif id_sitio:
+                        display_site = str(id_sitio)
                     else:
-                        print(f"[DEBUG] ❌ NO encontrado en specials")
+                        display_site = nombre_sitio or ""
                     
-                    if special_row:
-                        # Existe en specials - USAR VALORES DE SPECIALS para mostrar
-                        special_supervisor = special_row[1]
-                        special_fechahora = special_row[2]
-                        special_id_sitio = special_row[3]
-                        special_actividad = special_row[4]
-                        special_cantidad = special_row[5]
-                        special_camera = special_row[6]
-                        special_desc = special_row[7]
+                    # ⭐ Formatear fecha/hora CON ajuste de zona horaria
+                    try:
+                        # Get timezone offset for this site
+                        tz_offset_hours = tz_adjust.get((tz or '').upper(), 0)
                         
-                        # ⭐ IMPORTANTE: Para comparar, usar valores AJUSTADOS de Eventos
-                        # (porque accion_supervisores() guarda valores ajustados en specials)
+                        # Apply offset to datetime
+                        if isinstance(fecha_hora, str):
+                            fh = datetime.strptime(fecha_hora[:19], "%Y-%m-%d %H:%M:%S")
+                        else:
+                            fh = fecha_hora
                         
-                        # Normalizar valores de Eventos (con ajuste de timezone aplicado)
-                        eventos_cantidad = int(cantidad) if cantidad is not None else 0
-                        eventos_camera = str(camera).strip() if camera else ""
-                        eventos_desc = str(descripcion).strip() if descripcion else ""  # ⭐ Usar descripcion AJUSTADA
-                        
-                        # Normalizar valores de specials (convertir a tipos comparables)
-                        specials_cantidad = int(special_cantidad) if special_cantidad is not None else 0
-                        specials_camera = str(special_camera).strip() if special_camera else ""
-                        specials_desc = str(special_desc).strip() if special_desc else ""
-                        
-                        # Debug: Mostrar comparación
-                        print(f"[DEBUG] Comparando valores:")
-                        print(f"  Eventos (ajustado) -> Cantidad: {eventos_cantidad}, Camera: '{eventos_camera}', Desc: '{eventos_desc[:50]}...'")
-                        print(f"  Specials (guardado) -> Cantidad: {specials_cantidad}, Camera: '{specials_camera}', Desc: '{specials_desc[:50]}...'")
-                        
-                        if (eventos_cantidad != specials_cantidad or 
-                            eventos_camera != specials_camera or 
-                            eventos_desc != specials_desc):
-                            # HAY CAMBIOS: Estado "Pendiente por actualizar"
-                            print(f"[DEBUG] ⚠️ CAMBIOS DETECTADOS - Marca: Pendiente")
-                            mark_display = "⏳ Pendiente por actualizar"
-                            mark_color = "amber"
+                        fh_adjusted = fh + timedelta(hours=tz_offset_hours)
+                        fecha_str = fh_adjusted.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        fecha_str = fecha_hora.strftime("%Y-%m-%d %H:%M:%S") if fecha_hora else ""
+                    
+                    # ⭐ Ajustar timestamps dentro de la descripción
+                    # Soporta formatos: [HH:MM:SS], [H:MM:SS], HH:MM:SS, H:MM:SS, [HH:MM], [H:MM], HH:MM, H:MM
+                    if descripcion:
+                        try:
+                            desc_text = str(descripcion)
                             
-                            # USAR VALORES DE EVENTOS (ajustados) para mostrar cuando hay cambios pendientes
+                            # Normalizar formato: convertir [Timestamp: XX:XX:XX] a [XX:XX:XX]
+                            # Soporta HH:MM:SS y H:MM:SS
+                            desc_text = re.sub(r"\[?\s*Timestamp:\s*(\d{1,2}:\d{2}:\d{2})\s*\]?", r"[\1]", desc_text, flags=re.IGNORECASE)
+                            # Soporta HH:MM y H:MM
+                            desc_text = re.sub(r"\[?\s*Timestamp:\s*(\d{1,2}:\d{2})\s*\]?", r"[\1]", desc_text, flags=re.IGNORECASE)
+                            
+                            # Función para ajustar un timestamp (soporta H:MM, HH:MM, H:MM:SS, HH:MM:SS)
+                            def adjust_timestamp(match):
+                                raw_time = match.group(1) if match.lastindex >= 1 else match.group(0)
+                                # Guardar si tiene corchetes al inicio
+                                has_brackets = match.group(0).startswith('[')
+                                
+                                try:
+                                    # Usar la fecha del evento como base
+                                    base_date = fh.date() if 'fh' in locals() and isinstance(fh, datetime) else datetime.now().date()
+                                    
+                                    # Parsear el tiempo (puede ser H:MM:SS, HH:MM:SS, H:MM o HH:MM)
+                                    time_parts = raw_time.split(":")
+                                    if len(time_parts) == 3:
+                                        # Formato H:MM:SS o HH:MM:SS
+                                        hh, mm, ss = [int(x) for x in time_parts]
+                                    elif len(time_parts) == 2:
+                                        # Formato H:MM o HH:MM (asumir segundos = 00)
+                                        hh, mm = [int(x) for x in time_parts]
+                                        ss = 0
+                                    elif len(time_parts) == 1:
+                                        # Formato H (solo hora, asumir minutos y segundos = 00)
+                                        hh = int(time_parts[0])
+                                        mm = 0
+                                        ss = 0
+                                    else:
+                                        return match.group(0)  # Formato no reconocido
+                                    
+                                    # Validar rangos
+                                    if not (0 <= hh <= 23 and 0 <= mm <= 59 and 0 <= ss <= 59):
+                                        return match.group(0)  # Valores fuera de rango
+                                    
+                                    desc_dt = datetime.combine(base_date, datetime.min.time()) + timedelta(hours=hh, minutes=mm, seconds=ss)
+                                    
+                                    # Aplicar el mismo offset de zona horaria
+                                    desc_dt_adjusted = desc_dt + timedelta(hours=tz_offset_hours)
+                                    
+                                    # Mantener el formato original (con o sin ceros a la izquierda)
+                                    if len(time_parts) == 3:
+                                        # Formato con segundos
+                                        if len(time_parts[0]) == 1:
+                                            # Formato H:MM:SS (sin cero a la izquierda)
+                                            desc_time_adjusted_str = f"{desc_dt_adjusted.hour}:{desc_dt_adjusted.minute:02d}:{desc_dt_adjusted.second:02d}"
+                                        else:
+                                            # Formato HH:MM:SS (con cero a la izquierda)
+                                            desc_time_adjusted_str = desc_dt_adjusted.strftime("%H:%M:%S")
+                                    elif len(time_parts) == 2:
+                                        # Formato sin segundos
+                                        if len(time_parts[0]) == 1:
+                                            # Formato H:MM (sin cero a la izquierda)
+                                            desc_time_adjusted_str = f"{desc_dt_adjusted.hour}:{desc_dt_adjusted.minute:02d}"
+                                        else:
+                                            # Formato HH:MM (con cero a la izquierda)
+                                            desc_time_adjusted_str = desc_dt_adjusted.strftime("%H:%M")
+                                    else:
+                                        # Formato solo hora
+                                        desc_time_adjusted_str = desc_dt_adjusted.strftime("%H:%M")
+                                    
+                                    # Mantener el formato original (con o sin corchetes)
+                                    if has_brackets:
+                                        return f"[{desc_time_adjusted_str}]"
+                                    else:
+                                        return desc_time_adjusted_str
+                                except Exception as e:
+                                    print(f"[DEBUG] Error ajustando timestamp '{raw_time}': {e}")
+                                    return match.group(0)  # Retornar original si hay error
+                            
+                            # ⭐ ORDEN DE PROCESAMIENTO: Del más específico al más general
+                            
+                            # 1. Timestamps con corchetes y segundos: [HH:MM:SS] o [H:MM:SS]
+                            desc_text_adjusted = re.sub(r"\[(\d{1,2}:\d{2}:\d{2})\]", adjust_timestamp, desc_text)
+                            
+                            # 2. Timestamps con corchetes sin segundos: [HH:MM] o [H:MM]
+                            desc_text_adjusted = re.sub(r"\[(\d{1,2}:\d{2})\]", adjust_timestamp, desc_text_adjusted)
+                            
+                            # 3. Timestamps SIN corchetes con segundos: HH:MM:SS o H:MM:SS
+                            # Lookahead/lookbehind para evitar coincidir con fechas completas o timestamps ya procesados
+                            desc_text_adjusted = re.sub(
+                                r"(?<!\d)(\d{1,2}:\d{2}:\d{2})(?!\])",  # No debe tener ] después
+                                adjust_timestamp,
+                                desc_text_adjusted
+                            )
+                            
+                            # 4. Timestamps SIN corchetes sin segundos: HH:MM o H:MM
+                            # Evitar coincidir con HH:MM:SS (que ya fueron procesados)
+                            desc_text_adjusted = re.sub(
+                                r"(?<!\d)(\d{1,2}:\d{2})(?!:\d|\])",  # No debe tener :dígito después ni ]
+                                adjust_timestamp,
+                                desc_text_adjusted
+                            )
+                            
+                            descripcion = desc_text_adjusted
+                            
+                        except Exception:
+                            # Mantener descripción original si hay error
+                            pass
+                    
+                    # ⭐ VERIFICAR ESTADO EN TABLA SPECIALS (3 estados posibles)
+                    mark_display = ""  # Por defecto: vacío (sin enviar)
+                    mark_color = None  # None = sin color, "green" = enviado, "amber" = pendiente
+                    
+                    try:
+                        # ⭐ Buscar usando la fecha AJUSTADA (con timezone) porque así se guarda en specials
+                        # fecha_str ya tiene el ajuste de timezone aplicado
+                        
+                        # Debug: Mostrar valores de búsqueda
+                        print(f"[DEBUG] Buscando en specials:")
+                        print(f"  FechaHora: {fecha_str} (ajustada con timezone)")
+                        print(f"  Usuario: {usuario_original}")
+                        print(f"  Actividad: {nombre_actividad}")
+                        print(f"  ID_Sitio: {id_sitio}")
+                        
+                        # Buscar si existe en specials (usando LOWER para case-insensitive)
+                        cur.execute(
+                            """
+                            SELECT ID_special, Supervisor, FechaHora, ID_Sitio, Nombre_Actividad, 
+                                Cantidad, Camera, Descripcion
+                            FROM specials
+                            WHERE FechaHora = %s
+                            AND LOWER(Usuario) = LOWER(%s)
+                            AND Nombre_Actividad = %s
+                            AND IFNULL(ID_Sitio, 0) = IFNULL(%s, 0)
+                            LIMIT 1
+                            """,
+                            (fecha_str, usuario_original, nombre_actividad, id_sitio),
+                        )
+                        special_row = cur.fetchone()
+                        
+                        if special_row:
+                            print(f"[DEBUG] ✅ ENCONTRADO en specials: ID={special_row[0]}, Supervisor={special_row[1]}")
+                        else:
+                            print(f"[DEBUG] ❌ NO encontrado en specials")
+                        
+                        if special_row:
+                            # Existe en specials - USAR VALORES DE SPECIALS para mostrar
+                            special_supervisor = special_row[1]
+                            special_fechahora = special_row[2]
+                            special_id_sitio = special_row[3]
+                            special_actividad = special_row[4]
+                            special_cantidad = special_row[5]
+                            special_camera = special_row[6]
+                            special_desc = special_row[7]
+                            
+                            # ⭐ IMPORTANTE: Para comparar, usar valores AJUSTADOS de Eventos
+                            # (porque accion_supervisores() guarda valores ajustados en specials)
+                            
+                            # Normalizar valores de Eventos (con ajuste de timezone aplicado)
+                            eventos_cantidad = int(cantidad) if cantidad is not None else 0
+                            eventos_camera = str(camera).strip() if camera else ""
+                            eventos_desc = str(descripcion).strip() if descripcion else ""  # ⭐ Usar descripcion AJUSTADA
+                            
+                            # Normalizar valores de specials (convertir a tipos comparables)
+                            specials_cantidad = int(special_cantidad) if special_cantidad is not None else 0
+                            specials_camera = str(special_camera).strip() if special_camera else ""
+                            specials_desc = str(special_desc).strip() if special_desc else ""
+                            
+                            # Debug: Mostrar comparación
+                            print(f"[DEBUG] Comparando valores:")
+                            print(f"  Eventos (ajustado) -> Cantidad: {eventos_cantidad}, Camera: '{eventos_camera}', Desc: '{eventos_desc[:50]}...'")
+                            print(f"  Specials (guardado) -> Cantidad: {specials_cantidad}, Camera: '{specials_camera}', Desc: '{specials_desc[:50]}...'")
+                            
+                            if (eventos_cantidad != specials_cantidad or 
+                                eventos_camera != specials_camera or 
+                                eventos_desc != specials_desc):
+                                # HAY CAMBIOS: Estado "Pendiente por actualizar"
+                                print(f"[DEBUG] ⚠️ CAMBIOS DETECTADOS - Marca: Pendiente")
+                                mark_display = "⏳ Pendiente por actualizar"
+                                mark_color = "amber"
+                                
+                                # USAR VALORES DE EVENTOS (ajustados) para mostrar cuando hay cambios pendientes
+                                fecha_str_display = fecha_str
+                                descripcion_display = descripcion
+                            else:
+                                # SIN CAMBIOS: Estado "Enviado a @supervisor"
+                                print(f"[DEBUG] ✅ SIN CAMBIOS - Marca: Enviado a {special_supervisor}")
+                                mark_display = f"✅ Enviado a {special_supervisor}"
+                                mark_color = "green"
+                                
+                                # USAR VALORES DE SPECIALS para mostrar cuando está enviado sin cambios
+                                fecha_str_display = special_fechahora if special_fechahora else fecha_str
+                                descripcion_display = special_desc if special_desc else descripcion
+                        else:
+                            # NO EXISTE EN SPECIALS: Estado vacío (sin enviar)
+                            mark_display = ""
+                            mark_color = None
+                            
+                            # USAR VALORES DE EVENTOS (ajustados) para mostrar
                             fecha_str_display = fecha_str
                             descripcion_display = descripcion
-                        else:
-                            # SIN CAMBIOS: Estado "Enviado a @supervisor"
-                            print(f"[DEBUG] ✅ SIN CAMBIOS - Marca: Enviado a {special_supervisor}")
-                            mark_display = f"✅ Enviado a {special_supervisor}"
-                            mark_color = "green"
                             
-                            # USAR VALORES DE SPECIALS para mostrar cuando está enviado sin cambios
-                            fecha_str_display = special_fechahora if special_fechahora else fecha_str
-                            descripcion_display = special_desc if special_desc else descripcion
-                    else:
-                        # NO EXISTE EN SPECIALS: Estado vacío (sin enviar)
+                    except Exception:
                         mark_display = ""
                         mark_color = None
-                        
-                        # USAR VALORES DE EVENTOS (ajustados) para mostrar
                         fecha_str_display = fecha_str
                         descripcion_display = descripcion
-                        
-                except Exception:
-                    mark_display = ""
-                    mark_color = None
-                    fecha_str_display = fecha_str
-                    descripcion_display = descripcion
+                    
+                    # Fila para mostrar (SIN columnas ID y Usuario)
+                    # Columnas: ["Fecha_hora", "ID_Sitio", "Nombre_Actividad", "Cantidad", "Camera", "Descripcion", "Time_Zone", "Marca"]
+                    display_row = [
+                        fecha_str_display,        # Fecha_hora (de specials si enviado, de eventos si no)
+                        display_site,             # ID_Sitio
+                        nombre_actividad or "",   # Nombre_Actividad
+                        str(cantidad) if cantidad is not None else "0",  # Cantidad
+                        camera or "",             # Camera
+                        descripcion_display,      # Descripcion (de specials si enviado, de eventos si no)
+                        tz or "",                 # Time_Zone
+                        mark_display              # Marca (vacío, enviado, o pendiente)
+                    ]
+                    
+                    processed.append({
+                        'id': id_evento,
+                        'values': display_row,
+                        'mark_color': mark_color  # Para aplicar color después
+                    })
                 
-                # Fila para mostrar (SIN columnas ID y Usuario)
-                # Columnas: ["Fecha_hora", "ID_Sitio", "Nombre_Actividad", "Cantidad", "Camera", "Descripcion", "Time_Zone", "Marca"]
-                display_row = [
-                    fecha_str_display,        # Fecha_hora (de specials si enviado, de eventos si no)
-                    display_site,             # ID_Sitio
-                    nombre_actividad or "",   # Nombre_Actividad
-                    str(cantidad) if cantidad is not None else "0",  # Cantidad
-                    camera or "",             # Camera
-                    descripcion_display,      # Descripcion (de specials si enviado, de eventos si no)
-                    tz or "",                 # Time_Zone
-                    mark_display              # Marca (vacío, enviado, o pendiente)
-                ]
+                cur.close()
+                conn.close()
                 
-                processed.append({
-                    'id': id_evento,
-                    'values': display_row,
-                    'mark_color': mark_color  # Para aplicar color después
-                })
-            
-            cur.close()
-            conn.close()
-            
-            # Actualizar cache
-            row_data_cache = processed
-            row_ids = [item['id'] for item in processed]
-            
-            # Poblar sheet
-            if not processed:
-                data = [["No hay eventos de grupos especiales en este turno"] + [""] * (len(columns)-1)]
-                sheet.set_sheet_data(data)
-            else:
-                data = [item['values'] for item in processed]
-                sheet.set_sheet_data(data)
+                # Actualizar cache
+                row_data_cache = processed
+                row_ids = [item['id'] for item in processed]
                 
-                # ⭐ APLICAR COLORES según estado de marca
-                sheet.dehighlight_all()  # Limpiar colores anteriores
+                # Poblar sheet
+                if not processed:
+                    data = [["No hay eventos de grupos especiales en este turno"] + [""] * (len(columns)-1)]
+                    sheet.set_sheet_data(data)
+                else:
+                    data = [item['values'] for item in processed]
+                    sheet.set_sheet_data(data)
+                    
+                    # ⭐ APLICAR COLORES según estado de marca
+                    sheet.dehighlight_all()  # Limpiar colores anteriores
+                    
+                    for idx, item in enumerate(processed):
+                        mark_color = item.get('mark_color')
+                        if mark_color == 'green':
+                            # Verde (#00c853) para "Enviado"
+                            sheet.highlight_rows([idx], bg="#00c853", fg="#111111")
+                        elif mark_color == 'amber':
+                            # Ámbar (#f5a623) para "Pendiente por actualizar"
+                            sheet.highlight_rows([idx], bg="#f5a623", fg="#111111")
+                        # Sin color si mark_color es None (sin enviar)
                 
-                for idx, item in enumerate(processed):
-                    mark_color = item.get('mark_color')
-                    if mark_color == 'green':
-                        # Verde (#00c853) para "Enviado"
-                        sheet.highlight_rows([idx], bg="#00c853", fg="#111111")
-                    elif mark_color == 'amber':
-                        # Ámbar (#f5a623) para "Pendiente por actualizar"
-                        sheet.highlight_rows([idx], bg="#f5a623", fg="#111111")
-                    # Sin color si mark_color es None (sin enviar)
-            
-            apply_sheet_widths()
-            pending_changes.clear()
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo cargar eventos especiales:\n{e}", parent=top)
-            traceback.print_exc()
-            pending_changes.clear()
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo cargar specials:\n{e}", parent=top)
-            traceback.print_exc()
-
+                apply_sheet_widths()
+                pending_changes.clear()
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo cargar eventos especiales:\n{e}", parent=top)
+                traceback.print_exc()
+                pending_changes.clear()
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo cargar specials:\n{e}", parent=top)
+                traceback.print_exc()
+    
     def load_covers():
         """Carga covers desde el último START SHIFT filtrados por username (MODO COVERS)"""
         nonlocal row_data_cache, row_ids, pending_changes
@@ -7468,7 +7039,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     Activo
                 FROM Covers
                 WHERE Nombre_Usuarios = %s
-                  AND Cover_in >= %s
+                    AND Cover_in >= %s
                 ORDER BY Cover_in ASC
             """
             
@@ -7543,6 +7114,64 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             traceback.print_exc()
             pending_changes.clear()
 
+    def update_cover_queue_position():
+        """Calcula y muestra cuántos turnos faltan para el cover del usuario"""
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            # Buscar todos los covers programados activos (is_Active = 1) ordenados por Time_request
+            cur.execute("""
+                SELECT ID_user, Time_request, is_Active 
+                FROM covers_programados 
+                WHERE is_Active = 1 
+                ORDER BY Time_request ASC
+            """)
+            active_covers = cur.fetchall()
+            
+            # Buscar si el usuario actual tiene un cover programado activo
+            user_position = None
+            for idx, row in enumerate(active_covers):
+                if row[0] == username:  # ID_user == username
+                    user_position = idx + 1  # Posición 1-indexed
+                    break
+            
+            cur.close()
+            conn.close()
+            
+            # Actualizar el label
+            if user_position is not None:
+                if user_position == 1:
+                    text = "⭐ ¡Eres el siguiente! Estás en turno #1 para tu cover"
+                else:
+                    text = f"📋 Estás a {user_position} turnos para tu cover"
+                
+                if UI is not None:
+                    cover_queue_label.configure(text=text, text_color="#00ff88")
+                else:
+                    cover_queue_label.configure(text=text, fg="#00ff88")
+            else:
+                text = "ℹ️ No tienes covers programados activos"
+                if UI is not None:
+                    cover_queue_label.configure(text=text, text_color="#ffa500")
+                else:
+                    cover_queue_label.configure(text=text, fg="#ffa500")
+            
+            print(f"[DEBUG] Cover queue position for {username}: {user_position}")
+            
+        except Exception as e:
+            print(f"[ERROR] update_cover_queue_position: {e}")
+            traceback.print_exc()
+            text = "❌ Error calculando posición en cola"
+            if UI is not None:
+                cover_queue_label.configure(text=text, text_color="#ff4444")
+            else:
+                cover_queue_label.configure(text=text, fg="#ff4444")
+        
+        # Auto-refresh cada 30 segundos si estamos en modo covers
+        if current_mode.get() == 'covers':
+            top.after(30000, update_cover_queue_position)
+
     def load_data():
         """Wrapper que llama a load_daily(), load_specials() o load_covers() según el modo activo"""
         mode = current_mode.get()
@@ -7552,6 +7181,8 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             load_specials()
         elif mode == 'covers':
             load_covers()
+            # Actualizar posición en cola cuando se cargan covers
+            update_cover_queue_position()
     
     def toggle_mode():
         """Alterna entre modo DAILY ↔ SPECIALS (Covers tiene su propio botón)"""
@@ -7576,6 +7207,9 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             
             # Ocultar formulario de entrada (no se usa en specials)
             entry_frame.pack_forget()
+            
+            # Ocultar frame de posición en cola (solo para covers)
+            cover_queue_frame.pack_forget()
             
             # Mostrar botones de envío
             if enviar_btn:
@@ -7610,6 +7244,9 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             # Mostrar formulario de entrada
             entry_frame.pack(fill="x", side="bottom", padx=0, pady=0)
             
+            # Ocultar frame de posición en cola (solo para covers)
+            cover_queue_frame.pack_forget()
+            
             # Ocultar botones de envío (solo en Specials)
             if enviar_btn:
                 enviar_btn.pack_forget()
@@ -7618,9 +7255,9 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             
             # Actualizar botón toggle
             if UI is not None:
-                toggle_btn.configure(text="⌚ Specials", fg_color="#4D6068", hover_color="#3a7bc2")
+                toggle_btn.configure(text="⭐ Specials", fg_color="#4D6068", hover_color="#3a7bc2")
             else:
-                toggle_btn.configure(text="⌚ Specials", bg="#4D6068")
+                toggle_btn.configure(text="⭐ Specials", bg="#4D6068")
 
             # Cargar datos de daily
             load_daily()
@@ -7643,6 +7280,9 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             # Mostrar formulario de entrada
             entry_frame.pack(fill="x", side="bottom", padx=0, pady=0)
             
+            # ⭐ Ocultar frame de posición en cola
+            cover_queue_frame.pack_forget()
+            
             # Ocultar botones de envío
             if enviar_btn:
                 enviar_btn.pack_forget()
@@ -7651,9 +7291,9 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             
             # Actualizar botón toggle
             if UI is not None:
-                toggle_btn.configure(text="⌚ Specials", fg_color="#4D6068", hover_color="#3a7bc2")
+                toggle_btn.configure(text="⭐ Specials", fg_color="#4D6068", hover_color="#3a7bc2")
             else:
-                toggle_btn.configure(text="⌚ Specials", bg="#4D6068")
+                toggle_btn.configure(text="⭐ Specials", bg="#4D6068")
 
             # Cargar datos de daily
             load_daily()
@@ -7719,7 +7359,26 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         try:
             conn = under_super.get_connection()
             cur = conn.cursor()
-            cur.execute("SELECT Nombre_Usuario FROM user WHERE Rol IN (%s, %s)", ("Supervisor", "Lead Supervisor"))
+            cur.execute("""
+            SELECT u.Nombre_Usuario 
+            FROM user u
+            WHERE u.Rol IN (%s, %s)
+            AND EXISTS (
+                SELECT 1 
+                FROM sesion s 
+                WHERE s.ID_user = u.Nombre_Usuario 
+                AND s.Active = 1
+                ORDER BY s.ID DESC 
+                LIMIT 1
+            )
+            AND (
+                SELECT s2.Active
+                FROM sesion s2
+                WHERE s2.ID_user = u.Nombre_Usuario
+                ORDER BY s2.ID DESC
+                LIMIT 1
+            ) <> 2
+        """, ("Supervisor", "Lead Supervisor"))
             supervisores = [row[0] for row in cur.fetchall()]
             cur.close()
             conn.close()
@@ -7849,17 +7508,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     cantidad_normalizada = int(cantidad) if cantidad is not None and str(cantidad).strip() else 0
                     camera_normalizada = str(camera).strip() if camera else ""
                     descripcion_normalizada = str(descripcion).strip() if descripcion else ""
-                    
-                    # Debug: Imprimir valores que se van a enviar
-                    print(f"[DEBUG] Enviando evento a specials:")
-                    print(f"  FechaHora: {fecha_hora}")
-                    print(f"  Usuario: {usuario_evt}")
-                    print(f"  Actividad: {nombre_actividad}")
-                    print(f"  ID_Sitio: {id_sitio}")
-                    print(f"  Cantidad: {cantidad_normalizada} (tipo: {type(cantidad_normalizada)})")
-                    print(f"  Camera: '{camera_normalizada}'")
-                    print(f"  Descripcion: '{descripcion_normalizada}'")
-                    print(f"  Supervisor: {supervisor}")
+
                     
                     # Upsert en tabla specials
                     try:
@@ -7908,15 +7557,15 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                             except Exception as ue:
                                 print(f"[ERROR] al actualizar fila en specials (ID={special_id}): {ue}")
                         else:
-                            # Insertar nuevo registro
+                            # Insertar nuevo registro (con campos marked_* inicializados a NULL)
                             try:
                                 cur.execute(
                                     """
                                     INSERT INTO specials
                                         (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, 
-                                         Usuario, Time_Zone, Supervisor)
+                                         Usuario, Time_Zone, Supervisor, marked_status, marked_by, marked_at)
                                     VALUES
-                                        (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                        (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL, NULL, NULL)
                                     """,
                                     (fecha_hora, id_sitio, nombre_actividad, cantidad_normalizada, 
                                      camera_normalizada, descripcion_normalizada, 
@@ -7933,14 +7582,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 cur.close()
                 conn.close()
                 
-                # Mensaje de confirmación
-                messagebox.showinfo(
-                    "Envío completado",
-                    f"✅ Enviados a '{supervisor}':\n"
-                    f"  • {inserted} registros nuevos insertados\n"
-                    f"  • {updated} registros actualizados",
-                    parent=supervisor_win
-                )
+                
                 
                 supervisor_win.destroy()
                 
@@ -7984,168 +7626,6 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
 
     # ⭐ NOTA: add_new_row() eliminada - ahora se usa el formulario inferior
 
-    def save_changes():
-        """Guarda todos los cambios pendientes en la base de datos"""
-        if not pending_changes:
-            messagebox.showinfo("Info", "No hay cambios para guardar.", parent=top)
-            return
-
-        try:
-            conn = under_super.get_connection()
-            if not conn:
-                messagebox.showerror("Error", "No se pudo conectar a la base de datos.", parent=top)
-                return
-            
-            cur = conn.cursor()
-            
-            # Obtener ID_Usuario del username
-            cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario=%s", (username,))
-            user_row = cur.fetchone()
-            if not user_row:
-                messagebox.showerror("Error", f"Usuario '{username}' no encontrado.", parent=top)
-                cur.close()
-                conn.close()
-                return
-            user_id = int(user_row[0])
-
-            saved_count = 0
-            errors = []
-
-            for idx in pending_changes:
-                try:
-                    # Obtener datos de la fila desde el sheet
-                    row_data = sheet.get_row_data(idx)
-                    if not row_data or len(row_data) < 6:
-                        errors.append(f"Fila {idx+1}: Datos incompletos")
-                        continue
-
-                    fecha_str, sitio_str, actividad, cantidad_str, camera, descripcion = row_data
-
-                    # VALIDACIÓN 1: Actividad es obligatoria
-                    if not actividad or not actividad.strip():
-                        errors.append(f"Fila {idx+1}: Actividad es obligatoria")
-                        sheet.highlight_rows([idx], bg="#FFCDD2", fg="#111111")  # Rojo claro
-                        continue
-
-                    # VALIDACIÓN 2: Fecha/Hora
-                    if not fecha_str or not fecha_str.strip():
-                        # Si está vacía, usar fecha/hora actual
-                        fecha_hora = datetime.now()
-                    else:
-                        try:
-                            fecha_hora = datetime.strptime(fecha_str, "%Y-%m-%d %H:%M:%S")
-                        except Exception:
-                            errors.append(f"Fila {idx+1}: Formato de fecha/hora inválido")
-                            sheet.highlight_rows([idx], bg="#FFCDD2", fg="#111111")
-                            continue
-                    
-                    # VALIDACIÓN 3: Sitio - extraer ID_Sitio del formato "Nombre (ID)" o "Nombre ID"
-                    sitio_id = None
-                    if sitio_str and sitio_str.strip():
-                        try:
-                            # ⭐ Método 1: Buscar ID entre paréntesis "Nombre (123)"
-                            import re
-                            match = re.search(r'\((\d+)\)', sitio_str)
-                            if match:
-                                sitio_id = int(match.group(1))
-                            else:
-                                # ⭐ Método 2: Formato antiguo "Nombre 123" o "ID: 123" (fallback)
-                                parts = sitio_str.strip().split()
-                                sitio_id = int(parts[-1])
-                            
-                            # Verificar que existe
-                            cur.execute("SELECT ID_Sitio FROM Sitios WHERE ID_Sitio=%s", (sitio_id,))
-                            if not cur.fetchone():
-                                errors.append(f"Fila {idx+1}: Sitio con ID {sitio_id} no existe")
-                                sheet.highlight_rows([idx], bg="#FFCDD2", fg="#111111")
-                                continue
-                        except Exception as e:
-                            errors.append(f"Fila {idx+1}: Formato de sitio inválido ({e})")
-                            sheet.highlight_rows([idx], bg="#FFCDD2", fg="#111111")
-                            continue
-
-                    # VALIDACIÓN 4: Cantidad (convertir a número)
-                    try:
-                        cantidad = float(cantidad_str) if cantidad_str and cantidad_str.strip() else 0
-                    except Exception:
-                        errors.append(f"Fila {idx+1}: Cantidad debe ser un número")
-                        sheet.highlight_rows([idx], bg="#FFCDD2", fg="#111111")
-                        continue
-
-                    # Determinar si es INSERT o UPDATE
-                    cached_data = row_data_cache[idx]
-                    event_id = cached_data.get('id')
-
-                    if cached_data['status'] == 'new' or event_id is None:
-                        # INSERT - Nuevo evento
-                        cur.execute("""
-                            INSERT INTO Eventos (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, ID_Usuario)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        """, (fecha_hora, sitio_id, actividad.strip(), cantidad, camera.strip() if camera else "", 
-                              descripcion.strip() if descripcion else "", user_id))
-                        
-                        # Obtener ID generado
-                        new_id = cur.lastrowid
-                        row_data_cache[idx]['id'] = new_id
-                        row_ids[idx] = new_id
-                        
-                    else:
-                        # UPDATE - Evento existente
-                        cur.execute("""
-                            UPDATE Eventos 
-                            SET FechaHora=%s, ID_Sitio=%s, Nombre_Actividad=%s, Cantidad=%s, Camera=%s, Descripcion=%s
-                            WHERE ID_Eventos=%s
-                        """, (fecha_hora, sitio_id, actividad.strip(), cantidad, camera.strip() if camera else "",
-                              descripcion.strip() if descripcion else "", event_id))
-
-                    # Actualizar cache
-                    row_data_cache[idx].update({
-                        'fecha_hora': fecha_hora,
-                        'sitio_id': sitio_id,
-                        'sitio_nombre': sitio_str,
-                        'actividad': actividad.strip(),
-                        'cantidad': cantidad,
-                        'camera': camera.strip() if camera else "",
-                        'descripcion': descripcion.strip() if descripcion else "",
-                        'status': 'saved'
-                    })
-
-                    saved_count += 1
-
-                except Exception as e:
-                    errors.append(f"Fila {idx+1}: {str(e)}")
-                    print(f"[ERROR] save_changes fila {idx}: {e}")
-                    traceback.print_exc()
-
-            # Commit si hubo cambios exitosos
-            if saved_count > 0:
-                conn.commit()
-            
-            cur.close()
-            conn.close()
-
-            # Limpiar pending_changes
-            pending_changes.clear()
-
-            # Refrescar para mostrar datos guardados
-            load_data()
-
-            # Mostrar resultado
-            if errors:
-                error_msg = f"✅ {saved_count} evento(s) guardado(s).\n\n❌ Errores:\n" + "\n".join(errors[:5])
-                if len(errors) > 5:
-                    error_msg += f"\n... y {len(errors)-5} error(es) más."
-                messagebox.showwarning("Guardado parcial", error_msg, parent=top)
-            else:
-                messagebox.showinfo("Éxito", f"✅ {saved_count} evento(s) guardado(s) correctamente.", parent=top)
-
-        except Exception as e:
-            messagebox.showerror("Error", f"Error al guardar cambios:\n{e}", parent=top)
-            traceback.print_exc()
-            try:
-                conn.rollback()
-            except:
-                pass
 
     def delete_selected():
         """Elimina la fila seleccionada (SOLO EN MODO DAILY)"""
@@ -8759,7 +8239,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             import traceback
             traceback.print_exc()
     
-    # ⭐ BINDING: Doble click para DateTimePicker en FechaHora y ventanas emergentes para Sitio/Actividad
+    # ⭐ BINDING: Doble click para DateTimePicker en   y ventanas emergentes para Sitio/Actividad
     def on_cell_double_click(event):
         """Detecta DOBLE click y abre ventanas emergentes de selección"""
         try:
@@ -8773,9 +8253,9 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 col = selected.column
                 row = selected.row
                 
-                # Columna 0: FechaHora → DateTimePicker
+                # Columna 0:   → DateTimePicker
                 if row < len(row_data_cache) and col == 0:
-                    print(f"[DEBUG] Doble click en FechaHora")
+                    print(f"[DEBUG] Doble click en  ")
                     top.after(100, lambda: show_datetime_picker_for_edit(row))
                 # Columna 1: Sitio → Ventana emergente de selección
                 elif row < len(row_data_cache) and col == 1:
@@ -9555,7 +9035,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     if UI is not None:
         # ⭐ BOTÓN TOGGLE DAILY/SPECIALS (ciclo entre dos modos)
         toggle_btn = UI.CTkButton(
-            toolbar, text="⌚ Specials", command=toggle_mode,
+            toolbar, text="⭐ Specials", command=toggle_mode,
             fg_color="#4D6068", hover_color="#3a7bc2", 
             width=140, height=36,
             font=("Segoe UI", 12, "bold")
@@ -9564,9 +9044,49 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         
         # ⭐ BOTONES DE ENVÍO (solo visibles en modo Specials)
         enviar_btn = UI.CTkButton(toolbar, text="📤 Enviar Todos", command=enviar_todos,
-                    fg_color="#00bfae", hover_color="#009688", width=130, height=36)
-        accion_btn = UI.CTkButton(toolbar, text="👥 Acción Supervisores", command=accion_supervisores,
-                    fg_color="#00bfae", hover_color="#009688", width=160, height=36)
+                    fg_color="#4D6068", hover_color="#009688", width=130, height=36)
+        accion_btn = UI.CTkButton(toolbar, text="👥 Enviar individual", command=accion_supervisores,
+                    fg_color="#4D6068", hover_color="#009688", width=160, height=36)
+
+        # ⭐ BOTÓN LISTA DE COVERS (solo visible cuando Active = 2)
+        def open_covers_list():
+            """Abre panel integrado de lista de covers programados"""
+            show_covers_programados_panel(top, UI, username)
+        
+        lista_covers_btn = UI.CTkButton(
+            toolbar, 
+            text="📋 Lista de Covers", 
+            command=open_covers_list,
+            fg_color="#4D6068", 
+            hover_color="#ffa726", 
+            width=160, 
+            height=36
+        )
+        
+        # Función para verificar y actualizar visibilidad del botón
+        def check_and_update_covers_button():
+            """Verifica si Active = 2 y muestra/oculta el botón según corresponda"""
+            try:
+                active_status = under_super.get_user_status_bd(username)
+                if active_status == 2:
+                    # Usuario ocupado - mostrar botón
+                    if not lista_covers_btn.winfo_ismapped():
+                        lista_covers_btn.pack(side="left", padx=5, pady=12)
+                else:
+                    # Usuario disponible u otro estado - ocultar botón
+                    if lista_covers_btn.winfo_ismapped():
+                        lista_covers_btn.pack_forget()
+            except Exception as e:
+                print(f"[ERROR] Error checking covers button visibility: {e}")
+            
+            # Programar siguiente verificación (cada 5 segundos)
+            top.after(5000, check_and_update_covers_button)
+        
+        # Inicialmente oculto (se mostrará si Active = 2)
+        lista_covers_btn.pack_forget()
+        
+        # Iniciar verificación periódica
+        check_and_update_covers_button()
         
         # Inicialmente ocultos (modo daily) - se mostrarán en toggle_mode
         
@@ -9582,6 +9102,51 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                             bg="#00bfae", fg="white", relief="flat", width=14)
         accion_btn = tk.Button(toolbar, text="👥 Acción Supervisores", command=accion_supervisores,
                             bg="#00bfae", fg="white", relief="flat", width=18)
+        
+        # ⭐ BOTÓN LISTA DE COVERS (fallback tkinter - solo visible cuando Active = 2)
+        def open_covers_list():
+            """Abre panel integrado de lista de covers programados"""
+            show_covers_programados_panel(top, None, username)
+        
+        lista_covers_btn = tk.Button(
+            toolbar, 
+            text="📋 Lista de Covers", 
+            command=open_covers_list,
+            bg="#00bfae", 
+            fg="white", 
+            relief="flat", 
+            width=18
+        )
+        
+        # Función para verificar y actualizar visibilidad del botón (tkinter)
+        def check_and_update_covers_button():
+            """Verifica si Active = 2 y muestra/oculta el botón según corresponda"""
+            try:
+                active_status = under_super.get_user_status_bd(username)
+                if active_status == 2:
+                    # Usuario ocupado - mostrar botón
+                    try:
+                        lista_covers_btn.pack_info()
+                    except:
+                        lista_covers_btn.pack(side="left", padx=5, pady=12)
+                else:
+                    # Usuario disponible u otro estado - ocultar botón
+                    try:
+                        lista_covers_btn.pack_info()
+                        lista_covers_btn.pack_forget()
+                    except:
+                        pass
+            except Exception as e:
+                print(f"[ERROR] Error checking covers button visibility: {e}")
+            
+            # Programar siguiente verificación (cada 5 segundos)
+            top.after(5000, check_and_update_covers_button)
+        
+        # Inicialmente oculto
+        lista_covers_btn.pack_forget()
+        
+        # Iniciar verificación periódica
+        check_and_update_covers_button()
 
     # ⭐ CONFIGURAR CIERRE DE VENTANA: Ejecutar logout automáticamente
     def on_window_close():
@@ -9607,6 +9172,18 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     # Configurar protocolo de cierre (botón X)
     top.protocol("WM_DELETE_WINDOW", on_window_close)
 
+    # ⭐ RECARGA AUTOMÁTICA: Listener para evento de reenfoque
+    def on_window_refocused(event=None):
+        """Recarga datos automáticamente cuando la ventana vuelve a ganar foco"""
+        try:
+            print(f"[DEBUG] Window refocused - Reloading data for {username}...")
+            load_data()
+        except Exception as e:
+            print(f"[ERROR] Failed to reload data on refocus: {e}")
+    
+    # Vincular evento personalizado
+    top.bind("<<WindowRefocused>>", on_window_refocused)
+
     # Registrar ventana y cargar datos iniciales
     _register_singleton('hybrid_events', top)
     load_data()
@@ -9620,8 +9197,8 @@ def prompt_exit_active_cover(username, root):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT ID_Covers FROM covers
-            WHERE Nombre_Usuarios = %s AND (Activo = '-1' OR Cover_out IS NULL)
+            SELECT ID_Covers FROM covers_realizados
+            WHERE Nombre_usuarios = %s AND Cover_out IS NULL
             ORDER BY ID_Covers DESC
             LIMIT 1
             """,
@@ -9642,7 +9219,7 @@ def prompt_exit_active_cover(username, root):
         )
         exit_cover(username)
 
-def cover_mode(session_id, station, root, username):
+def cover_mode(username, session_id, station, root=None):
     # Ventana única por función
     ex = _focus_singleton('cover_mode')
     if ex:
@@ -9742,43 +9319,15 @@ def cover_mode(session_id, station, root, username):
     cover_form_var = tk.StringVar()
     if UI is not None:
         try:
-            cover_form_menu = UI.CTkOptionMenu(
+            cover_form_menu = under_super.FilteredCombobox(
                 cover_form,
-                values=("Cover Baño", "Cover Daily", "Break"),
-                variable=cover_form_var,
-                fg_color="#262a31",
-                button_color="#14414e",
-                text_color="#e0e0e0",
-                width=160,
+                textvariable=cover_form_var,
+                values=("Cover Baño", "Cover Daily", "Break", "Trainning", "Otro"),
+                font=("Segoe UI", 10),
             )
         except Exception:
-            # Fallback a combobox filtrado si el OptionMenu no funciona
-            cover_form_menu = under_super.FilteredCombobox(
-                cover_form,
-                textvariable=cover_form_var,
-                values=("Cover Baño", "Cover Daily", "Break"),
-                font=("Segoe UI", 10),
-            )
-    else:
-        try:
-            # Si usas un combobox filtrado propio
-            cover_form_menu = under_super.FilteredCombobox(
-                cover_form,
-                textvariable=cover_form_var,
-                values=("Cover Baño", "Cover Daily", "Break"),
-                font=("Segoe UI", 10),
-            )
-        except AttributeError:
-            # Fallback si no existe FilteredCombobox
-            from tkinter import ttk
-            cover_form_menu = ttk.Combobox(
-                cover_form,
-                textvariable=cover_form_var,
-                values=("Cover Baño", "Cover Daily", "Break"),
-                font=("Segoe UI", 10),
-                state="readonly",
-            )
-    cover_form_menu.place(x=150, y=70)
+            pass
+    cover_form_menu.place(x=150, y=50)
 
     if UI is not None:
         UI.CTkLabel(
@@ -9804,7 +9353,10 @@ def cover_mode(session_id, station, root, username):
     try:
         conn = under_super.get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT Nombre_Usuario FROM user WHERE Rol IN (%s, %s) ORDER BY Nombre_Usuario", ("Operador", "Supervisor"))
+        cur.execute(
+            "SELECT Nombre_Usuario FROM user WHERE Rol = %s ORDER BY Nombre_Usuario",
+            ("Operador",)
+        )
         covered_by_users = [row[0] for row in cur.fetchall()]
         cur.close()
         conn.close()
@@ -9813,47 +9365,15 @@ def cover_mode(session_id, station, root, username):
     
     if UI is not None:
         try:
-            covered_by_combo = UI.CTkComboBox(
-                cover_form,
-                values=covered_by_users if covered_by_users else [""],
-                variable=covered_by_var,
-                width=180,
-                fg_color="#262a31",
-                text_color="#e0e0e0",
-                border_color="#14414e",
+            covered_by_combo = under_super.FilteredCombobox(
+                    cover_form,
+                    textvariable=covered_by_var,
+                    values=covered_by_users,
+                    font=("Segoe UI", 10)
             )
         except Exception:
-            # Fallback a combobox filtrado
-            try:
-                covered_by_combo = under_super.FilteredCombobox(
-                    cover_form,
-                    textvariable=covered_by_var,
-                    values=covered_by_users,
-                    font=("Segoe UI", 10)
-                )
-            except AttributeError:
-                covered_by_combo = ttk.Combobox(
-                    cover_form,
-                    textvariable=covered_by_var,
-                    values=covered_by_users,
-                    font=("Segoe UI", 10)
-                )
-    else:
-        try:
-            covered_by_combo = under_super.FilteredCombobox(
-                cover_form,
-                textvariable=covered_by_var,
-                values=covered_by_users,
-                font=("Segoe UI", 10)
-            )
-        except AttributeError:
-            # Fallback si FilteredCombobox no está disponible
-            covered_by_combo = ttk.Combobox(
-                cover_form,
-                textvariable=covered_by_var,
-                values=covered_by_users,
-                font=("Segoe UI", 10)
-            )
+            pass
+    
     covered_by_combo.place(x=150, y=100)
 
     # Preferencia: cerrar sesión al guardar (para reducir clicks)
@@ -9868,68 +9388,18 @@ def cover_mode(session_id, station, root, username):
             ).place(x=20, y=140)
         except Exception:
             pass
-
-    # Nota: se elimina el diálogo de confirmación para minimizar pasos cuando está activo
-    def _maybe_logout():
+    
+    def on_registrar_cover():
         try:
-            if logout_after_var.get():
-                login.do_logout(session_id, station, root)
-        except Exception as e:
-            print(f"[WARN] logout falló: {e}")
-
-    def insertar_cover():
-        nonlocal cover_form
-
-
-        cover_reason = cover_form_var.get().strip()
-        covered_by_value = covered_by_var.get().strip()
-        now = datetime.now()
-
-        if not cover_reason:
-            tk.Label(
-                cover_form,
-                text="Motivo es obligatorio",
-                bg="#2c2f33",
-                fg="#ff9999",
-                font=("Segoe UI", 9, "bold"),
-            ).place(x=30, y=180)
-            return
-
-        conn = under_super.get_connection()
-        cur = conn.cursor()
-        try:
-            cur.execute(
-                """
-                INSERT INTO Covers (Nombre_Usuarios, Cover_in, Cover_out, Covered_by, Motivo, Activo)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                """,
-                (username, now, None, covered_by_value, cover_reason, -1)
-            )
-
-            # ✅ Obtener ID del último registro (compatible con Access y SQL Server)
-            cur.execute("SELECT LAST_INSERT_ID() AS LastID")
-            row = cur.fetchone()
-            current_cover_id = row[0] if row and row[0] is not None else None
-
-            conn.commit()
-
-
-            print("[DEBUG] Cover insertado correctamente, ID:", current_cover_id)
-
-            tk.Label(
-                cover_form,
-                text="✔ Guardado exitosamente",
-                bg="#2c2f33",
-                fg="#a3f9c5",
-                font=("Segoe UI", 9, "bold"),
-            ).place(x=30, y=180)
-            # Si está habilitado, cerrar sesión actual y hacer auto-login del "Covered By"
+            under_super.insertar_cover(username, covered_by_var.get(), cover_form_var.get(), session_id, station)
+            print("[DEBUG] Cover registrado correctamente.")
+            print("[DEBUG] logout_after_var.get():", logout_after_var.get())
             if logout_after_var.get():
                 try:
                     login.logout_silent(session_id, station)
                 except Exception as e:
                     print(f"[WARN] logout_silent falló: {e}")
-                target_user = (covered_by_value or '').strip()
+                target_user = (covered_by_var.get() or '').strip()
                 if not target_user:
                     messagebox.showwarning("Cover", "Debes indicar 'Covered By' para continuar al main.")
                     return  # Mantener el formulario abierto para que el usuario complete el campo
@@ -9947,24 +9417,22 @@ def cover_mode(session_id, station, root, username):
 
         except Exception as e:
             print("[ERROR] insert cover:", e)
-        finally:
-            cur.close()
-            conn.close()
 
-        
+    
 
+    
     # Registrar Cover (se cerrará sesión automáticamente al insertar)
     if UI is not None:
         UI.CTkButton(
             cover_form,
             text="Registrar Cover",
-            command=insertar_cover,
+            command=lambda: on_registrar_cover(),
             fg_color="#4a90e2",
             hover_color="#357ABD",
             width=160,
     ).place(x=150, y=180)
     else:
-        cover_form_btn = tk.Button(cover_form, text="Registrar Cover", command=insertar_cover)
+        cover_form_btn = tk.Button(cover_form, text="Registrar Cover", command=lambda: on_registrar_cover())
         cover_form_btn.place(x=30, y=160, width=120)
 
     _register_singleton('cover_mode', cover_form)
@@ -9977,742 +9445,49 @@ def exit_cover(username):
     now = datetime.now()
     conn = under_super.get_connection()
     cur = conn.cursor()
+    
     # Obtener el último ID de Covers para el usuario con Activo = -1
-    cur.execute(
-        """
+    try:
+        cur.execute(
+            """
         SELECT ID_Covers
-        FROM Covers
-        WHERE Nombre_Usuarios = %s AND Activo = -1
+        FROM covers_realizados
+        WHERE Nombre_usuarios = %s
         ORDER BY ID_Covers DESC
         LIMIT 1
         """,
         (username,)
-    )
+        )
+        conn.commit()
+        
+
+        result = cur.fetchone()
+        ID_cover = result[0] if result else None
+        print(f"[DEBUG] ID_cover obtenido: {ID_cover}")
     
-    row = cur.fetchone()
-    current_cover_id = row[0] if row else None
-    if current_cover_id is None:
-        print("[ERROR] No se encontró un cover activo para el usuario.")
-        return
+    except pymysql.Error as e:
+        print(f"[ERROR] al obtener ID_cover: {e}")
+        return ID_cover
 
     try:
         # Usar el último ID insertado (current_cover_id) y el username para actualizar Activo a 0
         cur.execute(
             """
-            UPDATE Covers
-            SET Cover_out = %s, Activo = 0
-            WHERE ID_Covers = %s AND Nombre_Usuarios = %s AND Activo = -1
+            UPDATE covers_realizados
+            SET Cover_out = %s
+            WHERE ID_Covers = %s AND Nombre_usuarios = %s
             """,
-            (now, current_cover_id, username)
+            (now, ID_cover, username)
         )
         conn.commit()
-        print("[DEBUG] Evento actualizado correctamente (Activo cambiado a 0)")
+        print("[DEBUG] Cover actualizado correctamente")
     except Exception as e:
         print("[ERROR]", e)
     finally:
         cur.close()
         conn.close()
 
-def open_report_window(username):
-    # Ventana de reporte (estilo y patrón como show_events): CTk si disponible, tksheet si existe
-    ex = _focus_singleton('report')
-    if ex:
-        return ex
 
-    # Detectar CustomTkinter
-    UI = None
-    try:
-        import importlib
-        ctk = importlib.import_module('customtkinter')
-        try:
-            ctk.set_appearance_mode("dark")
-            ctk.set_default_color_theme("dark-blue")
-        except Exception:
-            pass
-        UI = ctk
-    except Exception:
-        UI = None
-
-    # Preferir tksheet para comportamiento tipo Excel
-    USE_SHEET = False
-    SheetClass = None
-    sheet = None
-    try:
-        from tksheet import Sheet as _Sheet
-        SheetClass = _Sheet
-        USE_SHEET = True
-    except Exception:
-        USE_SHEET = False
-        SheetClass = None
-
-    columns = (
-        "FechaHora", "Nombre_Sitio", "Nombre_Actividad",
-        "Cantidad", "Camera", "Descripcion", "Usuario", "Time_Zone"
-    )
-    tree = None  # fallback widget
-
-    def load_report_events():
-        tz_adjust = load_tz_config()
-        grupos_especiales = ("AS", "KG", "HUD", "PE", "SCH", "WAG", "LT", "DT")
-        try:
-            conn = under_super.get_connection()
-            cur = conn.cursor()
-
-            # último start shift
-            cur.execute(
-                """
-                SELECT e.FechaHora
-                FROM Eventos e
-                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
-                WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = %s
-                ORDER BY e.FechaHora DESC
-                LIMIT 1
-                """,
-                (username, "START SHIFT"),
-            )
-            last_shift_row = cur.fetchone()
-            last_shift_time = last_shift_row[0] if last_shift_row else None
-
-            eventos_raw = []
-            if last_shift_time is not None:
-                query = (
-                    """
-                    SELECT
-                        e.ID_Sitio,
-                        e.FechaHora,
-                        e.Nombre_Actividad,
-                        e.Cantidad,
-                        e.Camera,
-                        e.Descripcion,
-                        u.Nombre_usuario
-                    FROM Eventos AS e
-                    INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
-                    WHERE u.Nombre_Usuario = %s
-                    AND e.ID_Sitio IN (
-                        SELECT st.ID_Sitio
-                        FROM Sitios st
-                        WHERE st.ID_Grupo IN (%s, %s, %s, %s, %s, %s, %s, %s)
-                    )
-                    AND e.FechaHora >= %s
-                    ORDER BY e.FechaHora DESC
-                    """
-                )
-                cur.execute(query, (username, *grupos_especiales, last_shift_time))
-                eventos_raw = cur.fetchall()
-
-            eventos = []
-            for evt in eventos_raw:
-                (
-                    id_sitio,
-                    fecha_hora,
-                    nombre_actividad,
-                    cantidad,
-                    camera,
-                    descripcion,
-                    nombre_usuario,
-                ) = evt
-
-                # sitio + tz
-                try:
-                    cur.execute("SELECT Nombre_Sitio, Time_Zone FROM Sitios WHERE ID_Sitio = %s", (id_sitio,))
-                    sitio_row = cur.fetchone()
-                    if sitio_row:
-                        nombre_sitio, time_zone = sitio_row
-                    else:
-                        nombre_sitio, time_zone = "SIN SITIO", ""
-                except Exception:
-                    nombre_sitio, time_zone = "SIN SITIO", ""
-
-                eventos.append((
-                    fecha_hora,
-                    nombre_sitio,
-                    nombre_actividad,
-                    cantidad,
-                    camera,
-                    descripcion,
-                    nombre_usuario,
-                    time_zone,
-                ))
-
-            # construir filas de salida y ajustar TZ
-            out_rows = []
-            for evt in eventos:
-                (
-                    fecha_hora,
-                    nombre_sitio,
-                    nombre_actividad,
-                    cantidad,
-                    camera,
-                    descripcion,
-                    nombre_usuario,
-                    time_zone,
-                ) = evt
-                try:
-                    tz_adj = tz_adjust.get((time_zone or '').upper(), 0)
-                    if isinstance(fecha_hora, str):
-                        fh = datetime.strptime(fecha_hora[:19], "%Y-%m-%d %H:%M:%S")
-                    else:
-                        fh = fecha_hora
-                    fh_adj = fh + timedelta(hours=tz_adj)
-                    fecha_hora_str = fh_adj.strftime("%Y-%m-%d %H:%M:%S")
-                except Exception:
-                    fecha_hora_str = str(fecha_hora)
-                try:
-                    desc_text = descripcion or ''
-                    desc_text = re.sub(r"\[?\s*Timestamp:\s*(\d{2}:\d{2}:\d{2})\s*\]?", r"[\1]", desc_text, flags=re.IGNORECASE)
-                    m = re.search(r"\[(\d{2}:\d{2}:\d{2})\]\s*$", desc_text.strip())
-                    if m:
-                        raw_time = m.group(1)
-                        base_date = fh.date() if 'fh' in locals() and isinstance(fh, datetime) else datetime.now().date()
-                        hh, mm, ss = [int(x) for x in raw_time.split(":")]
-                        desc_dt = datetime.combine(base_date, datetime.min.time()) + timedelta(hours=hh, minutes=mm, seconds=ss)
-                        tz_adj = tz_adjust.get((time_zone or '').upper(), 0)
-                        desc_dt_adj = desc_dt + timedelta(hours=tz_adj)
-                        desc_time_adj_str = desc_dt_adj.strftime("%H:%M:%S")
-                        descripcion = re.sub(r"\[(\d{2}:\d{2}:\d{2})\]\s*$", f"[{desc_time_adj_str}]", desc_text)
-                except Exception:
-                    pass
-                out_rows.append((
-                    fecha_hora_str,
-                    nombre_sitio,
-                    nombre_actividad,
-                    cantidad,
-                    camera,
-                    descripcion,
-                    nombre_usuario,
-                    time_zone,
-                ))
-
-            # Poblar UI
-            if USE_SHEET and sheet is not None:
-                data = [["" if v is None else str(v) for v in r] for r in out_rows]
-                if not data:
-                    data = [["No hay eventos de grupos especiales."] + [""] * (len(columns) - 1)]
-                try:
-                    sheet.set_sheet_data(data, reset_col_positions=True, reset_row_positions=True, redraw=True)
-                except Exception:
-                    sheet.data = data
-                    try:
-                        sheet.redraw()
-                    except Exception:
-                        pass
-            else:
-                tree.delete(*tree.get_children())
-                if not out_rows:
-                    tree.insert("", "end", values=["No hay eventos de grupos especiales."] + [""] * (len(columns) - 1), tags=("oddrow",))
-                else:
-                    for idx, row in enumerate(out_rows):
-                        values = [str(v) if v is not None else "" for v in row]
-                        tag = "evenrow" if idx % 2 == 0 else "oddrow"
-                        tree.insert("", "end", values=values, tags=(tag,))
-
-            cur.close()
-            conn.close()
-        except Exception as e:
-            messagebox.showerror("Error", f"Error al consultar la base de datos:\n{e}", parent=report_win)
-            try:
-                cur.close()
-                conn.close()
-            except Exception:
-                pass
-
-    # --- Ventana y layout
-    if UI is not None:
-        report_win = UI.CTkToplevel()
-        try:
-            report_win.configure(fg_color="#2c2f33")
-        except Exception:
-            pass
-    else:
-        report_win = tk.Toplevel()
-        report_win.configure(bg="#2c2f33")
-    report_win.title("Specials Report")
-    report_win.geometry("1010x450")
-    try:
-        report_win.grid_rowconfigure(0, weight=0)  # header
-        report_win.grid_rowconfigure(1, weight=1)  # content
-        report_win.grid_rowconfigure(2, weight=0)  # buttons
-        report_win.grid_columnconfigure(0, weight=1)
-    except Exception:
-        pass
-
-    # Header label
-    if UI is not None:
-        UI.CTkLabel(report_win, text="Specials Report", text_color="#00bfae", font=("Segoe UI", 18, "bold"), anchor="w").grid(row=0, column=0, sticky="ew", padx=12, pady=(12,4))
-    else:
-        tk.Label(report_win, text="Specials Report", bg="#2c2f33", fg="#00bfae", font=("Segoe UI", 16, "bold"), anchor="w").grid(row=0, column=0, sticky="ew", padx=12, pady=(12,4))
-
-    # Content frame
-    if UI is not None:
-        content = UI.CTkFrame(report_win, fg_color="#2c2f33")
-    else:
-        content = tk.Frame(report_win, bg="#2c2f33")
-    content.grid(row=1, column=0, sticky="nsew", padx=10, pady=(4,8))
-
-    # Grid: tksheet preferido, fallback Treeview con estilo local
-    if USE_SHEET and SheetClass is not None:
-        try:
-            sheet = SheetClass(content, data=[[]], headers=list(columns))
-            try:
-                sheet.set_options(
-                    header_bg="#23272a",
-                    header_fg="#a3c9f9",
-                    header_border_color="#23272a",
-                    top_left_bg="#23272a",
-                    table_bg="#23272a",
-                    table_fg="#e0e0e0",
-                    index_bg="#23272a",
-                    index_fg="#a3c9f9",
-                    selected_rows_bg="#4a90e2",
-                    selected_rows_fg="#ffffff",
-                )
-            except Exception:
-                pass
-            try:
-                sheet.enable_bindings((
-                    "single_select",      # habilita selección con click
-                    "row_select",         # selecciona filas completas
-                    "drag_select",        # arrastrar para seleccionar
-                    "arrowkeys",          # flechas para mover selección
-                    "column_width_resize",
-                    "rc_select",          # click derecho también selecciona
-                    "copy",
-                    "select_all",
-                ))
-            except Exception:
-                pass
-            sheet.pack(side="left", expand=True, fill="both")
-            # Aplicar anchos personalizados cuando usamos tksheet
-            try:
-                custom_widths_sheet = {
-                    "FechaHora": 160,
-                    "Nombre_Sitio": 500,
-                    "Nombre_Actividad": 180,
-                    "Cantidad": 80,
-                    "Camera": 120,
-                    "Descripcion": 600,
-                }
-                header_names = list(columns)
-                for cidx, cname in enumerate(header_names):
-                    w = custom_widths_sheet.get(cname)
-                    if w:
-                        try:
-                            # tksheet API
-                            sheet.column_width(cidx, int(w))
-                        except Exception:
-                            try:
-                                # Algunas versiones exponen set_column_width
-                                sheet.set_column_width(cidx, int(w))
-                            except Exception:
-                                pass
-                try:
-                    sheet.redraw()
-                except Exception:
-                    pass
-            except Exception:
-                pass
-        except Exception:
-            USE_SHEET = False
-            sheet = None
-
-    if not USE_SHEET:
-        style = ttk.Style()
-        style_name = f"ReportStyle_{id(report_win)}"
-        style.configure(
-            f"{style_name}.Treeview",
-            background="#23272a",
-            foreground="#e0e0e0",
-            fieldbackground="#23272a",
-            rowheight=28,
-            bordercolor="#23272a",
-            borderwidth=0,
-        )
-        style.configure(
-            f"{style_name}.Treeview.Heading",
-            background="#23272a",
-            foreground="#a3c9f9",
-            font=("Segoe UI", 11, "bold"),
-        )
-        style.map(f"{style_name}.Treeview", background=[("selected", "#4a90e2")], foreground=[("selected", "#fff")])
-
-        tree = ttk.Treeview(
-            content,
-            columns=columns,
-            show="headings",
-            style=f"{style_name}.Treeview",
-            selectmode="extended",
-        )
-        for col in columns:
-            tree.heading(col, text=col, anchor="w")
-            tree.column(col, width=140, anchor="w", stretch=True)
-        tree.pack(side="left", fill="both", expand=True)
-        try:
-            if UI is not None:
-                yscroll = UI.CTkScrollbar(content, orientation="vertical", command=tree.yview)
-            else:
-                yscroll = tk.Scrollbar(content, orient="vertical")
-                yscroll.config(command=tree.yview)
-            yscroll.pack(side="right", fill="y")
-            tree.configure(yscrollcommand=yscroll.set)
-        except Exception:
-            pass
-        try:
-            tree.tag_configure("oddrow", background="#3a3f44", foreground="#e0e0e0")
-            tree.tag_configure("evenrow", background="#2f343a", foreground="#e0e0e0")
-        except Exception:
-            pass
-
-    # Botonera inferior
-    if UI is not None:
-        btns = UI.CTkFrame(report_win, fg_color="#2c2f33")
-        btns.grid(row=2, column=0, sticky="ew", padx=10, pady=(0,10))
-        UI.CTkButton(btns, text="⟳ Refrescar", command=load_report_events, width=130).pack(side="left", padx=6)
-    else:
-        btns = tk.Frame(report_win, bg="#2c2f33")
-        btns.grid(row=2, column=0, sticky="ew", padx=10, pady=(0,10))
-        ttk.Style(report_win).configure("Modern.TButton", background="#262a31", foreground="#00bfae", font=("Segoe UI", 11, "bold"))
-        ttk.Button(btns, text="⟳ Refrescar", command=load_report_events, style="Modern.TButton").pack(side="left", padx=6)
-
-    # Enviar todos
-    def enviar_todos():
-        if USE_SHEET and sheet is not None:
-            try:
-                # seleccionar todas las filas
-                try:
-                    sheet.select_all()
-                except Exception:
-                    try:
-                        total = sheet.get_total_rows()
-                        # Seleccionamos explícitamente todas las filas si select_all no está disponible
-                        sheet.select_rows(list(range(total)))
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-        else:
-            all_items = tree.get_children()
-            if not all_items:
-                messagebox.showinfo("Sin datos", "No hay eventos para enviar.", parent=report_win)
-                return
-            tree.selection_set(all_items)
-        # Llamar al flujo de supervisores indicando que se procesen todas las filas
-        accion_supervisores(process_all=True)
-
-    if UI is not None:
-        UI.CTkButton(btns, text="Enviar Todos", command=enviar_todos, width=130).pack(side="left", padx=6)
-    else:
-        ttk.Button(btns, text="Enviar Todos", command=enviar_todos, style="Modern.TButton").pack(side="left", padx=6)
-
-    # Supervisores
-    def accion_supervisores(process_all=False):
-        # Ventana modal para elegir supervisor con CTk si está disponible
-        if UI is not None:
-            supervisor_win = UI.CTkToplevel(report_win)
-            try:
-                supervisor_win.configure(fg_color="#2c2f33")
-            except Exception:
-                pass
-        else:
-            supervisor_win = tk.Toplevel(report_win)
-            supervisor_win.configure(bg="#2c2f33")
-        supervisor_win.title("Selecciona un Supervisor")
-        supervisor_win.geometry("360x220")
-        supervisor_win.resizable(False, False)
-
-        if UI is not None:
-            UI.CTkLabel(supervisor_win, text="Supervisores disponibles:", text_color="#00bfae", font=("Segoe UI", 16, "bold")).pack(pady=(18, 8))
-            container = UI.CTkFrame(supervisor_win, fg_color="#2c2f33")
-            container.pack(fill="both", expand=True, padx=16, pady=(0, 12))
-        else:
-            tk.Label(supervisor_win, text="Supervisores disponibles:", bg="#2c2f33", fg="#00bfae", font=("Segoe UI", 13, "bold")).pack(pady=(18,4))
-            container = tk.Frame(supervisor_win, bg="#2c2f33")
-            container.pack(fill="both", expand=True, padx=14, pady=(4,16))
-
-        # Consultar lista de supervisores
-        supervisores = []
-        try:
-            conn = under_super.get_connection()
-            cur = conn.cursor()
-            cur.execute("SELECT Nombre_Usuario FROM user WHERE Rol = %s", ("Supervisor",))
-            supervisores = [row[0] for row in cur.fetchall()]
-            cur.close(); conn.close()
-        except Exception as e:
-            print(f"Error al consultar supervisores: {e}")
-
-        # Control de selección: CTkOptionMenu (si CTk), Listbox (fallback)
-        sup_var = tk.StringVar()
-        if UI is not None:
-            if not supervisores:
-                supervisores = ["No hay supervisores disponibles"]
-            try:
-                opt = UI.CTkOptionMenu(container, variable=sup_var, values=supervisores, fg_color="#262a31", button_color="#14414e", text_color="#00bfae")
-            except Exception:
-                opt = UI.CTkOptionMenu(container, variable=sup_var, values=supervisores)
-            if supervisores:
-                try:
-                    sup_var.set(supervisores[0])
-                except Exception:
-                    pass
-            opt.pack(fill="x", padx=6, pady=6)
-        else:
-            yscroll_sup = tk.Scrollbar(container, orient="vertical")
-            yscroll_sup.pack(side="right", fill="y")
-            sup_listbox = tk.Listbox(container, height=10, selectmode="browse", bg="#262a31", fg="#00bfae", font=("Segoe UI", 12), yscrollcommand=yscroll_sup.set, activestyle="dotbox", selectbackground="#14414e")
-            sup_listbox.pack(side="left", fill="both", expand=True)
-            yscroll_sup.config(command=sup_listbox.yview)
-            if not supervisores:
-                sup_listbox.insert("end", "No hay supervisores disponibles")
-            else:
-                for sup in supervisores:
-                    sup_listbox.insert("end", sup)
-
-        def aceptar_supervisor():
-            # obtener selección de filas
-            selected_rows = []
-            if USE_SHEET and sheet is not None:
-                if process_all:
-                    # Procesar todas las filas visibles en la hoja
-                    try:
-                        total = sheet.get_total_rows()
-                    except Exception:
-                        try:
-                            total = len(sheet.get_sheet_data())
-                        except Exception:
-                            total = 0
-                    selected_rows = list(range(total))
-                else:
-                    try:
-                        sel = sheet.get_selected_rows()
-                    except Exception:
-                        sel = []
-                    # si no hay filas seleccionadas, intentar con selección de celdas/actual
-                    if not sel:
-                        try:
-                            cur = sheet.get_currently_selected()
-                            if isinstance(cur, dict) and 'row' in cur and cur['row'] is not None:
-                                sel = {cur['row']}
-                        except Exception:
-                            pass
-                    if not sel:
-                        tk.messagebox.showwarning("Sin selección", "No hay filas seleccionadas en el reporte.")
-                        return
-                    try:
-                        selected_rows = list(sel)
-                    except Exception:
-                        selected_rows = [next(iter(sel))]
-            else:
-                seleccionados = tree.get_children() if process_all else tree.selection()
-                if not seleccionados:
-                    tk.messagebox.showwarning("Sin selección", "No hay filas seleccionadas en el reporte.")
-                    return
-
-            # supervisor seleccionado
-            if UI is not None:
-                supervisor = (sup_var.get() or "").strip()
-                if not supervisor or supervisor == "No hay supervisores disponibles":
-                    tk.messagebox.showwarning("Sin supervisor", "Debes seleccionar un supervisor.")
-                    return
-            else:
-                selected_indices = sup_listbox.curselection()
-                if not selected_indices or (sup_listbox.get(selected_indices[0]) == "No hay supervisores disponibles"):
-                    tk.messagebox.showwarning("Sin supervisor", "Debes seleccionar un supervisor.")
-                    return
-                supervisor = sup_listbox.get(selected_indices[0])
-
-            try:
-                conn = under_super.get_connection()
-                cur = conn.cursor()
-                inserted = 0
-                updated = 0
-
-                if USE_SHEET and sheet is not None:
-                    for r in selected_rows:
-                        try:
-                            valores = sheet.get_row_data(r)
-                        except Exception:
-                            valores = []
-                        fecha_hora = valores[0] if len(valores) > 0 else None
-                        nombre_sitio = valores[1] if len(valores) > 1 else None
-                        nombre_actividad = valores[2] if len(valores) > 2 else None
-                        cantidad = valores[3] if len(valores) > 3 else None
-                        camera = valores[4] if len(valores) > 4 else None
-                        descripcion = valores[5] if len(valores) > 5 else None
-                        usuario_evt = valores[6] if len(valores) > 6 else None
-                        time_zone = valores[7] if len(valores) > 7 else None
-                        # resolver ID_Sitio
-                        id_sitio = None
-                        try:
-                            if nombre_sitio is not None:
-                                try:
-                                    id_sitio = int(nombre_sitio)
-                                except Exception:
-                                    cur.execute("SELECT ID_Sitio FROM Sitios WHERE Nombre_Sitio = %s", (nombre_sitio,))
-                                    row = cur.fetchone(); id_sitio = row[0] if row else None
-                        except Exception:
-                            id_sitio = None
-                        # upsert en specials
-                        try:
-                            cur.execute(
-                                """
-                                SELECT ID_special
-                                FROM specials
-                                WHERE FechaHora = %s
-                                  AND Usuario = %s
-                                  AND Nombre_Actividad = %s
-                                  AND IFNULL(ID_Sitio, 0) = IFNULL(%s, 0)
-                                  AND IFNULL(Cantidad, 0) = IFNULL(%s, 0)
-                                  AND IFNULL(Camera, '') = IFNULL(%s, '')
-                                  AND IFNULL(Descripcion, '') = IFNULL(%s, '')
-                                LIMIT 1
-                                """,
-                                (fecha_hora, usuario_evt, nombre_actividad, id_sitio, cantidad, camera, descripcion),
-                            )
-                            row_exist = cur.fetchone()
-                            if row_exist:
-                                special_id = row_exist[0]
-                                try:
-                                    cur.execute(
-                                        """
-                                        UPDATE specials
-                                           SET FechaHora = %s,
-                                               ID_Sitio = %s,
-                                               Nombre_Actividad = %s,
-                                               Cantidad = %s,
-                                               Camera = %s,
-                                               Descripcion = %s,
-                                               Usuario = %s,
-                                               Time_Zone = %s,
-                                               Supervisor = %s
-                                         WHERE ID_Special = %s
-                                        """,
-                                        (fecha_hora, id_sitio, nombre_actividad, cantidad, camera, descripcion, usuario_evt, time_zone, supervisor, special_id),
-                                    )
-                                    updated += 1
-                                except Exception as ue:
-                                    print(f"[ERROR] al actualizar fila en specials (ID={special_id}): {ue}")
-                            else:
-                                try:
-                                    cur.execute(
-                                        """
-                                        INSERT INTO specials
-                                            (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, Usuario, Time_Zone, Supervisor)
-                                        VALUES
-                                            (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                                        """,
-                                        (fecha_hora, id_sitio, nombre_actividad, cantidad, camera, descripcion, usuario_evt, time_zone, supervisor),
-                                    )
-                                    inserted += 1
-                                except Exception as ie:
-                                    print(f"[ERROR] al insertar fila en specials (Fecha_hora={fecha_hora}, Usuario={usuario_evt}): {ie}")
-                        except Exception as e_row:
-                            print(f"[ERROR] al procesar fila para specials (Usuario={usuario_evt}, Fecha_hora={fecha_hora}): {e_row}")
-                else:
-                    # Treeview
-                    seleccionados = tree.selection()
-                    for item in seleccionados:
-                        valores = tree.item(item, "values")
-                        fecha_hora = valores[0] if len(valores) > 0 else None
-                        nombre_sitio = valores[1] if len(valores) > 1 else None
-                        nombre_actividad = valores[2] if len(valores) > 2 else None
-                        cantidad = valores[3] if len(valores) > 3 else None
-                        camera = valores[4] if len(valores) > 4 else None
-                        descripcion = valores[5] if len(valores) > 5 else None
-                        usuario_evt = valores[6] if len(valores) > 6 else None
-                        time_zone = valores[7] if len(valores) > 7 else None
-                        # resolver ID_Sitio
-                        id_sitio = None
-                        try:
-                            if nombre_sitio is not None:
-                                try:
-                                    id_sitio = int(nombre_sitio)
-                                except Exception:
-                                    cur.execute("SELECT ID_Sitio FROM Sitios WHERE Nombre_Sitio = %s", (nombre_sitio,))
-                                    row = cur.fetchone(); id_sitio = row[0] if row else None
-                        except Exception:
-                            id_sitio = None
-                        # upsert
-                        try:
-                            cur.execute(
-                                """
-                                SELECT ID_special FROM specials
-                                WHERE FechaHora = %s AND Usuario = %s AND Nombre_Actividad = %s
-                                  AND IFNULL(ID_Sitio, 0) = IFNULL(%s, 0)
-                                  AND IFNULL(Cantidad, 0) = IFNULL(%s, 0)
-                                  AND IFNULL(Camera, '') = IFNULL(%s, '')
-                                  AND IFNULL(Descripcion, '') = IFNULL(%s, '')
-                                LIMIT 1
-                                """,
-                                (fecha_hora, usuario_evt, nombre_actividad, id_sitio, cantidad, camera, descripcion),
-                            )
-                            row_exist = cur.fetchone()
-                            if row_exist:
-                                special_id = row_exist[0]
-                                try:
-                                    cur.execute(
-                                        """
-                                        UPDATE specials SET FechaHora=%s, ID_Sitio=%s, Nombre_Actividad=%s,
-                                            Cantidad=%s, Camera=%s, Descripcion=%s, Usuario=%s, Time_Zone=%s, Supervisor=%s
-                                        WHERE ID_Special=%s
-                                        """,
-                                        (fecha_hora, id_sitio, nombre_actividad, cantidad, camera, descripcion, usuario_evt, time_zone, supervisor, special_id),
-                                    )
-                                    updated += 1
-                                except Exception as ue:
-                                    print(f"[ERROR] update specials (ID={special_id}): {ue}")
-                            else:
-                                try:
-                                    cur.execute(
-                                        """
-                                        INSERT INTO specials
-                                            (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, Usuario, Time_Zone, Supervisor)
-                                        VALUES
-                                            (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                                        """,
-                                        (fecha_hora, id_sitio, nombre_actividad, cantidad, camera, descripcion, usuario_evt, time_zone, supervisor),
-                                    )
-                                    inserted += 1
-                                except Exception as ie:
-                                    print(f"[ERROR] insert specials (Fecha_hora={fecha_hora}, Usuario={usuario_evt}): {ie}")
-                        except Exception as e_row:
-                            print(f"[ERROR] procesando fila specials (Usuario={usuario_evt}, Fecha_hora={fecha_hora}): {e_row}")
-
-                conn.commit()
-                cur.close(); conn.close()
-                # Mostrar confirmación en una ventana de mensaje
-                messagebox.showinfo("Éxito", f"Se insertaron {inserted} y se actualizaron {updated} filas en 'specials'.", parent=supervisor_win)
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo insertar en 'specials':\n{e}", parent=supervisor_win)
-            finally:
-                try:
-                    cur.close()
-                except Exception:
-                    pass
-                try:
-                    conn.close()
-                except Exception:
-                    pass
-
-            supervisor_win.destroy()
-
-        if UI is not None:
-            UI.CTkButton(supervisor_win, text="Aceptar", command=aceptar_supervisor, width=120).pack(pady=10)
-        else:
-            tk.Button(supervisor_win, text="Aceptar", command=aceptar_supervisor, bg="#13988e", fg="#fff", font=("Segoe UI", 11, "bold"), padx=10, pady=2).pack(pady=10)
-
-    if UI is not None:
-        UI.CTkButton(btns, text="Envio Individual", command=accion_supervisores, width=160).pack(side="left", padx=6)
-    else:
-        ttk.Button(btns, text="Envio Individual", command=accion_supervisores, style="Modern.TButton").pack(side="left", padx=6)
-
-    _register_singleton('report', report_win)
-    report_win.after_idle(load_report_events)
-"""
-Nueva versión de open_specials_window con:
-1. Marcas persistentes en DB (visibles entre supervisores)
-2. Filtro por shift (START SHIFT a END SHIFT o ahora)
-
-Copiar este código a backend_super.py reemplazando la función open_specials_window
-"""
 
 def open_specials_window(username):
     """Muestra specials del supervisor filtrados por el turno actual (START SHIFT → ahora).
@@ -10901,7 +9676,7 @@ def open_specials_window(username):
                 conn = under_super.get_connection()
                 cur = conn.cursor()
                 cur.execute("""
-                    SELECT e.FechaHora
+                    SELECT e.FechaHora 
                     FROM Eventos e
                     INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
                     WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = 'START SHIFT'
@@ -11479,7 +10254,7 @@ def open_specials_window(username):
                             conn_end = under_super.get_connection()
                             cur_end = conn_end.cursor()
                             cur_end.execute("""
-                                SELECT e.FechaHora
+                                SELECT e.FechaHora 
                                 FROM Eventos e
                                 INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
                                 WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = 'END SHIFT'
@@ -12147,7 +10922,7 @@ def audit_view(parent=None):
     tk.Entry(adv_frame, textvariable=idgrupo_var, width=8).grid(row=2, column=1, sticky="w", padx=6)
 
     # Resultados: tksheet si está disponible, sino Treeview
-    cols = ("ID_Evento", "FechaHora", "Nombre_Sitio", "Nombre_Actividad", "Cantidad", "Camera", "Descripcion", "Usuario")
+    cols = ("ID_Evento", " ", "Nombre_Sitio", "Nombre_Actividad", "Cantidad", "Camera", "Descripcion", "Usuario")
     if use_sheet:
         if UI is not None:
             table_frame = UI.CTkFrame(win)
@@ -12241,7 +11016,7 @@ def audit_view(parent=None):
         cur = conn.cursor()
 
         base = (
-            "SELECT e.`ID_Eventos`, e.`FechaHora`, s.`Nombre_Sitio`, "
+            "SELECT e.`ID_Eventos`, e.` `, s.`Nombre_Sitio`, "
             "e.`Nombre_Actividad`, e.`Cantidad`, e.`Camera`, e.`Descripcion`, "
             "u.`Nombre_Usuario` "
             "FROM `eventos` AS e "
@@ -12279,7 +11054,7 @@ def audit_view(parent=None):
             if dt:
                 start = datetime(dt.year, dt.month, dt.day)
                 end = start + timedelta(days=1)
-                base += " AND e.`FechaHora` >= %s AND e.`FechaHora` < %s"
+                base += " AND e.` ` >= %s AND e.` ` < %s"
                 params.extend([start, end])
 
         # Fechas rango
@@ -12287,7 +11062,7 @@ def audit_view(parent=None):
         send = parse_date_flex(end_var.get().strip())
         if sstart and send:
             send = datetime(send.year, send.month, send.day) + timedelta(days=1)
-            base += " AND e.`FechaHora` >= %s AND e.`FechaHora` < %s"
+            base += " AND e.` ` >= %s AND e.` ` < %s"
             params.extend([sstart, send])
 
         # Filtro grupo
@@ -12302,7 +11077,7 @@ def audit_view(parent=None):
                 params.append(gid)
 
         # ✅ SOLO AHORA pones el ORDER BY
-        base += " ORDER BY e.`FechaHora` DESC"
+        base += " ORDER BY e.` ` DESC"
 
         print(f"[DEBUG] SQL={base} params={params}")
 
@@ -13086,12 +11861,12 @@ def export_events_to_excel_from_db(user_name, conn_str, output_folder):
 
         # --- Obtener eventos del turno ---
         cur.execute("""
-            SELECT e.ID_Eventos, e.FechaHora, e.Nombre_Actividad, e.Cantidad, e.Camera, e.Descripcion
+            SELECT e.ID_Eventos, e. , e.Nombre_Actividad, e.Cantidad, e.Camera, e.Descripcion
             FROM Eventos e
             INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
             WHERE u.Nombre_Usuario = %s
-            AND e.FechaHora BETWEEN %s AND %s
-            ORDER BY e.FechaHora
+            AND e.  BETWEEN %s AND %s
+            ORDER BY e. 
         """, (user_name, start_time, end_time))
 
         rows = cur.fetchall()
@@ -14082,6 +12857,7 @@ def open_trash_window(parent=None):
     UI = None
     try:
         import importlib
+
         ctk = importlib.import_module('customtkinter')
         try:
             ctk.set_appearance_mode("dark")
