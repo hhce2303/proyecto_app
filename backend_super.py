@@ -10179,7 +10179,6 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                                         marked_by = NULL,
                                         Supervisor = %s
                                     WHERE ID_Special = %s
-                                    AND Supervisor is NULL
                                     """,
                                     (fecha_hora, id_sitio, nombre_actividad, cantidad_normalizada, 
                                      camera_normalizada, descripcion_normalizada, 
