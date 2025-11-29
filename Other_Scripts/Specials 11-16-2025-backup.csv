@@ -1,0 +1,196 @@
+ID_Special,FechaHora,ID_Sitio,Nombre_Actividad,Cantidad,Camera,Descripcion,Usuario,Time_Zone,Supervisor,marked_status,marked_at,marked_by
+2,"2025-10-23 21:50:37",144,"Cleaner on site",2,A04," [21:02:28]","Emanuel B",MT,"Wendy H",NULL,NULL,NULL
+3,"2025-10-23 22:42:31",141,"Cleaner on site",1,50,,"Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+4,"2025-10-23 23:40:54",230,"Delivery out",0,9,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+5,"2025-10-23 21:40:27",264,"Cleaner on site",1,46,,"Santiago F",MT,"Nicol M",NULL,NULL,NULL
+6,"2025-10-24 00:03:36",160,"Cleaner out",3,11,"Gray PUT, white sedan [01:05:31]","Lorena Z",ET,"Nicol M",NULL,NULL,NULL
+7,"2025-10-23 23:39:08",176,"Cleaner out",2,0,"by call","Lorena Z",ET,"Nicol M",NULL,NULL,NULL
+8,"2025-10-23 22:00:30",240,"Cleaner on site",1,81,,"Jhon S",MT,"Nicol M",NULL,NULL,NULL
+9,"2025-10-23 22:55:20",137,"Cleaner on site",2,35,,"Jhon S",CT,"Nicol M",NULL,NULL,NULL
+10,"2025-10-24 00:10:20",185,"Employee in",1,01,,"Santiago F",ET,"Nicol M",NULL,NULL,NULL
+11,"2025-10-23 23:45:05",220,"Cleaner on site",1,16,,"Yosselin C",ET,"Nicol M",NULL,NULL,NULL
+12,"2025-10-23 23:38:05",191,"Cleaner on site",2,16,,"Yosselin C",ET,"Nicol M",NULL,NULL,NULL
+13,"2025-10-24 00:18:30",121,"Traffic Stop",1,02/06,,"Maria C",ET,"Nicol M",NULL,NULL,NULL
+14,"2025-10-23 23:41:41",162,"Delivery out",1,177,DHL,"Maria C",ET,"Nicol M",NULL,NULL,NULL
+15,"2025-10-23 23:40:01",162,"Cleaner on site",1,177,"1 WOMAN [02:00:00]","Maria C",ET,"Nicol M",NULL,NULL,NULL
+16,"2025-10-23 23:38:35",162,"Delivery in",1,61,DHL,"Maria C",ET,"Nicol M",NULL,NULL,NULL
+17,"2025-10-23 21:55:26",130,"Cleaner on site",2,26,,Miguel,MT,"Nicol M",NULL,NULL,NULL
+18,"2025-10-24 00:18:23",127,"Delivery in",0,16,Penske,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+19,"2025-10-23 23:36:19",166,Delivery,0,1,"Amazon delivery.","Lorena Z",CT,"Nicol M",NULL,NULL,NULL
+20,"2025-10-24 01:03:42",133,Delivery,1,52,"penske [02:24:45]","Yosselin C",ET,"Nicol M",NULL,NULL,NULL
+21,"2025-10-24 00:28:13",133,Delivery,1,14," [01:41:21]","Yosselin C",ET,"Nicol M",NULL,NULL,NULL
+22,"2025-10-24 01:57:40",162,"Cleaner out",2,13,"IN A WHITE PICKUP","Maria C",ET,"Nicol M",NULL,NULL,NULL
+23,"2025-10-24 01:29:40",121,"Delivery in",1,5,"UNB/LEFT AT 00:50 AM [02:00:00]","Maria C",ET,"Nicol M",NULL,NULL,NULL
+24,"2025-10-24 00:03:44",141,Dropoff,1,18,"A DARK GREY SEDAN/ LEFT AT 00:10 AM [00:00:00]","Maria C",CT,"Nicol M",NULL,NULL,NULL
+25,"2025-10-23 22:33:00",203,"Cleaner out",1,05,"1 MAN","Maria C",MT,"Nicol M",NULL,NULL,NULL
+26,"2025-10-24 02:14:41",126,"Cleaner on site",0,,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+27,"2025-10-23 23:53:36",144,"Cleaner out",1,8,"gray sedan","Emanuel B",MT,"Wendy H",NULL,NULL,NULL
+28,"2025-10-24 01:08:07",185,"Detailer on site",1,1,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+29,"2025-10-24 00:02:46",136,"Cleaner on site",1,25,,"Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+30,"2025-10-24 00:18:23",127,"Delivery in",0,16,"Penske [01:32:16]","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+31,"2025-10-24 01:12:03",231,"Delivery out",1,07,,"Jhon S",CT,"Nicol M",NULL,NULL,NULL
+32,"2025-10-23 22:00:30",240,"Cleaner on site",4,81,"Gray sedan and blue sedan cam 01 at [00:08:26]","Jhon S",MT,"Nicol M",NULL,NULL,NULL
+33,"2025-10-23 22:55:20",137,"Cleaner on site",2,35,"Out cam 04 silver pick up truck by call at [23:49:30]","Jhon S",CT,"Nicol M",NULL,NULL,NULL
+34,"2025-10-24 03:05:30",118,"Cleaner on site",1,18,"out cam 03 white van at [04:18:10]","Jhon S",ET,"Nicol M",NULL,NULL,NULL
+35,"2025-10-24 03:04:30",126,"Delivery in",1,4,"out at [03:29:08]","Jhon S",ET,"Nicol M",NULL,NULL,NULL
+36,"2025-10-24 03:19:55",120,"Cleaner in",1,27A,"white van","Carolina N",ET,"Wendy H",NULL,NULL,NULL
+37,"2025-10-23 23:46:49",239,Delivery,1,6,"23:49 left [00:00:00]","Carolina N",CT,"Wendy H",NULL,NULL,NULL
+38,"2025-10-24 01:52:24",298,"Delivery in",0,3,,"Emanuel B",MT,"Wendy H",NULL,NULL,NULL
+39,"2025-10-24 03:49:42",344,"Delivery out",0,8,Penske,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+40,"2025-10-24 03:43:35",282,"First Employee",1,25,"Blue sedan","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+41,"2025-10-24 03:35:09",346,"Delivery in",0,6,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+42,"2025-10-24 03:30:51",344,"Cleaner in",1,21,"Red minivan","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+43,"2025-10-24 03:13:15",344,"Security Patroling",0,25,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+44,"2025-10-24 02:59:20",231,"Cleaner out",2,7,"White Suv ","Jhon S",CT,"Nicol M",NULL,NULL,NULL
+45,"2025-10-24 03:05:30",118,"Cleaner on site",1,18,"out cam 03 white van at [03:18:08]","Jhon S",ET,"Nicol M",NULL,NULL,NULL
+46,"2025-10-24 03:26:38",160,"Delivery in",1,11,"PENSKE [03:35:31] - 1hour [02:00:00]","Yosselin C",ET,"Nicol M",NULL,NULL,NULL
+47,"2025-10-24 02:09:25",141,"Delivery in",1,17,"PENSKE [03:00:48]","Yosselin C",CT,"Nicol M",NULL,NULL,NULL
+48,"2025-10-23 23:01:27",130,"Cleaner on site",1,23,,"Santiago F",MT,"Nicol M",NULL,NULL,NULL
+49,"2025-10-23 22:54:55",264,"cleaner out",1,"by call",,"Santiago F",MT,"Nicol M",NULL,NULL,NULL
+50,"2025-10-23 21:40:27",264,"Cleaner on site",1,46,"out [22:15:08] cam 2 ","Santiago F",MT,"Nicol M",NULL,NULL,NULL
+51,"2025-10-24 04:27:34",343,Delivery,0,9,unbranded,"Lorena Z",ET,"Nicol M",NULL,NULL,NULL
+52,"2025-10-24 03:27:22",137,"First Employee",0,35,,"Lorena Z",CT,"Nicol M",NULL,NULL,NULL
+53,"2025-10-24 03:48:06",184,Delivery,0,12,Penske,"Lorena Z",ET,"Nicol M",NULL,NULL,NULL
+54,"2025-10-24 03:17:06",299,"First Employee",0,4,"white sedan","Lorena Z",ET,"Nicol M",NULL,NULL,NULL
+55,"2025-10-24 04:24:43",133,"Employee in",1,22,"gray sedan","Yosselin C",ET,"Nicol M",NULL,NULL,NULL
+56,"2025-10-24 04:46:28",162,"Delivery in",1,61,PENKSE,"Maria C",ET,"Nicol M",NULL,NULL,NULL
+57,"2025-10-24 04:45:28",121,"Employee on site",1,05,"IN A BLACK SUV","Maria C",ET,"Nicol M",NULL,NULL,NULL
+58,"2025-10-24 03:01:00",162,"Cleaner out",2,13," [02:00:00]","Maria C",ET,"Nicol M",NULL,NULL,NULL
+59,"2025-10-24 05:19:59",160,"Employee in",1,11,"black sedan [01:00:00]","Yosselin C",ET,prueba2,NULL,NULL,NULL
+60,"2025-10-24 03:07:24",141,"Delivery in",1,17," [03:20:17]","Yosselin C",CT,"Nicol M",NULL,NULL,NULL
+61,"2025-10-24 05:10:36",126,"First Employee",1,19,"Orange Suv","Jhon S",ET,"Nicol M",NULL,NULL,NULL
+62,"2025-10-24 05:10:36",220,"First Employee",1,04,"Blue Pick up Truck","Jhon S",ET,"Nicol M",NULL,NULL,NULL
+63,"2025-10-24 04:53:36",176,"Delivery in",1,4,"Out at [05:05:35]","Jhon S",ET,"Nicol M",NULL,NULL,NULL
+64,"2025-10-24 04:46:36",118,"First Employee",1,06,"White Suv","Jhon S",ET,"Nicol M",NULL,NULL,NULL
+65,"2025-10-24 03:20:30",231,"First Employee",1,22,"Black sedan out at [04:20:27]","Jhon S",CT,"Nicol M",NULL,NULL,NULL
+66,"2025-10-23 22:00:30",240,"Cleaner on site",4,81,"Gray sedan and blue sedan cam 01 at [01:08:54]","Jhon S",MT,"Nicol M",NULL,NULL,NULL
+67,"2025-10-24 05:51:06",191,"employee in ",2,04,"black sedan","Yosselin C",ET,prueba2,NULL,NULL,NULL
+68,"2025-10-24 05:19:12",160,Dropoff,1,46,"black sedan","Yosselin C",ET,prueba2,NULL,NULL,NULL
+69,"2025-10-24 03:51:11",240,"Delivery in",1,29,,"Jhon S",MT,"Nicol M",NULL,NULL,NULL
+70,"2025-10-24 05:18:28",162,"Delivery in",1,207,"PENSKE/LEFT AT [05:22:43]","Maria C",ET,prueba2,NULL,NULL,NULL
+71,"2025-10-24 05:10:00",162,"First Employee",1,51,"1 MAN","Maria C",ET,"Nicol M",NULL,NULL,NULL
+72,"2025-10-24 03:01:23",242,Dropoff,1,1,"A WHITE SUV/ LEFT AT [03:08:00]","Maria C",MT,"Nicol M",NULL,NULL,NULL
+73,"2025-10-24 04:46:28",162,"Delivery in",1,61,"PENKSE/LEFT AT [04:59:24]","Maria C",ET,"Nicol M",NULL,NULL,NULL
+74,"2025-10-24 01:29:40",121,"Delivery in",1,5,"UNB/LEFT AT [01:50:00]","Maria C",ET,"Nicol M",NULL,NULL,NULL
+75,"2025-10-24 00:03:44",141,Dropoff,1,18,"A DARK GREY SEDAN/ LEFT AT [00:10:00]","Maria C",CT,"Nicol M",NULL,NULL,NULL
+76,"2025-10-24 23:07:26",170,"Employee out",1,03,"black sedan",Miguel,CT,prueba2,NULL,NULL,NULL
+77,"2025-10-24 04:52:30",170,"First Employee",1,1,"silver sedan",Miguel,CT,"Nicol M",NULL,NULL,NULL
+78,"2025-10-24 05:28:20",124,"First Employee",1,29,,Miguel,ET,prueba2,NULL,NULL,NULL
+79,"2025-10-24 05:23:34",127,"Employee in",1,25,"silver sedan",Miguel,ET,prueba2,NULL,NULL,NULL
+80,"2025-10-24 05:07:44",127,"First Employee",1,38,"White sedan",Miguel,ET,"Nicol M",NULL,NULL,NULL
+81,"2025-10-24 04:55:09",159,"Cleaner on site",2,139,,Miguel,ET,"Nicol M",NULL,NULL,NULL
+82,"2025-10-24 01:49:50",124,"Delivery in",1,11,,Miguel,ET,"Nicol M",NULL,NULL,NULL
+83,"2025-10-23 23:03:38",260,"Cleaner in",2,37,"white suv - out at [23:52:56]",Miguel,MT,"Nicol M",NULL,NULL,NULL
+84,"2025-10-24 03:47:40",230,Dropoff,1,07,"black sedan","Carolina N",ET,"Wendy H",NULL,NULL,NULL
+85,"2025-10-24 04:27:26",344,Dropoff,7,20," [02:00:00]","Carolina N",ET,"Wendy H",NULL,NULL,NULL
+86,"2025-10-24 04:39:32",346,"First Employee",1,2,"black sedan","Carolina N",ET,"Wendy H",NULL,NULL,NULL
+87,"2025-10-24 05:10:21",288,"Employee on site",1,90,,"Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+88,"2025-10-24 03:04:40",284,"Delivery in",0,13,PENSKE,"Emanuel B",MST,"Wendy H",NULL,NULL,NULL
+89,"2025-10-24 04:06:34",316,"Employee on site",1,33,,"Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+90,"2025-10-24 03:35:09",346,"Delivery in",0,6," [05:00:12]","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+91,"2025-10-24 05:23:30",350,"First Employee",1,9,"black pickup","Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+92,"2025-10-24 03:04:40",284,"Delivery in",0,13,"PENSKE [03:31:07]","Emanuel B",MST,"Wendy H",NULL,NULL,NULL
+93,"2025-10-28 01:17:58",305,"Change Split",0,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+94,"2025-10-28 05:20:46",165,"Change Split",0,1234prueb,prueba,Prueba,CT,prueba2,NULL,NULL,NULL
+95,"2025-10-28 06:21:54",124,"Change Split",0,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+96,"2025-10-28 07:34:25",119,"Change Split",121212,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+97,"2025-10-31 02:08:47",305,"Change Station",1233,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+98,"2025-10-31 03:37:47",124,"Change Station",12,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+99,"2025-11-04 02:13:37",342,Dropoff,0,23,"Dark Blue Suv","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+100,"2025-11-04 01:58:20",344,"Cleaner out",1,9,"Beige sedan","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+101,"2025-11-04 01:45:46",339,"Cleaner out",2,8,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+102,"2025-11-04 01:18:32",303,Delivery,0,17," [01:45:33]","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+103,"2025-11-04 00:56:40",344,Dropoff,0,20,"9 cars","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+104,"2025-11-04 00:38:53",355,Pickup,0,5,"blue sedan","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+105,"2025-11-04 00:34:34",303,"Cleaner on site",1,20," [01:16:58]","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+106,"2025-11-04 00:29:55",355,"Security Patroling",1,37,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+107,"2025-11-04 02:46:57",303,Dropoff,0,17,"White Sedan","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+108,"2025-11-04 01:31:41",288,"Cleaner out",2,1,"Black sedan","Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+109,"2025-11-04 02:29:21",342,"Delivery in",0,4," [02:42:59]","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+110,"2025-11-04 04:14:31",165,"Cleaner in",12,12,"prueba - delete",Prueba,CT,"Julian V",NULL,NULL,NULL
+111,"2025-11-04 05:32:39",350,"First Employee",1,9,"black pickup","Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+112,"2025-11-04 05:08:42",288,"Switch Car",0,31,"left gray sedan
+took white suv","Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+113,"2025-11-04 04:26:23",342,"First Employee",1,1,"White Pickup","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+114,"2025-11-04 03:58:19",303,"First Employee",1,20,"Black sedan","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+115,"2025-11-04 02:50:40",288,"Delivery in",0,17," [03:41:53]","Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+116,"2025-11-04 02:57:24",339,"Employee in",1,9,"Black Pickup","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+117,"2025-11-04 01:46:57",303,Dropoff,0,17,"White Sedan","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+118,"2025-11-04 00:31:41",288,"Cleaner out",2,1,"Black sedan","Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+119,"2025-11-04 01:29:21",342,"Delivery in",0,4," [01:42:59]","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+120,"2025-11-04 01:13:37",342,Dropoff,0,23,"Dark Blue Suv","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+121,"2025-11-04 00:58:20",344,"Cleaner out",1,9,"Beige sedan","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+122,"2025-11-04 00:45:46",339,"Cleaner out",2,8,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+123,"2025-11-04 00:18:32",303,Delivery,0,17," [00:45:33]","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+124,"2025-11-03 23:56:40",344,Dropoff,0,20,"9 cars","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+125,"2025-11-03 23:38:53",355,Pickup,0,5,"blue sedan","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+126,"2025-11-03 23:34:34",303,"Cleaner on site",1,20," [00:16:58]","Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+127,"2025-11-03 23:29:55",355,"Security Patroling",1,37,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+128,"2025-11-03 23:04:00",339,"Cleaner on site",2,58,,"Emanuel B",ET,"Wendy H",NULL,NULL,NULL
+129,"2025-11-03 22:01:43",288,"Cleaner on site",1,90,,"Emanuel B",CT,"Wendy H",NULL,NULL,NULL
+130,"2025-11-04 05:44:28",298,"First Employee",1,11,"Red offroad","Emanuel B",MT,"Wendy H",NULL,NULL,NULL
+131,"2025-11-04 05:43:01",298,Dropoff,1,1,"White Pickup","Emanuel B",MT,"Wendy H",NULL,NULL,NULL
+132,"2025-11-04 05:38:13",298,"Voice Down",3,3,"3 suspicious persons on site","Emanuel B",MT,"Wendy H",NULL,NULL,NULL
+133,"2025-11-06 02:34:08",165,Call,12,12,12,Prueba,CT,"Logan G",done,"2025-11-06 05:56:52","Logan G"
+134,"2025-11-06 02:53:12",119,Call,12,12,12,prueba,ET,prueba2,done,"2025-11-06 05:56:57","Logan G"
+135,"2025-11-06 01:02:41",126,"Call Report",123,123,"prueba 8 [05:24:22]",prueba,ET,prueba2,done,"2025-11-06 07:16:10",prueba2
+136,"2025-11-05 23:08:42",230,"Employee out",1,29,,"kevin c",ET,"Julian V",done,"2025-11-06 03:32:05","julian v"
+137,"2025-11-05 22:31:52",230,"Cleaner on site",2,34,,"kevin c",ET,"Julian V",done,"2025-11-06 03:32:05","julian v"
+138,"2025-11-06 02:34:04",165,Call,23,2323,23,prueba,CT,prueba2,done,"2025-11-06 07:16:10",prueba2
+139,"2025-11-05 22:34:08",165,Call,12,12,12,Prueba,CT,prueba2,NULL,NULL,NULL
+140,"2025-11-06 05:55:43",185,"Contractor on site",1,1,,"kevin c",ET,"Logan G",done,"2025-11-06 06:38:06","logan g"
+141,"2025-11-06 05:45:00",230,"First Employee",1,18,"White Pick T.","kevin c",ET,"Logan G",done,"2025-11-06 06:38:06","logan g"
+142,"2025-11-09 01:41:11",165,Call,0,1,1,Prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+143,"2025-11-09 01:29:17",165,Call,1,1pru,"prueba out at [02:30:55] [01:31:07]",Prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+144,"2025-11-08 22:25:22",165,"Delivery in",1,3,,prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+145,"2025-11-08 00:14:24",230,"Voice Down",1,1,"prueba [00:43:00]",prueba,ET,prueba2,done,"2025-11-11 06:03:35",prueba2
+146,"2025-11-06 05:35:46",130,"Late Employee",1,2,2,prueba,MT,prueba2,flagged,"2025-11-09 02:45:44",prueba2
+147,"2025-11-06 07:26:49",325,"Cleaner in",1,4,2,prueba,ET,prueba2,done,"2025-11-11 06:03:35",prueba2
+148,"2025-11-06 07:19:15",124,"Contractor in",1,5,"5 prueba 06:32",prueba,ET,prueba2,done,"2025-11-11 06:03:35",prueba2
+149,"2025-11-06 06:00:16",165,"Employee out",1,2,prueba,prueba,CT,prueba2,flagged,"2025-11-09 02:45:44",prueba2
+150,"2025-11-06 06:27:24",325,Dropoff,7,7,123,prueba,ET,prueba2,flagged,"2025-11-09 02:45:44",prueba2
+151,"2025-11-06 01:02:41",126,"Call Report",123,123,"prueba 8 [05:24:22]",Prueba,ET,prueba2,NULL,NULL,NULL
+152,"2025-11-09 05:03:33",130,"Cleaner in",1,1,"prueba eee 99 [06:19:17]",prueba,MT,prueba2,flagged,"2025-11-10 23:38:32",prueba2
+153,"2025-11-09 02:29:17",335,"Change Split",1,1pru,"prueba out at [04:12:10]",prueba,ET,prueba2,done,"2025-11-11 06:03:35",prueba2
+154,"2025-11-08 23:25:22",165,"Delivery in",1,3,fwefwfwfe,prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+155,"2025-11-06 07:35:46",130,"Late Employee",1,2,"2 - [07:23:00]",prueba,MT,prueba2,done,"2025-11-11 06:03:35",prueba2
+156,"2025-11-06 07:00:16",165,"Employee out",1,2,prueba,prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+157,"2025-11-12 03:34:04",165,Call,23,2323,23,prueba,CT,prueba2,done,"2025-11-15 04:00:01",prueba2
+158,"2025-11-09 20:54:43",185,"Employee out",2,12,"prueba [20:01:57]",prueba,ET,prueba2,flagged,"2025-11-10 23:38:32",prueba2
+159,"2025-11-09 19:52:52",130,"Cleaner in",1,1,03:23,prueba,MT,prueba2,flagged,"2025-11-10 23:38:32",prueba2
+160,"2025-11-10 00:45:19",130,"Employee in",40,.,,prueba,MT,prueba2,flagged,"2025-11-10 23:38:32",prueba2
+161,"2025-11-10 07:17:36",301,"Employee on site",2,2,prueba,prueba,ET,prueba2,done,"2025-11-10 07:21:24",prueba2
+163,"2025-11-10 22:07:34",130,"Employee in",1,1,"03:03 - 03:33 - 3:33",prueba,MT,"Wendy H",NULL,NULL,NULL
+164,"2025-11-11 20:28:26",130,"Cleaner in",1,1,"Red Sedan",prueba,MT,"Wendy H",flagged,"2025-11-16 02:07:29","wendy h"
+165,"2025-11-11 23:58:35",130,"Employee in",1,123,0:33,prueba,MT,"Wendy H",flagged,"2025-11-16 02:07:29","wendy h"
+171,"2025-11-16 00:09:22",162,"Cleaner on site",2,152,,"Jacobo B",ET,"Wendy H",flagged,"2025-11-16 02:07:29","wendy h"
+172,"2025-11-16 00:00:38",141,"Cleaner out",5,,"BY CALL","Jacobo B",CT,"Wendy H",flagged,"2025-11-16 02:07:29","wendy h"
+173,"2025-11-15 22:17:00",260,"Cleaner in",2,30,,"Maria C",MT,"Harvin V",NULL,NULL,NULL
+174,"2025-11-15 23:41:57",230,"Cleaner on site",1,37,,"Juan Jose C",ET,"Logan G",done,"2025-11-16 03:14:12","Logan G"
+175,"2025-11-15 22:42:08",126,Dropoff,1,43,"White sedan","Daniel P",ET,"Logan G",done,"2025-11-16 03:12:44","Logan G"
+176,"2025-11-15 22:11:14",129,"Employee out",1,24,"Sedan gris","Daniel P",CT,"Logan G",done,"2025-11-16 03:15:54","Logan G"
+177,"2025-11-15 22:34:01",129,"Employee out",1,23,"SUV Negra","Daniel P",CT,"Logan G",done,"2025-11-16 03:15:52","Logan G"
+178,"2025-11-16 00:03:19",126,"Cleaner on site",1,64,"Black sedan out 00:57","Daniel P",ET,"Logan G",done,"2025-11-16 03:12:40","Logan G"
+179,"2025-11-15 23:03:56",256,"Employee on site",1,23,,"Brahian G",ET,"Wendy H",done,"2025-11-16 03:15:08","Logan G"
+180,"2025-11-15 23:20:33",256,"Employee out",0,01,"sedan black","Brahian G",ET,"Wendy H",done,"2025-11-16 03:15:06","Logan G"
+181,"2025-11-15 22:19:03",264,Pickup,0,03,"suv black","Brahian G",MT,"Wendy H",done,"2025-11-16 03:17:00","Logan G"
+182,"2025-11-15 22:35:32",262,"Employee out",1,28,"black suv","Yosselin C",MST,"Harvin V",NULL,NULL,NULL
+183,"2025-11-15 23:47:15",141,"Employee out",1,15,"black sedan","Yosselin C",CT,"Harvin V",done,"2025-11-16 03:24:36","Harvin V"
+184,"2025-11-15 23:58:20",141,"Employee out",1,10,"grey suv","Yosselin C",CT,"Harvin V",done,"2025-11-16 03:24:36","Harvin V"
+185,"2025-11-15 22:48:28",344,"Switch Car",1,11,"Grey sedan x Black SUV","Nicol M OP",ET,"Nicolas M",done,"2025-11-16 03:43:49","Nicolas M"
+186,"2025-11-15 22:54:52",342,"Cleaner on site",2,14,,"Nicol M OP",ET,"Nicolas M",done,"2025-11-16 03:45:23","Nicolas M"
+187,"2025-11-15 21:55:26",288,"Cleaner on site",2,46,,"Nicol M OP",CT,"Nicolas M",NULL,NULL,NULL
+188,"2025-11-15 23:20:39",344,"Employee out",1,21,"Black sedan","Nicol M OP",ET,"Nicolas M",done,"2025-11-16 03:43:05","Nicolas M"
+189,"2025-11-15 22:07:19",298,"Cleaner on site",2,,22:53,"Nicol M OP",MT,"Nicolas M",NULL,NULL,NULL
+190,"2025-11-16 00:39:52",344,"Employee in",1,14,"Black sedan","Nicol M OP",ET,"Nicolas M",done,"2025-11-16 03:42:01","Nicolas M"
+191,"2025-11-15 22:10:43",318,"Cleaner in",1,call,,"Yurani B",CT,"Logan G",done,"2025-11-16 03:16:26","Logan G"
+192,"2025-11-15 22:50:00",346,"Security Patroling",1,08,"Sedan gris","Alejandra O",ET,"Nicolas M",done,"2025-11-16 03:44:25","Nicolas M"
+193,"2025-11-16 10:36:00",289,"Cleaner on site",0,,"Call - 2 Cleaners","Alejandra O",CT,"Nicolas M",done,"2025-11-16 03:31:51","Nicolas M"
+194,"2025-11-16 01:28:02",120,"Cleaner in",1,27A,"White Van","Eddie R",ET,"Harvin V",done,"2025-11-16 03:24:36","Harvin V"
+197,"2025-11-16 00:14:00",260,"Cleaner out",2,11,,"Maria C",MT,"Harvin V",done,"2025-11-16 03:24:36","Harvin V"
+198,"2025-11-16 00:02:38",240,Dropoff,1,02,"Gray sedan","Daniel P",MT,"Logan G",done,"2025-11-16 03:17:30","Logan G"
+199,"2025-11-16 02:22:25",230,"Employee out",3,27,"Black PUT","Juan Jose C",ET,"Logan G",done,"2025-11-16 03:14:14","Logan G"
+200,"2025-11-16 03:16:44",120,"Cleaner out",1,27A,"White Van","Eddie R",ET,"Harvin V",done,"2025-11-16 03:24:36","Harvin V"
+201,"2025-11-16 03:41:05",303,Dropoff,1,27,"White sedan","Nicol M OP",ET,"Nicolas M",done,"2025-11-16 03:48:11","Nicolas M"
+202,"2025-11-15 23:58:22",130,Pickup,0,05,"sedan gray","Brahian G",MT,"Wendy H",NULL,NULL,NULL
+203,"2025-11-16 03:58:06",195,"Cleaner on site",1,34,,"Juan Jose C",ET,"Logan G",NULL,NULL,NULL

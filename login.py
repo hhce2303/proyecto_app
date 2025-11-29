@@ -54,7 +54,7 @@ def do_logout(session_id, station, root):
             """
             UPDATE sesion
             SET Log_Out = %s, Active = "0"
-            WHERE ID = %s AND Active = "1" or ACTIVE = "-1"
+            WHERE ID = %s AND Active = "1" or Active = "-1" or Active = "2"
             """,
             (log_out_time, session_id)
         )
@@ -386,7 +386,7 @@ def show_login():
             backend_super.prompt_exit_active_cover(username, win)
 
             # Mensaje de bienvenida
-            messagebox.showinfo("Login", f"Bienvenido {username} ({role})")
+
             # No destruir el root: solo ocultarlo; main window será un Toplevel
             try:
                 win.withdraw()
@@ -458,7 +458,7 @@ def logout_silent(session_id, station):
         cursor.execute(
             """
             UPDATE Sesion 
-            SET Log_Out = %s, Active = '1'
+            SET Log_Out = %s, Active = '1' or Active = '-1' or Active = '2'
             WHERE ID = %s AND Active = '0'
             """,
             (log_out_time, int(session_id))

@@ -1,0 +1,1001 @@
+ID_Eventos,FechaHora,ID_Sitio,Nombre_Actividad,Cantidad,Camera,Descripcion,ID_Usuario,Eventoscol
+344,"2025-11-10 02:45:19",130,"Cleaner in",40,.,12:21,4,NULL
+347,"2025-11-10 07:17:36",130,"Employee on site",2,2,prueba,4,NULL
+348,"2025-11-11 00:07:34",130,"Cleaner in",1,1,"05:03 - 05:33 - 5:33",4,NULL
+350,"2025-11-02 23:36:15",291,"START SHIFT",1,,"Do Not Edit - No Editar",4,NULL
+351,"2025-11-11 01:22:59",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",8,NULL
+352,"2025-11-11 01:23:02",291,"START SHIFT",0,,"Do Not Edit - No Editar",8,NULL
+353,"2025-11-11 06:44:33",291,"START SHIFT",0,,"Do Not Edit - No Editar",15,NULL
+354,"2025-11-11 22:28:26",130,"Cleaner in",1,1,"Red Sedan",4,NULL
+355,"2025-11-12 01:58:35",130,"Employee in",1,123,2:33,4,NULL
+356,"2025-11-15 02:28:57",130,"Cleaner in",1,1,02:33-2:33,4,NULL
+357,"2025-11-15 03:10:40",130,"Cleaner in",1,1,"9:42 pm",4,NULL
+360,"2025-11-15 03:39:41",196,"Cleaner in",41,44,3:38,4,NULL
+361,"2025-11-15 03:52:25",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",4,NULL
+362,"2025-11-15 03:52:33",291,"START SHIFT",0,,"Do Not Edit - No Editar",4,NULL
+363,"2025-11-15 03:53:44",130,"Cleaner on site",1213,89,"red 4:45 sedan 5:45 pm 05:05- 22:10",4,NULL
+364,"2025-11-15 03:57:41",287,"Cleaner in",1,1,1,4,NULL
+365,"2025-11-15 04:04:46",130,"Cleaner in",1,1,1,4,NULL
+366,"2025-11-15 04:05:17",130,"Cleaner in",1,1,"4:30 - 04:03  - [04:23]",4,NULL
+367,"2025-11-15 05:07:57",196,"Cleaner in",2,45,4:56,4,NULL
+369,"2025-11-15 06:55:46",130,"Cleaner on site",12,12,"3:26 hhhhh",4,NULL
+370,"2025-11-15 07:54:50",334,"Employee out",5,5,05:23,4,NULL
+371,"2025-11-15 22:41:52",291,"START SHIFT",0,,"Do Not Edit - No Editar",22,NULL
+372,"2025-11-15 22:42:08",126,Dropoff,1,43,"White sedan",22,NULL
+373,"2025-11-15 22:46:07",291,"START SHIFT",0,,"Do Not Edit - No Editar",35,NULL
+376,"2025-11-15 22:51:33",291,"START SHIFT",0,,"Do Not Edit - No Editar",56,NULL
+379,"2025-11-15 22:44:23",230,"Cleaner on site",1,37,,56,NULL
+380,"2025-11-15 22:57:15",291,"START SHIFT",0,,"Do Not Edit - No Editar",25,NULL
+381,"2025-11-15 22:45:23",217,"Cleaner in",1,call,,56,NULL
+383,"2025-11-15 22:30:21",291,"Change Split",0,,"split 5-5",25,NULL
+384,"2025-11-15 23:00:22",275,"Cleaner on site",1,30,,56,NULL
+385,"2025-11-15 23:00:54",266,"Cleaner on site",1,103,,35,NULL
+386,"2025-11-15 23:03:28",249,"Employee out",1,04,"Black sedan",22,NULL
+387,"2025-11-15 23:03:56",256,"Employee on site",1,23,,35,NULL
+388,"2025-11-15 22:35:23",291,"START SHIFT",0,,"Do Not Edit - No Editar",72,NULL
+389,"2025-11-15 22:48:28",344,"Switch Car",1,11,"Grey sedan x Black SUV",72,NULL
+390,"2025-11-15 23:10:43",318,"Cleaner in",1,call,"out 4:26 AM",25,NULL
+391,"2025-11-15 22:54:52",342,"Cleaner on site",2,14,,72,NULL
+392,"2025-11-15 23:11:14",129,"Employee out",1,24,"Sedan gris",22,NULL
+395,"2025-11-15 22:55:26",288,"Cleaner on site",2,46,,72,NULL
+396,"2025-11-15 22:35:44",291,"Change Split",0,,10/6,35,NULL
+397,"2025-11-15 23:20:33",256,"Employee out",0,01,"sedan black",35,NULL
+398,"2025-11-15 23:20:39",344,"Employee out",1,21,"Black sedan",72,NULL
+399,"2025-11-15 22:00:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",31,NULL
+400,"2025-11-15 23:32:20",164,"Employee out",0,09,"suv black",35,NULL
+401,"2025-11-15 23:34:01",129,"Employee out",1,23,"SUV Negra",22,NULL
+402,"2025-11-15 22:50:00",346,"Security Patroling",1,08,"Sedan gris",31,NULL
+403,"2025-11-15 23:41:57",230,"Cleaner on site",1,37,,56,NULL
+404,"2025-11-15 23:43:45",275,"Security Patroling",1,10,Citadel,22,NULL
+405,"2025-11-15 23:10:00",291,"Covered by",1,,"Wendy - Supevisora -23:21",31,NULL
+406,"2025-11-15 00:00:02",342,"Employee out",1,1,"Black sedan",72,NULL
+407,"2025-11-15 23:59:44",291,"START SHIFT",0,,"Do Not Edit - No Editar",54,NULL
+409,"2025-11-16 00:02:26",291,"START SHIFT",0,,"Do Not Edit - No Editar",48,NULL
+410,"2025-11-16 00:02:27",291,"START SHIFT",0,,"Do Not Edit - No Editar",10,NULL
+412,"2025-11-16 00:02:29",291,"START SHIFT",0,,"Do Not Edit - No Editar",42,NULL
+413,"2025-11-16 00:02:41",291,"START SHIFT",0,,"Do Not Edit - No Editar",7,NULL
+414,"2025-11-16 00:03:19",126,"Cleaner on site",1,64,"Black sedan out 00:57",22,NULL
+415,"2025-11-15 22:35:00",291,"Change Split",1,,SP5-ST4,31,NULL
+416,"2025-11-15 22:35:47",291,"Change Split",0,,5/3,72,NULL
+417,"2025-11-16 00:05:47",266,"Employee out",0,29,"cedan gray",35,NULL
+418,"2025-11-16 00:06:59",291,"START SHIFT",0,,"Do Not Edit - No Editar",68,NULL
+419,"2025-11-16 00:07:29",291,"Change Split",0,,14-7,22,NULL
+421,"2025-11-16 00:07:17",291,"Change Split",0,,14/6,35,NULL
+422,"2025-11-16 00:07:19",298,"Cleaner on site",2,29,00:53,72,NULL
+423,"2025-11-16 00:07:37",291,"Took station over",0,,"Sp 14 St 10",48,NULL
+425,"2025-11-16 00:07:39",291,"Change Split",0,0,"split 14",10,NULL
+426,"2025-11-16 00:07:00",291,"Change Split",0,,"SP 14 ST 14",63,NULL
+427,"2025-11-16 00:07:22",291,"Change Split",0,,"Split 14 OMNIA",68,NULL
+428,"2025-11-16 00:09:22",162,"Cleaner on site",2,152,,48,NULL
+429,"2025-11-16 00:12:25",291,"Change Split",0,,"Split 7, station 3",72,NULL
+430,"2025-11-16 00:08:00",291,"Change Split",1,0,"SPLIT 14, STATION 9",8,NULL
+431,"2025-11-16 00:17:58",249,"Cleaner in",1,11,"out 00:20",22,NULL
+432,"2025-11-16 00:19:03",264,Pickup,0,03,"suv black",35,NULL
+433,"2025-11-16 00:17:00",260,"Cleaner in",2,30,,8,NULL
+434,"2025-11-16 00:35:32",262,"Employee out",1,28,"black suv",10,NULL
+435,"2025-11-16 00:40:42",126,"Cleaner on site",1,,,54,NULL
+436,"2025-11-16 00:47:15",141,"Employee out",1,15,"black sedan",10,NULL
+437,"2025-11-16 00:39:52",344,"Employee in",1,14,"Black sedan",72,NULL
+438,"2025-11-16 00:58:20",141,"Employee out",1,10,"grey suv",10,NULL
+439,"2025-11-16 00:52:27",277,"Security Patroling",0,03,citadel,35,NULL
+440,"2025-11-16 00:00:42",291,"Change Split",0,,"5-5 lux",25,NULL
+441,"2025-11-16 00:58:29",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",7,NULL
+442,"2025-11-16 00:45:43",291,"Covered by",0,,"sanabria until 00:55",25,NULL
+443,"2025-11-16 01:00:38",141,"Cleaner out",5,,"BY CALL",48,NULL
+444,"2025-11-15 11:36:00",289,"Cleaner on site",0,,"Call - 2 Cleaners",31,NULL
+445,"2025-11-16 00:45:00",291,"Covered by",0,,"00:55 - Miguel B",31,NULL
+446,"2025-11-16 19:34:46",291,"START SHIFT",0,,"Do Not Edit - No Editar",70,NULL
+447,"2025-11-16 00:12:00",291,"Change Split",0,,SP7-ST4,31,NULL
+448,"2025-11-16 01:28:02",120,"Cleaner in",1,27A,"White Van",42,NULL
+449,"2025-11-16 00:25:00",357,"Security Patroling",1,16,"SUV BLANCA - Cetadel",31,NULL
+451,"2025-11-16 01:31:00",291,"Covered by",1,,"BACK AT 1:42",8,NULL
+452,"2025-11-16 01:58:22",130,Pickup,0,05,"sedan gray",35,NULL
+454,"2025-11-16 02:02:38",240,Dropoff,1,02,"Gray sedan",22,NULL
+455,"2025-11-15 21:00:06",291,"START SHIFT",0,,"Do Not Edit - No Editar",29,NULL
+456,"2025-11-16 02:14:00",260,"Cleaner out",2,11,,8,NULL
+457,"2025-11-16 02:02:14",163,Break,0,,"By Lorena Z",56,NULL
+458,"2025-11-16 02:22:25",230,"Employee out",3,27,"Black PUT",56,NULL
+459,"2025-11-16 02:01:00",291,Break,0,,"David Carvajal - 3:00 am",31,NULL
+460,"2025-11-16 03:05:06",291,"START SHIFT",0,,"Do Not Edit - No Editar",7,NULL
+461,"2025-11-15 22:55:15",291,"START SHIFT",0,,"Do Not Edit - No Editar",63,NULL
+463,"2025-11-16 02:00:20",291,Break,0,,"by Sanabria",72,NULL
+466,"2025-11-16 03:16:44",120,"Cleaner out",1,27A,"White Van",42,NULL
+467,"2025-11-15 22:50:08",291,"START SHIFT",0,,"Do Not Edit - No Editar",86,NULL
+468,"2025-11-15 22:23:49",291,"START SHIFT",0,,"Do Not Edit - No Editar",84,NULL
+469,"2025-11-16 03:29:02",266,"Voice Down",0,65,,7,NULL
+470,"2025-11-16 03:41:05",303,Dropoff,1,27,"White sedan",72,NULL
+471,"2025-11-16 03:45:26",271,"Police Patroling",1,31,"Left at 5:30:29",42,NULL
+472,"2025-11-16 03:58:06",195,"Cleaner on site",1,34,,56,NULL
+473,"2025-11-16 03:59:09",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",29,NULL
+474,"2025-11-16 03:59:02",291,"Change Split",0,,"Split 13",68,NULL
+475,"2025-11-16 03:59:01",291,"Change Split",0,,13/6,35,NULL
+476,"2025-11-16 03:59:01",163,"Change Split",0,,"split 13",7,NULL
+477,"2025-11-16 03:59:14",291,"Change Split",0,,"Sp 13 St 10",48,NULL
+478,"2025-11-16 03:59:02",291,"Change Split",0,,12,42,NULL
+479,"2025-11-16 03:59:15",291,"Change Split",0,0,"split 13",10,NULL
+480,"2025-11-16 04:02:57",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",7,NULL
+481,"2025-11-16 03:04:47",291,Break,0,,"by Sarminento until 4:03 am",25,NULL
+482,"2025-11-16 04:13:27",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",15,NULL
+483,"2025-11-16 04:28:53",137,Dropoff,1,13,"1 black sedan",22,NULL
+484,"2025-11-16 03:17:00",335,"Police Patroling",1,27,"SUV BLANCA",31,NULL
+485,"2025-11-16 04:28:00",291,"Covered by",0,,"4:30 AM- Wendy",31,NULL
+486,"2025-11-16 04:44:29",164,"Employee on site",1,20,,35,NULL
+487,"2025-11-10 04:49:26",291,"START SHIFT",0,,"Do Not Edit - No Editar",6,NULL
+488,"2025-11-15 11:36:00",289,"Cleaner in",0,,"Call - 2 Cleaners",31,NULL
+489,"2025-11-16 04:42:33",291,"Covered by",0,,"Burbano, back at 4:51",72,NULL
+490,"2025-11-15 23:36:00",289,"Cleaner in",2,,"Call - 2 cleaners.",31,NULL
+493,"2025-11-16 00:00:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",33,NULL
+494,"2025-11-16 00:07:14",291,"Change Split",14,,,33,NULL
+495,"2025-11-16 02:10:10",230,"Cleaner out",2,02,,33,NULL
+497,"2025-11-16 02:13:30",230,Pickup,0,29,"Blue SUV out Charging Station",33,NULL
+498,"2025-11-16 02:13:46",230,"Cleaner out",2,02,,33,NULL
+499,"2025-11-16 04:00:22",291,Break,0,,"back at 05:00 AM",33,NULL
+500,"2025-11-16 05:46:10",164,"First Employee",0,03,,33,NULL
+501,"2025-11-16 05:47:51",133,Dropoff,0,05,"3 vehicles",54,NULL
+502,"2025-11-16 05:52:13",164,"First Employee",1,09,"picup truck gray",35,NULL
+503,"2025-11-16 05:59:34",291,"START SHIFT",0,,"Do Not Edit - No Editar",7,NULL
+505,"2025-11-16 06:00:00",338,"Charging Station",1,4,,63,NULL
+506,"2025-11-16 06:09:42",291,"Change Split",0,,"Split 9 station 3 lux",72,NULL
+507,"2025-11-16 06:10:32",291,"Change Split",0,,"Split 15",68,NULL
+508,"2025-11-16 06:10:40",291,"Change Split",0,,15,42,NULL
+509,"2025-11-16 06:10:48",163,"Change Split",0,,15-7,22,NULL
+510,"2025-11-16 06:10:37",291,"Change Split",0,,15/6,35,NULL
+511,"2025-11-16 06:10:50",291,"Change Split",0,,"SP15 ST10",44,NULL
+512,"2025-11-16 06:10:19",163,"Change Split",0,,"Split 15  stat 15- also took stat 14 until 6:12",7,NULL
+513,"2025-11-16 06:10:48",291,"Change Split",0,0,"split 15",10,NULL
+514,"2025-11-16 06:10:40",291,"Change Split",1,0,"TO SPLIT 15, STATION 9",8,NULL
+515,"2025-11-16 06:12:22",131,"Cleaner on site",1,32,,35,NULL
+516,"2025-11-16 06:09:11",291,"Change Split",0,,SP9-ST4,31,NULL
+517,"2025-11-16 06:12:57",291,"Change Split",0,,"split 15/5",56,NULL
+518,"2025-11-16 06:17:53",131,Dropoff,1,13,"1 sedan / 6 suv/ 6:50",35,NULL
+519,"2025-11-16 19:29:00",291,"START SHIFT",1,-,"Do Not Edit - No Editar",43,NULL
+520,"2025-11-16 06:10:16",291,"Change Split",0,,"Split 5-5",25,NULL
+521,"2025-11-16 06:24:55",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",84,NULL
+522,"2025-11-16 06:26:54",168,"Cleaner in",1,72,"black shirt",56,NULL
+523,"2025-11-16 06:10:12",291,"Change Split",15,,,33,NULL
+525,"2025-11-16 06:30:10",344,Dropoff,9,20,"9 Vehicles",72,NULL
+527,"2025-11-16 06:33:17",168,"Cleaner in",1,157,"BLACK SUV",56,NULL
+528,"2025-11-16 06:27:30",291,"Covered by",0,,"By Elizabeth C. until 6:36",25,NULL
+529,"2025-11-16 06:53:46",291,"Covered by",0,,"OUT: 6:43",44,NULL
+530,"2025-11-16 06:54:43",291,"START SHIFT",0,,"Do Not Edit - No Editar",44,NULL
+531,"2025-11-16 06:54:53",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",44,NULL
+532,"2025-11-16 06:54:28",291,"Covered by",0,,"6:59 - Edwin Ortiz",31,NULL
+533,"2025-11-16 06:56:49",249,"First Employee",1,11,"Red Sedan",22,NULL
+534,"2025-11-16 06:50:46",128,"First Employee",1,07,"White SUV",68,NULL
+535,"2025-11-16 06:53:00",291,"Covered by",1,0,"BACK AT  6:59 AM",8,NULL
+536,"2025-11-16 07:00:00",324,"First Employee",1,02,"Sedan blanco",31,NULL
+537,"2025-11-16 07:02:27",344,"First Employee",1,,,72,NULL
+539,"2025-11-16 06:58:20",121,Dropoff,1,05,"Black Sedan",42,NULL
+540,"2025-11-16 07:07:13",121,"First Employee",1,1,"Black Pick Up Truck",42,NULL
+541,"2025-11-16 06:35:28",342,"Employee on site",1,62,,54,NULL
+542,"2025-11-16 07:13:25",162,"First Employee",1,76B,,48,NULL
+543,"2025-11-16 06:56:01",280,"Security Patroling",1,3,,63,NULL
+544,"2025-11-16 07:24:13",291,"Change Split",1,,"SPLIT 13/5",56,NULL
+545,"2025-11-16 06:08:29",291,"Covered by",0,,"Edwin Ortiz / 6:17",54,NULL
+546,"2025-11-16 07:27:27",291,"Change Split",0,,"Split 13",68,NULL
+547,"2025-11-16 07:27:27",163,"Change Split",0,,"split 13",7,NULL
+548,"2025-11-16 07:27:37",291,"Change Split",0,,13,42,NULL
+549,"2025-11-16 07:27:36",291,"Change Split",1,0,"TO SPLIT 13, ST 9",8,NULL
+550,"2025-11-16 07:27:39",291,"Change Split",0,,"Sp 13 St 10",48,NULL
+551,"2025-11-16 07:27:43",291,"Change Split",0,0,"split 13",10,NULL
+552,"2025-11-16 06:10:04",291,"Change Split",0,,"SP 9 ST 7 LUX",63,NULL
+553,"2025-11-16 07:26:19",291,"Change Split",0,,13/6,35,NULL
+554,"2025-11-16 07:24:16",291,"Change Split",0,,13-7,22,NULL
+555,"2025-11-16 07:27:23",291,"Change Split",0,,"SP 7 ST 7 LUX",63,NULL
+556,"2025-11-16 07:28:05",291,"Change Split",0,,"S 7/3",72,NULL
+557,"2025-11-16 07:28:00",291,"Change Split",0,,SP7-ST4,31,NULL
+558,"2025-11-16 07:31:54",291,"Took station over",0,,"st3 splt 7",54,NULL
+559,"2025-11-16 07:33:43",121,"First Employee",1,53,"Arrrives in a  Red Ford mustang",48,NULL
+561,"2025-11-16 07:27:16",291,"Change Split",14,,,33,NULL
+564,"2025-11-16 07:28:19",163,"Took station over",0,,"stat 3 - split 13",7,NULL
+565,"2025-11-16 00:31:35",291,covers,0,,12:42,54,NULL
+566,"2025-11-16 01:00:47",291,Break,0,,"For Kevin Vergara / 2 am",54,NULL
+567,"2025-11-16 01:25:48",291,"Covered by",0,,"Andres Galvis / 01:30",54,NULL
+568,"2025-11-16 02:02:31",291,Break,0,,"For Maritza O / 03:02",54,NULL
+569,"2025-11-16 03:02:23",291,Break,0,,"Covered by nobody / 4:01",54,NULL
+570,"2025-11-16 04:02:33",291,covers,0,,05:01,54,NULL
+571,"2025-11-16 05:02:19",291,Break,0,,"For Yosselin Candela / 06:01",54,NULL
+572,"2025-11-16 07:45:56",130,"Cleaner in",1,1,"1:12 -02:24 ahhhhhh",4,NULL
+573,"2025-11-16 06:09:13",291,"Took station over",0,,"9/9 LUX",54,NULL
+574,"2025-11-16 07:46:51",118,"Employee on site",1,,,72,NULL
+575,"2025-11-16 07:55:28",230,Dropoff,0,24,"Hatchback green",56,NULL
+576,"2025-11-16 07:27:09",291,"Change Split",0,,"Split 7-5",25,NULL
+577,"2025-11-16 07:58:17",291,"OMNIA Crash",0,,"Until 7:59:01",42,NULL
+578,"2025-11-16 08:03:59",140,Dropoff,2,01,"grey suv / black pick up truck",10,NULL
+579,"2025-11-16 08:04:39",159,"Cleaner on site",2,85,,8,NULL
+580,"2025-11-16 08:02:39",159,"Contractor in",1,01,,25,NULL
+581,"2025-11-16 08:14:09",223,"First Employee",1,12,"green pick up truck",10,NULL
+582,"2025-11-16 08:17:43",150,"First Employee",1,78,,42,NULL
+583,"2025-11-16 08:27:54",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",63,NULL
+584,"2025-11-16 08:29:29",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",68,NULL
+585,"2025-11-16 08:29:34",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",33,NULL
+586,"2025-11-16 08:29:49",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",86,NULL
+587,"2025-11-16 08:29:53",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",42,NULL
+588,"2025-11-16 08:29:53",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",31,NULL
+589,"2025-11-16 08:29:57",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",54,NULL
+590,"2025-11-16 08:30:02",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",22,NULL
+591,"2025-11-16 08:30:29",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",8,NULL
+592,"2025-11-16 08:30:57",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",56,NULL
+593,"2025-11-16 08:31:03",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",7,NULL
+594,"2025-11-16 08:31:03",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",25,NULL
+595,"2025-11-16 08:31:19",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",35,NULL
+596,"2025-11-16 08:31:43",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",10,NULL
+597,"2025-11-16 08:32:09",291,"START SHIFT",0,,"Do Not Edit - No Editar",80,NULL
+600,"2025-11-16 08:30:39",324,"Detailer on site",1,72,,26,NULL
+601,"2025-11-16 08:37:58",291,"START SHIFT",0,,"Do Not Edit - No Editar",26,NULL
+602,"2025-11-16 08:37:33",324,"Detailer on site",1,72,,26,NULL
+603,"2025-11-16 08:39:29",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",48,NULL
+604,"2025-11-16 08:41:56",324,"Detailer on site",1,72,,26,NULL
+605,"2025-11-16 08:45:42",291,"START SHIFT",0,,"Do Not Edit - No Editar",65,NULL
+606,"2025-11-16 08:30:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",52,NULL
+607,"2025-11-16 08:45:45",291,"Change Split",0,,"Split 10/4 luxriot",26,NULL
+608,"2025-11-16 08:37:00",291,"Took station over",0,,"TOOK STATION 13",65,NULL
+609,"2025-11-16 08:35:22",167,"Employee on site",2,16,,52,NULL
+611,"2025-11-16 08:40:04",291,"Change Split",0,,"TO SPLIT 18",65,NULL
+612,"2025-11-16 08:40:19",291,"Change Split",1,,"13/4 to 18/4",52,NULL
+613,"2025-11-16 08:40:37",273,"Site Down",0,,,65,NULL
+614,"2025-11-16 08:57:34",340,Dropoff,1,15,"Black sedan",26,NULL
+615,"2025-11-16 08:52:00",344,"Detailer on site",1,05,,80,NULL
+616,"2025-11-16 09:43:03",291,"OMNIA Crash",0,,"CAMILO M TOOK STATION, BACK AT 9:43",65,NULL
+617,"2025-11-16 10:50:10",345,"First Employee",1,2,"Black Sedan",26,NULL
+618,"2025-11-16 08:30:06",291,"Change Split",0,,"SP13 ST10 - SP13 ST13",79,NULL
+619,"2025-11-16 08:35:22",121,"Employee on site",1,54,,79,NULL
+621,"2025-11-16 09:29:23",121,"Detailer in",1,54,"VAN BLANCA",79,NULL
+622,"2025-11-16 11:21:49",291,"Covered by",0,,"BY SANTIAGO F, BACK AT 11:31",65,NULL
+623,"2025-11-16 08:30:55",291,"START SHIFT",0,,"Do Not Edit - No Editar",79,NULL
+624,"2025-11-16 11:22:01",291,"START SHIFT",0,,"Back at 11:29",59,NULL
+626,"2025-11-16 11:38:36",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",59,NULL
+627,"2025-11-16 11:31:05",269,"First Employee",0,1,"BLACK PICK UP",65,NULL
+628,"2025-11-16 11:34:27",269,"Employee in",0,4,"WHITE SEDAN",65,NULL
+629,"2025-11-16 11:58:34",291,"Change Split",0,,"TO SPLIT 15",65,NULL
+630,"2025-11-16 11:58:32",291,"Change Split",0,,"Split 8/4 Luxriot",26,NULL
+631,"2025-11-16 11:58:49",291,"Change Split",1,,"18/4 to 15/4",52,NULL
+632,"2025-11-16 08:30:19",291,"Change Split",0,,"SP13 ST10",79,NULL
+634,"2025-11-16 08:40:11",291,"Change Split",0,,"SP18 ST10",79,NULL
+636,"2025-11-16 12:01:13",236,"Cleaner on site",0,39,,65,NULL
+637,"2025-11-16 08:35:20",291,"Took station over",0,,split13st13,36,NULL
+638,"2025-11-16 08:35:25",291,"START SHIFT",0,,"Do Not Edit - No Editar",36,NULL
+639,"2025-11-16 08:45:36",128,"Detailer out",1,45,"black pick up truck",36,NULL
+640,"2025-11-16 10:45:56",140,Dropoff,1,10,"Carhauler bring 2 cars",36,NULL
+641,"2025-11-16 11:00:41",140,Pickup,1,01,"carhauler take 2 cars",36,NULL
+642,"2025-11-16 12:10:36",236,Delivery,0,9,"WHITE TRUCK",65,NULL
+643,"2025-11-16 12:32:31",266,Dropoff,1,05,"Blue Pickup Truck",52,NULL
+644,"2025-11-16 12:45:45",236,"Delivery out",0,9,"WHITE TRUCK",65,NULL
+645,"2025-11-16 12:46:07",292,Pickup,1,9,"Black Sedan",26,NULL
+646,"2025-11-16 12:56:46",236,"Cleaner out",0,,"REPORTED BY CALL",65,NULL
+648,"2025-11-16 12:17:15",129,"Cleaner on site",1,64,"Black suv, left at 14:23pm",36,NULL
+649,"2025-11-16 12:42:57",129,"Employee out",1,59,"Black suv",36,NULL
+650,"2025-11-16 12:48:57",135,"Delivery out",1,66,,36,NULL
+651,"2025-11-16 11:58:30",291,"Change Split",0,,"SP15 ST10",79,NULL
+652,"2025-11-16 12:25:22",201,"Cleaner on site",1,48,"OUT 12:27 CAM 4 SEDAN ROJO",79,NULL
+653,"2025-11-16 12:46:55",125,Dropoff,1,4,"BLACK PICK UP, OUT AT 12:51",65,NULL
+654,"2025-11-16 13:01:30",335,Dropoff,1,27,"Gray Sedan",26,NULL
+655,"2025-11-16 12:55:52",274,Pickup,1,08,"Gray SUV",52,NULL
+656,"2025-11-16 13:11:36",169,"Cleaner in",0,43,"BLACK SUV",65,NULL
+657,"2025-11-16 08:26:55",291,"START SHIFT",0,,"Do Not Edit - No Editar",16,NULL
+658,"2025-11-16 13:33:03",241,"Employee out",1,4,"SEDAN NEGRO",79,NULL
+659,"2025-11-16 13:46:41",169,"Cleaner out",0,43,"BLACK SUV, REPORTED BY CALL",65,NULL
+660,"2025-11-16 13:50:58",266,Dropoff,1,02,"Black SUV",52,NULL
+661,"2025-11-16 14:10:07",292,Dropoff,1,9,"Gray pickup truk",26,NULL
+662,"2025-11-16 13:06:43",125,Dropoff,1,5,"BLACK PICK UP, OUT AT 13:19",65,NULL
+665,"2025-11-16 13:50:35",140,Dropoff,1,10,"carhauler bring 8 cars",36,NULL
+666,"2025-11-16 14:22:57",135,"Employee in",1,10,"black sedan",36,NULL
+667,"2025-11-16 15:05:55",266,"Switch Car",1,14,"white flatbed for a white pickup truck",52,NULL
+668,"2025-11-16 15:08:25",171,"Cleaner out",2,7,"SEDAN BLANCO",79,NULL
+669,"2025-11-16 14:31:51",190,Dropoff,1,18,"flatbedtruck bring black sedan",36,NULL
+670,"2025-11-16 15:08:16",129,Pickup,1,41,"black suv",36,NULL
+671,"2025-11-16 15:10:18",291,"Covered by",0,,"BY ANDRES C, BACK AT 15:20",65,NULL
+672,"2025-11-16 15:22:47",292,Dropoff,1,9,"Black SUV",26,NULL
+673,"2025-11-16 12:38:00",339,"Switch Car",1,13,"sedan gris,  * se llevan  pickup negra",80,NULL
+674,"2025-11-16 15:12:00",288,"Police Patroling",1,35,,80,NULL
+675,"2025-11-16 16:01:00",339,Dropoff,1,09,"1 vehiculo pickup negra",80,NULL
+676,"2025-11-16 16:03:27",125,Dropoff,1,4,"BLACK SUV, OUT AT 16:09",65,NULL
+677,"2025-11-16 16:21:16",292,Dropoff,1,9,"Black sedan",26,NULL
+678,"2025-11-16 16:20:00",339,Dropoff,1,18,"1 vehiculo sedan blanco",80,NULL
+679,"2025-11-16 16:25:48",125,Pickup,1,12,"DARK GRAY PICK UP",65,NULL
+680,"2025-11-16 16:33:04",190,Dropoff,1,2,"Black sedan",73,NULL
+681,"2025-11-16 16:43:20",335,Dropoff,1,26,"Black SUV",26,NULL
+682,"2025-11-16 16:44:00",190,Dropoff,1,18,"Silver Sedan",73,NULL
+683,"2025-11-16 16:55:35",335,Dropoff,1,27,"Black sport",26,NULL
+684,"2025-11-16 16:58:35",140,Dropoff,1,10,"Blue pick up truck",73,NULL
+685,"2025-11-16 17:07:21",292,Dropoff,1,09,"Black SUV",26,NULL
+686,"2025-11-16 16:02:37",135,"cleaner in",2,,"call to check in",36,NULL
+687,"2025-11-16 17:35:33",162,"Detailer on site",2,45,,79,NULL
+688,"2025-11-16 17:32:57",125,Dropoff,1,4,"black sedan, out at 17:39",65,NULL
+689,"2025-11-16 17:41:10",335,Dropoff,1,27,"White sedan",26,NULL
+690,"2025-11-16 17:43:44",292,Dropoff,1,09,"Blue pickup truck",26,NULL
+691,"2025-11-16 17:42:30",236,"Charging Station",0,5,"white suv out",65,NULL
+692,"2025-11-16 18:00:29",224,"Cleaner in",2,12,,52,NULL
+693,"2025-11-16 16:43:00",350,Dropoff,1,01,"1 vehiculo sedan verde",80,NULL
+694,"2025-11-16 17:48:00",339,Dropoff,1,09,"1 vehiculo svc blanco",80,NULL
+695,"2025-11-16 08:23:50",291,"START SHIFT",0,,"Do Not Edit - No Editar",89,NULL
+696,"2025-11-16 18:19:10",237,"Cleaner out",0,16,"BLACK SUV",79,NULL
+697,"2025-11-16 17:10:43",266,Dropoff,1,46,"Red SUV",52,NULL
+698,"2025-11-16 18:23:36",140,Dropoff,1,10,"Carhauler bring 6 cars",36,NULL
+699,"2025-11-16 18:39:26",129,"Cleaner out",1,21,"Black suv",36,NULL
+700,"2025-11-16 18:01:57",291,Break,0,,"covered by kelly back at 19:01",65,NULL
+701,"2025-11-16 18:03:51",291,Break,1,,"Back at 19:02/ Nicolas C. took station",52,NULL
+702,"2025-11-16 08:33:43",158,"Detailer in",1,10,,32,NULL
+703,"2025-11-16 08:37:39",137,"Cleaner in",2,04,,32,NULL
+705,"2025-11-16 19:12:34",162,Dropoff,1,12,"WHITE SUV",79,NULL
+706,"2025-11-16 08:17:07",291,"START SHIFT",0,,"Do Not Edit - No Editar",85,NULL
+707,"2025-11-16 19:30:08",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",85,NULL
+708,"2025-11-16 19:21:45",291,"Change Split",0,,"SP12 ST10",79,NULL
+709,"2025-11-16 19:22:21",291,"Change Split",0,,"to split 12",65,NULL
+710,"2025-11-16 19:22:03",292,Dropoff,0,9,"White SUV",26,NULL
+711,"2025-11-16 19:21:01",291,"Change Split",1,,"15/4 to 12/4",52,NULL
+712,"2025-11-16 19:23:07",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",36,NULL
+714,"2025-11-16 19:25:22",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",16,NULL
+715,"2025-11-16 19:24:38",291,"Change Split",0,,"Split6/4 Luxriot",26,NULL
+716,"2025-11-16 19:28:30",136,"Cleaner on site",1,65,,65,NULL
+717,"2025-11-16 19:29:05",125,Dropoff,1,1,"1 white van",65,NULL
+718,"2025-11-16 19:30:03",282,Dropoff,1,20,"Red SUV",26,NULL
+719,"2025-11-16 19:30:44",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",79,NULL
+720,"2025-11-16 19:30:51",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",65,NULL
+721,"2025-11-16 19:30:54",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",26,NULL
+722,"2025-11-16 19:30:14",291,"START SHIFT",0,,"Do Not Edit - No Editar",63,NULL
+723,"2025-11-16 19:32:16",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",52,NULL
+724,"2025-11-16 19:32:49",291,"START SHIFT",0,,"Do Not Edit - No Editar",48,NULL
+725,"2025-11-16 19:31:58",291,"Took station over",0,,"Sp 12 St 9",48,NULL
+726,"2025-11-16 19:32:58",162,"Cleaner on site",1,129,,63,NULL
+727,"2025-11-16 19:30:02",291,"START SHIFT",0,,"Do Not Edit - No Editar",68,NULL
+729,"2025-11-16 19:50:44",291,"START SHIFT",0,,"Do Not Edit - No Editar",42,NULL
+730,"2025-11-16 19:47:00",231,"Cleaner out",1,42,"Gray SUV",42,NULL
+731,"2025-11-16 19:49:33",247,"Employee out",1,15,,63,NULL
+733,"2025-11-16 19:41:47",270,Dropoff,4,6,"4 Suv's",48,NULL
+734,"2025-11-16 19:56:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",78,NULL
+735,"2025-11-16 19:55:42",135,"Cleaner out",1,36/40,"Black Sedan",42,NULL
+736,"2025-11-16 19:55:51",270,Dropoff,1,5,"Silver SUV",48,NULL
+737,"2025-11-16 19:56:40",291,"START SHIFT",0,,"Do Not Edit - No Editar",54,NULL
+739,"2025-11-16 19:47:00",231,"Cleaner out",1,42,"Gray SUV",42,NULL
+741,"2025-11-16 19:58:59",214,"Cleaner in",2,15,"Arrives in a Red Sedan",48,NULL
+742,"2025-11-16 19:30:00",163,"Took station over",1,1st,"St. 1/1 B&B  From Emanuel",43,NULL
+743,"2025-11-16 20:09:05",291,"Change Split",0,,13,42,NULL
+744,"2025-11-16 20:06:11",270,"Employee out",1,,,48,NULL
+745,"2025-11-16 20:07:07",140,Dropoff,2,10,"2 Black SUV'S",48,NULL
+746,"2025-11-16 20:08:50",232,"Security Patroling",1,1,,78,NULL
+747,"2025-11-16 20:09:18",291,"Change Split",0,,"Split 13",68,NULL
+748,"2025-11-16 20:09:21",291,"Change Split",0,,"SPLT13 ST3",54,NULL
+749,"2025-11-16 20:09:31",291,"Change Split",1,,"split 13 omnia",78,NULL
+751,"2025-11-16 20:09:16",291,"Change Split",0,,"Sp 13 St 9",48,NULL
+752,"2025-11-16 20:09:03",291,"Change Split",0,,"SP 13 ST 10",63,NULL
+754,"2025-11-16 19:00:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",29,NULL
+755,"2025-11-16 19:30:07",291,"START SHIFT",0,,"Do Not Edit - No Editar",7,NULL
+758,"2025-11-16 21:19:15",176,Dropoff,1,02/20,"Gray SUV",42,NULL
+759,"2025-11-16 20:05:22",141,Dropoff,1,15,"Black SUV",7,NULL
+760,"2025-11-16 20:09:09",163,"Change Split",0,,"SPLIT 13 - STAT 11",7,NULL
+761,"2025-11-16 20:17:15",279,"Cleaner in",2,13/26,"Black SUV",42,NULL
+762,"2025-11-16 20:11:00",264,Dropoff,0,03,,68,NULL
+763,"2025-11-16 20:28:44",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",89,NULL
+764,"2025-11-16 20:33:36",266,"Employee in",1,35,"Arrives in a black SUV",48,NULL
+765,"2025-11-16 19:30:45",291,"START SHIFT",0,,"Do Not Edit - No Editar",41,NULL
+766,"2025-11-16 20:28:51",141,Dropoff,1,16,"1 Black Cooper",63,NULL
+767,"2025-11-16 19:30:57",291,"START SHIFT",0,,"Do Not Edit - No Editar",10,NULL
+768,"2025-11-16 19:33:34",147,Dropoff,0,15,"white hashback",41,NULL
+769,"2025-11-16 19:30:39",291,"START SHIFT",0,,"Do Not Edit - No Editar",33,NULL
+770,"2025-11-16 19:30:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",8,NULL
+771,"2025-11-16 19:45:55",354,Dropoff,1,11,off-road,10,NULL
+773,"2025-11-16 19:40:20",271,Pickup,1,17,"White SUV",33,NULL
+774,"2025-11-16 19:30:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",60,NULL
+775,"2025-11-16 19:54:42",271,Dropoff,1,01,"White Pick up truck",33,NULL
+776,"2025-11-16 19:38:38",222,"Employee out",1,02,,41,NULL
+777,"2025-11-16 19:30:22",291,"START SHIFT",0,,"Do Not Edit - No Editar",11,NULL
+778,"2025-11-16 20:08:31",318,Dropoff,1,03,"white suv / out at 20:30",10,NULL
+779,"2025-11-16 19:35:15",337,"Cleaner on site",3,52,,70,NULL
+780,"2025-11-16 20:09:07",291,"Change Split",7,,LUXRIOT,33,NULL
+782,"2025-11-16 20:11:00",282,Dropoff,1,25,"White Van",33,NULL
+784,"2025-11-16 20:39:56",271,"Voice Down",0,,Trespasser,7,NULL
+785,"2025-11-16 20:10:53",291,"Change Split",6,,luxriot,70,NULL
+786,"2025-11-16 20:20:37",280,Dropoff,1,03,"Gray Sedan",33,NULL
+787,"2025-11-16 19:50:30",222,"Employee out",2,02,"black suv",41,NULL
+788,"2025-11-16 19:37:00",240,Dropoff,1,2,"White SUV 03:22 3:22",60,NULL
+789,"2025-11-16 20:28:59",318,"Cleaner on site",2,36,"out at 22:35 / red suv",10,NULL
+791,"2025-11-16 19:45:00",331,"Employee on site",1,13,,8,NULL
+792,"2025-11-16 19:39:06",144,"Cleaner in",2,07,"Gray suv",11,NULL
+793,"2025-11-16 19:52:00",303,"Detailer on site",1,79,,8,NULL
+794,"2025-11-16 20:09:17",291,"Change Split",0,0,"Split 13 station 1 omnia",11,NULL
+795,"2025-11-16 20:44:57",147,Dropoff,1,15,"red suv",54,NULL
+796,"2025-11-16 20:19:47",291,"Change Split",0,,"Split 13 Station 7",60,NULL
+797,"2025-11-16 19:55:00",338,Dropoff,1,13,"a dark grey suv",8,NULL
+798,"2025-11-16 20:12:47",250,"Cleaner out",1,21,"White suv",11,NULL
+799,"2025-11-16 20:09:29",291,"Change Split",0,0,"split 7",10,NULL
+800,"2025-11-16 20:09:00",291,"Change Split",1,0,"to split 7, station 6/ luxriot",8,NULL
+801,"2025-11-16 19:57:11",145,"Cleaner out",2,02,"black suv",41,NULL
+802,"2025-11-16 20:24:49",151,Pickup,1,21,"Black suv",11,NULL
+803,"2025-11-16 20:40:15",197,"Cleaner on site",1,08,"Out 21:01",11,NULL
+804,"2025-11-16 20:09:03",291,"Change Split",0,,"sp 13 - st 2",41,NULL
+805,"2025-11-16 20:44:38",151,Dropoff,1,5,"White Pick up Truck",48,NULL
+806,"2025-11-16 20:49:58",279,"Cleaner out",2,26,"Black SUV",42,NULL
+807,"2025-11-16 20:15:25",219,Dropoff,1,20,"black suv",41,NULL
+808,"2025-11-16 20:16:09",145,Dropoff,2,02,"Black suv's",41,NULL
+809,"2025-11-16 20:33:04",222,"Employee out",1,02,"black sedan",41,NULL
+810,"2025-11-16 20:53:08",133,"Cleaner out",1,,"Black SUV",7,NULL
+811,"2025-11-16 20:42:14",219,Dropoff,1,21*20,"black sedan",41,NULL
+812,"2025-11-16 20:44:04",222,"Employee in",2,02,"black sedan out at 21:36",41,NULL
+813,"2025-11-16 20:50:06",130,Dropoff,1,5,"Black SUV",48,NULL
+814,"2025-11-16 20:58:12",130,"Cleaner on site",2,11,,48,NULL
+815,"2025-11-16 21:05:13",151,"Cleaner out",1,35,"Gray Sedan",11,NULL
+816,"2025-11-16 21:07:54",203,"Cleaner in",2,07,"gray pick up truck",78,NULL
+817,"2025-11-16 21:12:36",136,"Cleaner out",2,14,"green sedan",54,NULL
+818,"2025-11-16 21:17:54",270,Dropoff,1,13,"Black SUV",48,NULL
+819,"2025-11-16 21:21:16",184,Dropoff,2,,"Black put",70,NULL
+820,"2025-11-16 21:19:39",223,"Cleaner in",1,"07, 09","Red Sedan",7,NULL
+821,"2025-11-16 21:20:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",90,NULL
+822,"2025-11-16 21:27:09",144,"Employee out",1,1,"Black hatchback",90,NULL
+824,"2025-11-16 21:32:29",291,"START SHIFT",0,,"Do Not Edit - No Editar",35,NULL
+826,"2025-11-16 21:33:03",291,"START SHIFT",0,,"Do Not Edit - No Editar",56,NULL
+827,"2025-11-16 21:34:16",281,"First Employee",3,4,"blue put",70,NULL
+828,"2025-11-16 21:35:52",163,"Change Split",0,,"splt 17 - stat 9",7,NULL
+829,"2025-11-16 21:35:52",291,"Change Split",0,,"Sp 17 - St 2",41,NULL
+830,"2025-11-16 21:35:41",291,"Change Split",0,,17/14,35,NULL
+831,"2025-11-16 21:35:54",291,"Change Split",0,,"split 17 omnia",78,NULL
+832,"2025-11-16 21:30:23",291,"START SHIFT",0,,"Do Not Edit - No Editar",25,NULL
+833,"2025-11-16 21:35:03",291,"Change Split",0,0,"Split 17 station 1 omnia",11,NULL
+834,"2025-11-16 21:35:11",291,"Change Split",0,,"SP 17 ST 8",63,NULL
+835,"2025-11-16 21:35:31",291,"Change Split",0,,"split 17-15",25,NULL
+837,"2025-11-16 21:30:26",291,"START SHIFT",0,,"Do Not Edit - No Editar",72,NULL
+838,"2025-11-16 21:29:51",291,"START SHIFT",0,,"SPLICK 17/17",91,NULL
+839,"2025-11-16 21:37:56",291,"START SHIFT",0,,"Do Not Edit - No Editar",77,NULL
+840,"2025-11-16 21:36:46",291,"Change Split",9,,LUXRIOT,33,NULL
+841,"2025-11-16 21:37:42",291,"Change Split",0,0,"split 9",10,NULL
+842,"2025-11-16 21:35:38",291,"Change Split",0,,"Split 17, station 13",72,NULL
+843,"2025-11-16 21:36:00",291,"Change Split",1,0,"to split 9, station 6",8,NULL
+844,"2025-11-16 21:36:17",291,"Change Split",0,,"Split 9 LUXRIOT",68,NULL
+845,"2025-11-16 21:38:08",144,"Cleaner on site",2,A01,,35,NULL
+846,"2025-11-16 21:27:00",144,"Employee out",1,1,"Black HatchBack",42,NULL
+847,"2025-11-16 21:36:18",291,"Change Station",0,,"LUXRIOT 9",68,NULL
+849,"2025-11-16 21:37:30",291,"Change Split",9,,luxriot,70,NULL
+850,"2025-11-16 19:45:16",127,Delivery,1,"36,38","Customer in Orange T-shirt",43,NULL
+851,"2025-11-16 21:42:40",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",56,NULL
+852,"2025-11-16 21:43:38",266,"Employee out",1,,"Black SUV",48,NULL
+853,"2025-11-16 21:42:07",286,"Cleaner in",1,"04 / Call","Out at 22:58",33,NULL
+854,"2025-11-16 21:44:55",291,"START SHIFT",0,,"Do Not Edit - No Editar",56,NULL
+855,"2025-11-16 21:46:21",266,"Security Patroling",1,40,CITADEL,48,NULL
+857,"2025-11-16 21:49:36",235,"Detailer in",1,31,"Dark green off road",41,NULL
+858,"2025-11-16 20:08:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",53,NULL
+859,"2025-11-16 21:54:16",214,"Cleaner out",1,15,"red sedan",78,NULL
+860,"2025-11-16 20:30:00",135,"Employee out",1,6,"in a silver sedan",53,NULL
+861,"2025-11-16 20:48:09",190,Pickup,1,21,"1 Silver suv",53,NULL
+862,"2025-11-16 21:35:38",291,"Change Split",0,,SPLT17,54,NULL
+863,"2025-11-16 21:59:08",281,"Employee in",1,4,,70,NULL
+864,"2025-11-16 21:59:39",346,"Police Patroling",1,5,"Blue SUV.",90,NULL
+865,"2025-11-16 21:35:00",291,"Change Split",0,,"17/11 OMNIA",53,NULL
+868,"2025-11-16 20:15:49",240,Dropoff,1,3,"Silver SUV",60,NULL
+869,"2025-11-16 20:32:38",240,Dropoff,1,2,"Black SUV",60,NULL
+870,"2025-11-16 22:02:45",249,"Cleaner on site",2,24,,48,NULL
+871,"2025-11-16 22:02:16",133,Dropoff,6,5,"6 suv",53,NULL
+872,"2025-11-16 21:30:26",260,Pickup,1,02,"Blue sedan",7,NULL
+873,"2025-11-16 22:03:12",280,Dropoff,1,4,"Dark-gray SUV",90,NULL
+874,"2025-11-16 21:08:00",249,"Cleaner in",2,"11,38",,60,NULL
+875,"2025-11-16 21:36:51",291,"Change Split",0,,"Luxriot - Split 9 Station 8",60,NULL
+876,"2025-11-16 22:05:07",223,"Cleaner out",1,7,"in a red sedan",53,NULL
+877,"2025-11-16 21:30:00",291,"Start Shift",0,,,31,NULL
+878,"2025-11-16 21:54:00",291,"Covered by",1,0,"back at 22:05 pm",8,NULL
+879,"2025-11-16 22:03:38",160,"Employee out",1,66,,63,NULL
+884,"2025-11-16 22:07:13",230,"Charging Station",1,29,"suv color negra",77,NULL
+885,"2025-11-16 22:10:11",203,"cleaner out",2,07,"gray pick up",78,NULL
+886,"2025-11-16 22:13:52",151,"Detailer on site",1,111,,48,NULL
+887,"2025-11-16 22:16:25",156,"Cleaner out",1,18,"Dark-gray sedan",90,NULL
+888,"2025-11-16 22:16:18",144,"Employee out",0,01,"sedan black",35,NULL
+889,"2025-11-16 21:38:02",291,"Change Split",0,,"split17/ station16",77,NULL
+890,"2025-11-16 22:15:00",271,Dropoff,1,1,"Silver sedan - Out 10:19 en Silver suv",31,NULL
+891,"2025-11-16 22:22:49",274,"Security Patroling",1,07,,78,NULL
+892,"2025-11-16 22:12:06",307,Dropoff,1,19,"black sedan",70,NULL
+893,"2025-11-16 22:25:23",240,Dropoff,1,02,"grey sedan",41,NULL
+894,"2025-11-16 22:11:19",281,"Employee out",1,04,"black put",70,NULL
+895,"2025-11-16 22:25:32",280,Dropoff,1,06,"Black Hatchback",33,NULL
+898,"2025-11-16 22:19:54",188,dropoff,1,8,"black sedan",70,NULL
+899,"2025-11-16 22:28:20",282,Dropoff,1,11,"Red SUV",33,NULL
+900,"2025-11-16 22:26:07",281,dropoff,1,1,"black hatchback",70,NULL
+901,"2025-11-16 22:35:54",260,Dropoff,4,11,"4 Vehicles",7,NULL
+902,"2025-11-16 22:41:04",264,"Traffic Stop",0,23,"Left at 22:51:01",42,NULL
+903,"2025-11-16 22:43:46",291,"Took station over",0,,"Sp 17 - st 1 Jhon S. 22:44",41,NULL
+905,"2025-11-16 22:29:00",291,"Covered by",1,1st,"Lead Supervisor Wendy H. Until 22:36",43,NULL
+906,"2025-11-16 22:43:37",291,"OMNIA Crash",0,0,"Station took by David Carvajal until 22:44",11,NULL
+907,"2025-11-16 22:46:56",282,"Police Patroling",0,04,,33,NULL
+908,"2025-11-16 21:30:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",22,NULL
+909,"2025-11-16 21:30:45",291,Covers,0,,Covers,22,NULL
+910,"2025-11-16 21:35:46",291,"Change Split",0,,17-3,22,NULL
+911,"2025-11-16 22:42:35",231,"Cleaner in",2,7,,63,NULL
+912,"2025-11-16 22:01:30",348,"Employee out",2,02,"Gray SUV",22,NULL
+913,"2025-11-16 22:54:19",182,"Cleaner in",1,1,"in a silver sedan, out 1.17",53,NULL
+914,"2025-11-16 22:57:23",291,"Change Split",0,0,"split 7",10,NULL
+915,"2025-11-16 22:56:56",291,"Change Split",0,,"Split 7 LUXRIOT",68,NULL
+916,"2025-11-16 22:57:30",291,"Change Split",1,0,"to spli 7, st 6",8,NULL
+918,"2025-11-16 22:57:10",291,"Change Split",7,,lux,70,NULL
+919,"2025-11-16 22:59:04",291,"Change Split",0,,"Split 14 OMNIA",68,NULL
+920,"2025-11-16 22:59:12",291,"Change Split",0,,"Sp 14 - St 2",41,NULL
+921,"2025-11-16 22:57:51",291,"Change Split",7,,LUXRIOT,33,NULL
+922,"2025-11-16 22:59:15",163,"Change Split",0,,"split 14",7,NULL
+923,"2025-11-16 22:59:16",291,"Change Split",0,,14,42,NULL
+924,"2025-11-16 22:59:52",291,"Change Split",0,0,"Split 14 Station 1 omnia",11,NULL
+925,"2025-11-16 22:59:18",291,"Change Split",0,,"SP 14 ST 8",63,NULL
+926,"2025-11-16 22:59:21",291,"Change Split",0,,SPLT14,54,NULL
+927,"2025-11-16 22:59:14",291,"Change Split",0,,"Sp 14 St 7",48,NULL
+928,"2025-11-16 22:59:33",291,"Change Split",0,,14/11,53,NULL
+929,"2025-11-16 22:59:27",291,"Change Split",1,,"split 14 ommnia",78,NULL
+931,"2025-11-16 22:59:00",291,"Change Split",0,,SP14-ST12,31,NULL
+932,"2025-11-16 23:12:00",295,"Cleaner out",1,09,,8,NULL
+933,"2025-11-16 23:05:13",282,"Security Patroling",0,17,police,35,NULL
+934,"2025-11-16 22:36:31",338,Dropoff,1,11,"Gray SUV",60,NULL
+935,"2025-11-16 22:54:01",338,"Charging Station",0,4,"Silver SUV",60,NULL
+936,"2025-11-16 22:59:19",291,"Change Split",0,,,60,NULL
+938,"2025-11-16 23:25:37",141,"cleaner in",1,6,"in a black sedan, out 23.43",53,NULL
+939,"2025-11-16 23:17:22",291,"Covered by",0,,"Nicol  M. until 23:25",25,NULL
+940,"2025-11-16 23:00:00",291,Covers,0,,"Covers Break",22,NULL
+941,"2025-11-16 23:32:58",266,"Police Patroling",1,60,,91,NULL
+942,"2025-11-16 23:34:32",214,"Cleaner on site",1,,"out  10:44",91,NULL
+943,"2025-11-16 23:37:15",346,"Police Patroling",1,2,,70,NULL
+944,"2025-11-16 23:38:47",286,"Cleaner in",0,04,"suv black",35,NULL
+945,"2025-11-17 00:00:36",182,"Cleaner on site",1,31,,72,NULL
+946,"2025-11-17 00:14:12",331,"Employee in",1,9,"deja bus color azul.",77,NULL
+947,"2025-11-17 00:16:24",124,Dropoff,1,04,"White SUV - by flat bed",7,NULL
+948,"2025-11-17 00:19:04",281,"Security Patroling",1,3,"sedan negro",77,NULL
+949,"2025-11-17 00:29:15",338,"Charging Station",0,04,"Gray SUV Out",33,NULL
+950,"2025-11-17 00:20:40",196,"Voice Down",0,8,"Trespasser under influence",60,NULL
+951,"2025-11-16 23:33:06",291,"Covered by",0,,"Back at 23:39",72,NULL
+952,"2025-11-17 00:43:18",264,"Police Patroling",1,20,"Left at 2:09:08",42,NULL
+953,"2025-11-16 21:35:00",291,"Change Split",0,,SP17-ST12,31,NULL
+954,"2025-11-17 01:01:30",214,"Detailer out",1,"14, 15","White suv",7,NULL
+955,"2025-11-17 01:02:03",291,Break,0,,"Break to Kevin Vergara. Lux 7/4",72,NULL
+956,"2025-11-17 01:13:45",344,Dropoff,0,20,"out at 1:15 /",35,NULL
+957,"2025-11-17 01:15:35",280,"Security Patroling",1,1,"suv plata patrulling",77,NULL
+958,"2025-11-17 01:14:10",126,Dropoff,1,18,"Black Pick up T.",48,NULL
+959,"2025-11-17 01:24:53",266,"Cleaner in",1,15,"black suv out at 2:50 am",7,NULL
+960,"2025-11-17 01:31:00",344,"Security Patroling",0,16,"premiere security",35,NULL
+961,"2025-11-17 01:32:39",219,"Cleaner on site",1,39,,68,NULL
+962,"2025-11-17 01:29:56",230,"Charging Station",1,29,"Blue SUV",42,NULL
+963,"2025-11-17 01:15:20",345,Dropoff,1,27,"a dark grey sedan",8,NULL
+964,"2025-11-17 01:38:06",303,"Employee on site",0,78,,35,NULL
+965,"2025-11-17 00:56:00",291,"OMNIA Crash",0,,"12:56 - Omnia Crash Juan Diego",31,NULL
+966,"2025-11-17 00:58:00",291,"OMNIA Crash",0,,"12:59 - Omnia Crash Juan Diego",31,NULL
+967,"2025-11-17 01:05:57",291,Break,0,,"Back 2:06 / Covered by Joel Olivar",60,NULL
+968,"2025-11-17 02:17:27",291,"Covered by",1,,"Logan G. until 02:25",11,NULL
+969,"2025-11-17 02:30:13",279,"Security Patroling",1,12,,63,NULL
+970,"2025-11-17 02:52:52",201,"Employee on site",1,30,,78,NULL
+971,"2025-11-17 02:54:07",230,"Charging Station",1,29,"Blue SUV",42,NULL
+972,"2025-11-17 03:03:47",291,Break,0,n/a,"retun at 3:02",35,NULL
+973,"2025-11-17 02:05:41",291,Break,0,,"until 3.05",53,NULL
+974,"2025-11-17 02:01:00",291,Break,0,,"Covered by Alejandra O. Back at 3:01",22,NULL
+975,"2025-11-17 01:23:00",291,"Covered by",0,,"Sebastian C. Back at 1:27",22,NULL
+976,"2025-11-16 22:54:00",291,"Covered by",0,,"Wendy Back at 22:58",22,NULL
+977,"2025-11-17 03:03:00",291,Covers,0,,"Covers de capacitacion Black and Blue Until 3:30",22,NULL
+978,"2025-11-17 03:27:25",163,"Change Split",0,,"split 10",7,NULL
+979,"2025-11-17 03:27:24",291,"Change Split",0,,"Split 10 OMNIA",68,NULL
+980,"2025-11-17 03:27:33",291,"Change Split",5,,LUXRIOT,33,NULL
+981,"2025-11-17 03:27:36",291,"Change Split",0,,"SP 10 ST 8",63,NULL
+982,"2025-11-17 03:27:10",291,"Change Split",0,,10,42,NULL
+983,"2025-11-17 03:27:41",291,"Change Split",0,0,"Split 10 Station 1",11,NULL
+984,"2025-11-17 03:27:51",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",7,NULL
+985,"2025-11-17 03:27:51",291,"Change Split",0,,"Sp 10 St 7",48,NULL
+986,"2025-11-17 03:27:48",291,"Change Split",0,,"SP 10 - ST 2",41,NULL
+987,"2025-11-17 03:28:00",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",33,NULL
+988,"2025-11-17 03:27:43",291,"Change Split",0,,"split 10 omnia",78,NULL
+989,"2025-11-17 03:27:40",291,"Change Split",1,,splt10,54,NULL
+990,"2025-11-17 03:27:41",291,"Change Split",1,,"to spit 5",8,NULL
+991,"2025-11-17 03:28:05",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",8,NULL
+992,"2025-11-17 03:27:45",291,"Change Split",0,0,"split 5",10,NULL
+993,"2025-11-17 03:28:31",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",48,NULL
+994,"2025-11-17 03:28:44",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",68,NULL
+995,"2025-11-17 03:28:58",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",41,NULL
+996,"2025-11-17 03:28:59",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",11,NULL
+997,"2025-11-17 03:29:42",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",42,NULL
+998,"2025-11-17 03:29:47",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",54,NULL
+999,"2025-11-17 03:29:48",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",78,NULL
+1000,"2025-11-17 03:29:59",291,"Took station over",0,,10-2,53,NULL
+1001,"2025-11-17 03:32:36",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",63,NULL
+1002,"2025-11-17 03:30:00",291,"Change Station",0,,"SP10-ST3 - JUAN DAVID BURBANO",31,NULL
+1003,"2025-11-17 03:02:05",291,"Change Split",0,,"Split 10  omnia",60,NULL
+1004,"2025-11-17 03:30:35",291,"Change Station",0,,"Station 4 / Omnia",60,NULL
+1005,"2025-11-17 03:38:54",291,"Change Station",8,,,70,NULL
+1006,"2025-11-17 03:31:00",291,Covers,0,,"Covers Break",22,NULL
+1007,"2025-11-17 03:46:55",155,"Charging Station",1,1,"Cliente carga sedan azul",77,NULL
+1008,"2025-11-17 03:47:30",187,"Change Station",0,,10/08,91,NULL
+1009,"2025-11-17 03:49:35",262,"Employee out",1,23,,72,NULL
+1010,"2025-11-17 03:40:48",287,Dropoff,0,19,"3 suv / 1 sedan",35,NULL
+1011,"2025-11-17 04:06:11",159,"Employee in",1,66,"black sedan",10,NULL
+1012,"2025-11-17 04:06:55",213,Dropoff,1,19,"Black Sedan",22,NULL
+1013,"2025-11-17 04:04:38",281,"Security Patroling",0,06,,35,NULL
+1014,"2025-11-17 04:16:18",231,"Cleaner on site",1,22,"sendan black",91,NULL
+1015,"2025-11-17 04:18:51",279,"Security Patroling",1,1,h,91,NULL
+1016,"2025-11-17 04:20:00",125,"First Employee",1,3,"Out 5:18 - Silver sedan",31,NULL
+1017,"2025-11-17 04:21:52",121,"First Employee",1,15,"white suv",56,NULL
+1018,"2025-11-16 20:00:08",291,"START SHIFT",0,,"Do Not Edit - No Editar",92,NULL
+1019,"2025-11-17 04:27:44",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",92,NULL
+1020,"2025-11-17 04:37:26",118,"First Employee",1,5,"White off-road",43,NULL
+1021,"2025-11-17 04:38:10",137,"Employee in",1,13,"LLega en suv blanca",77,NULL
+1022,"2025-11-17 04:47:16",348,"First Employee",0,26,"pickup truck gray",35,NULL
+1023,"2025-11-17 04:51:10",189,"First Employee",0,13,"sedan black",35,NULL
+1024,"2025-11-17 04:56:55",193,"First Employee",1,24,,25,NULL
+1025,"2025-11-17 04:58:15",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",10,NULL
+1026,"2025-11-17 05:04:35",299,"First Employee",0,22,"black suv",35,NULL
+1027,"2025-11-17 05:05:23",291,"Covered by",1,3th,"Supervisor Logan G. Until 05:14 a.m.",43,NULL
+1028,"2025-11-17 05:21:18",127,"First Employee",1,14,"White P.U.T.",43,NULL
+1029,"2025-11-17 05:24:11",190,"Police Patroling",1,8,,56,NULL
+1030,"2025-11-17 05:25:00",136,"Contractor in",0,14,,31,NULL
+1031,"2025-11-17 05:29:04",124,"First Employee",1,5,"Black SUV",56,NULL
+1032,"2025-11-17 05:34:45",236,"First Employee",1,08,"Picatruck Negro con blanco",31,NULL
+1033,"2025-11-17 05:33:05",197,"First Employee",1,10,,72,NULL
+1034,"2025-11-17 05:46:52",306,"First Employee",0,06,"red suv",35,NULL
+1035,"2025-11-17 05:47:08",279,"Detailer in",2,26,,91,NULL
+1036,"2025-11-17 04:26:17",133,"First Employee",0,4,"Black SUV",60,NULL
+1037,"2025-11-17 05:07:09",195,"First Employee",0,9,"Black sedan",60,NULL
+1038,"2025-11-17 05:38:00",167,"First Employee",0,"24,40","Red PT",60,NULL
+1039,"2025-11-17 05:40:57",133,Dropoff,9,3,"Arrived with 9 cars / 3 Drop off",60,NULL
+1040,"2025-11-17 05:55:15",184,"First Employee",0,04,"gray sedan",35,NULL
+1041,"2025-11-17 05:56:15",156,"First Employee",1,48,,72,NULL
+1042,"2025-11-17 05:57:57",279,"Police Patroling",1,4,,91,NULL
+1043,"2025-11-17 06:01:33",291,"Change Split",0,,"Split 7-st3",31,NULL
+1044,"2025-11-17 06:01:45",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",56,NULL
+1045,"2025-11-17 05:53:00",291,"Covered by",0,,"6:00 - Logan",31,NULL
+1046,"2025-11-17 06:03:24",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",43,NULL
+1047,"2025-11-17 06:02:57",137,"Cleaner on site",1,39,,25,NULL
+1048,"2025-11-17 06:03:40",130,"Employee on site",1,45,,31,NULL
+1049,"2025-11-17 06:07:23",291,"START SHIFT",0,,"Do Not Edit - No Editar",84,NULL
+1050,"2025-11-17 06:04:23",291,"Change Split",0,,7-2,53,NULL
+1051,"2025-11-17 06:08:02",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",60,NULL
+1052,"2025-11-17 06:04:14",291,"Change Split",0,,"s 7/1",72,NULL
+1053,"2025-11-17 06:00:00",291,"Change Split",0,,7-7,22,NULL
+1054,"2025-11-17 06:10:05",168,"First Employee",1,43e,"walk in",53,NULL
+1055,"2025-11-17 06:10:24",279,"First Employee",1,13,,31,NULL
+1056,"2025-11-17 06:09:16",231,"Employee on site",1,53,,25,NULL
+1057,"2025-11-17 06:10:14",197,"Change Station",0,,"Splick 7  Station 4",91,NULL
+1058,"2025-11-17 06:11:35",197,"Cleaner on site",4,1,,91,NULL
+1059,"2025-11-17 06:10:29",167,"First Employee",0,33,"White pickup truck",72,NULL
+1060,"2025-11-17 06:12:43",163,"First Employee",2,24,"Picatruck blanco",31,NULL
+1061,"2025-11-17 06:02:44",291,"Change Split",0,,2/1,35,NULL
+1062,"2025-11-17 06:13:42",144,Delivery,0,8,,72,NULL
+1064,"2025-11-17 06:18:13",124,"Employee on site",2,28,,91,NULL
+1065,"2025-11-17 06:18:58",137,"First Employee",1,51,,25,NULL
+1067,"2025-11-17 06:19:45",291,"Covered by",1,2nd,"By Edwin Ortiz until 6:24 am",72,NULL
+1068,"2025-11-17 06:23:30",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",84,NULL
+1069,"2025-11-17 06:23:35",223,"Cleaner on site",1,53,,56,NULL
+1071,"2025-11-17 06:22:20",136,"First Employee",1,"14,53","white sedan",72,NULL
+1072,"2025-11-17 06:24:33",271,"Employee in",1,18,"Llega en suv blanca y se va en 4x4 blanca",77,NULL
+1073,"2025-11-17 06:25:04",272,"Police Patroling",1,48,,91,NULL
+1074,"2025-11-17 06:24:37",262,Delivery,1,21,"out 6:31 am",25,NULL
+1075,"2025-11-17 06:24:09",216,"Employee in",1,4,"llega en 4x4 color plata",77,NULL
+1076,"2025-11-17 06:27:52",129,"Employee in",1,16,"4x4 azul",91,NULL
+1077,"2025-11-17 06:29:54",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",29,NULL
+1078,"2025-11-17 06:22:09",291,"Covered by",0,,"kevin v. until 6:29",25,NULL
+1079,"2025-11-17 06:10:00",124,Covers,0,,,91,NULL
+1080,"2025-11-17 06:37:10",240,"First Employee",1,22,"Suv silver",31,NULL
+1081,"2025-11-17 06:38:17",266,"Cleaner on site",1,72,,56,NULL
+1082,"2025-11-17 06:38:26",151,"First Employee",1,34,,31,NULL
+1083,"2025-11-17 06:41:01",288,"Employee in",0,56,"red suv",35,NULL
+1084,"2025-11-17 06:42:14",135,"First Employee",1,50,,25,NULL
+1085,"2025-11-17 06:40:42",231,Dropoff,6,08,"7 suv 5 black 1 blue 1 white  1 sedan black",25,NULL
+1086,"2025-11-17 06:45:35",250,"Employee on site",0,08,"white suv",35,NULL
+1087,"2025-11-17 06:52:51",225,"Employee out",1,53,"in a black pick up truck",53,NULL
+1088,"2025-11-17 06:53:46",168,"First Employee",1,154,"walk in",53,NULL
+1089,"2025-11-17 06:56:23",165,"First Employee",1,3,,22,NULL
+1090,"2025-11-17 07:00:17",124,"Change Split",0,,6/4,91,NULL
+1091,"2025-11-17 07:01:30",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",53,NULL
+1092,"2025-11-17 07:04:27",240,"Employee on site",2,50,,25,NULL
+1093,"2025-11-17 07:07:48",130,"Employee in",1,15,"llega en suv lanco",77,NULL
+1094,"2025-11-17 07:05:56",264,Dropoff,1,3,"llega en 4x4 gris  y la deja",77,NULL
+1095,"2025-11-17 07:09:48",284,"First Employee",0,06,"white suv",35,NULL
+1096,"2025-11-17 07:27:23",240,"First Employee",1,73,,25,NULL
+1097,"2025-11-17 07:28:32",174,"First Employee",1,12,,31,NULL
+1098,"2025-11-17 07:32:24",169,"Employee in",1,6,,91,NULL
+1100,"2025-11-17 07:41:00",240,Dropoff,9,17,"9. 1 pickup truck grey, 2 sedan, 6 suv",25,NULL
+1101,"2025-11-17 07:50:01",262,"First Employee",1,11,"Black SUV",72,NULL
+1102,"2025-11-17 07:03:13",291,"Covered by",0,,"Juan Jose C Back at 7:10",22,NULL
+1103,"2025-11-17 07:50:07",298,"First Employee",1,11,"PUT Gris",22,NULL
+1104,"2025-11-17 08:00:49",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",72,NULL
+1105,"2025-11-17 08:00:54",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",77,NULL
+1106,"2025-11-17 08:00:58",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",31,NULL
+1107,"2025-11-17 07:51:48",283,"First Employee",1,05,"SUV Gris",22,NULL
+1108,"2025-11-17 08:01:28",291,"START SHIFT",0,,"Do Not Edit - No Editar",56,NULL
+1109,"2025-11-17 08:01:30",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",35,NULL
+1110,"2025-11-17 08:01:34",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",56,NULL
+1111,"2025-11-17 08:01:52",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",25,NULL
+1112,"2025-11-17 08:02:10",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",22,NULL
+1113,"2025-11-17 08:00:13",291,"START SHIFT",0,,"Do Not Edit - No Editar",65,NULL
+1114,"2025-11-17 08:13:59",291,"START SHIFT",0,,"Do Not Edit - No Editar",86,NULL
+1115,"2025-11-17 08:13:02",302,"Delivery in",1,"7,9",Unbrand,65,NULL
+1116,"2025-11-17 08:21:30",302,Delivery,1,7,"AmeriGas, Left at 08:40",65,NULL
+1117,"2025-11-17 08:31:06",144,"First Employee",1,8,"Black sedan",65,NULL
+1118,"2025-11-17 08:41:29",144,"Employee in",1,26,"Black pick up",65,NULL
+1119,"2025-11-17 09:03:02",302,"Delivery out",1,9,Unbrand,65,NULL
+1120,"2025-11-17 09:17:23",144,Delivery,1,21,"FedEx, Left at 09:19",65,NULL
+1121,"2025-11-17 09:21:23",291,"START SHIFT",0,,"Do Not Edit - No Editar",89,NULL
+1123,"2025-11-17 09:41:14",144,Delivery,1,"1,26","MME, left at 10:12",65,NULL
+1124,"2025-11-17 09:50:43",144,Pickup,1,29,"By flatbed, 1 silver pick up, left at 12:41",65,NULL
+1125,"2025-11-17 09:52:31",239,"Delivery in",1,2,"UPS, left at 10:44",65,NULL
+1126,"2025-11-17 10:06:50",144,Delivery,1,"4,3","Parts delivery, left at 11:07",65,NULL
+1127,"2025-11-17 10:18:28",291,"Covered by",0,,"By Juan Acevedo, back at 10:25",65,NULL
+1128,"2025-11-17 10:27:17",144,Dropoff,3,28,"By flatbed, 3 white pickup trucks, left at 10:41",65,NULL
+1129,"2025-11-17 10:35:55",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",89,NULL
+1130,"2025-11-17 10:36:44",144,Delivery,1,"4,31","Parts delivery, left at  12:01",65,NULL
+1131,"2025-11-17 10:37:53",291,"START SHIFT",0,,"Do Not Edit - No Editar",89,NULL
+1132,"2025-11-17 10:38:52",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",89,NULL
+1133,"2025-11-17 10:41:21",291,"START SHIFT",0,,"Do Not Edit - No Editar",89,NULL
+1134,"2025-11-17 10:45:58",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",89,NULL
+1135,"2025-11-17 10:54:48",144,Pickup,2,31,"By flatbed, 2 white pick up, Left at 12:47",65,NULL
+1136,"2025-11-17 11:05:21",144,Delivery,1,26,"Estes, Left at 11:11",65,NULL
+1137,"2025-11-17 11:10:08",144,Pickup,4,28,"By car hauler, 3 white pick up, 1 silver pick up, out at 14:22",65,NULL
+1138,"2025-11-17 11:16:17",163,Delivery,1,"23B, 23A","Amazon delivery, left at 11:17",65,NULL
+1139,"2025-11-17 11:28:33",302,"Contractor in",1,8,"White pick up, out at 13:29",65,NULL
+1140,"2025-11-17 11:32:58",144,Delivery,1,8,"UPS, left at 11:35",65,NULL
+1141,"2025-11-17 11:36:32",144,Delivery,1,"8, 26, 4","FedEx, left at 12:10",65,NULL
+1142,"2025-11-17 11:38:06",144,Delivery,1,"8,  1","FedEx, left at 11:45",65,NULL
+1143,"2025-11-17 11:42:03",144,Pickup,2,31,"Flatbed, 2 black pickup and 1 white pick up, Left at 13:07",65,NULL
+1144,"2025-11-17 11:42:48",144,Delivery,1,"1, 26","Xtra, left at 12:05",65,NULL
+1145,"2025-11-17 12:26:02",144,Delivery,1,8,"Shred-it, Left at 12:32",65,NULL
+1146,"2025-11-17 12:27:44",196,"First Employee",1,5,"Black hatchback",65,NULL
+1147,"2025-11-17 12:30:34",144,Delivery,1,"26, 1","UPS, left at 12:34",65,NULL
+1148,"2025-11-17 12:20:22",144,Dropoff,3,28,"By (Green) flatbed, 3 white pick up, left at 12:45",65,NULL
+1149,"2025-11-17 12:43:25",196,"Employee in",1,1,"Silver suv",65,NULL
+1150,"2025-11-17 12:46:43",144,Delivery,1,26,"Kessimakis, left at 13:04",65,NULL
+1151,"2025-11-17 12:55:25",144,Delivery,1,31,"Sysco, left at 13:26",65,NULL
+1152,"2025-11-17 13:04:00",291,Break,0,,"By Juan Acevedo, back at 14:04",65,NULL
+1153,"2025-11-17 12:28:00",132,"Contractor in",1,"5,10","Landscaper, left at",65,NULL
+1154,"2025-11-17 13:28:30",144,"Contractor in",1,"1,3","Recycling disposal, left at 13:40",65,NULL
+1155,"2025-11-17 13:07:39",144,Pickup,2,29,"By (White) flatbed,2 White pickup trucks, left at 14:17",65,NULL
+1157,"2025-11-17 13:36:29",302,"Delivery in",1,7,"Estes, left at 14:17",65,NULL
+1158,"2025-11-17 13:41:06",144,"Delivery in",1,21,"USPS, left at 13:57",65,NULL
+1159,"2025-11-17 12:36:30",144,Pickup,1,28,"By car hauler, 1 black pickup truck , left at 13:52",65,NULL
+1160,"2025-11-17 13:55:30",144,"Delivery in",1,"1,2","Parts delivery, left at 14:04",65,NULL
+1161,"2025-11-17 14:25:05",144,Pickup,1,31,"by flatbed, 3 white pick up",65,NULL
+1162,"2025-11-17 14:36:07",144,Pickup,1,31,"1 white pick up by flatbed",65,NULL
+1163,"2025-11-17 14:27:33",291,"OMNIA Crash",0,,"back at 14:35",65,NULL
+1164,"2025-11-17 14:27:14",291,"LUXRIOT Crash",0,,"back at 14:35",65,NULL
+1165,"2025-11-17 14:38:07",144,Pickup,1,23,"by flatbed, 2 white pick up",65,NULL
+1166,"2025-11-17 14:40:12",144,Pickup,1,15,"by car hauler,",65,NULL
+1167,"2025-11-17 14:35:15",311,Delivery,1,7,"ACT delivery, out 14:50",65,NULL
+1169,"2025-11-17 15:00:14",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",65,NULL
+1170,"2025-11-17 15:01:06",291,"START SHIFT",0,,"Do Not Edit - No Editar",8,NULL
+1171,"2025-11-17 15:08:28",144,Pickup,1,23,"car hauler/gray sedan, white pickup",8,NULL
+1172,"2025-11-17 15:19:13",144,"Delivery in",1,26,"meyer, left at 15:29 pm",8,NULL
+1173,"2025-11-17 15:28:20",144,"Delivery in",1,30,"costco, left at 15:40 pm",8,NULL
+1174,"2025-11-17 15:36:00",144,"Delivery in",1,25,"intex, left at 15:44 pm",8,NULL
+1175,"2025-11-17 15:47:46",144,Pickup,1,31,"By flatbed, 3 white pickup trucks, left at 16:16",8,NULL
+1176,"2025-11-17 16:13:16",144,"Delivery in",1,01,"XPO, left at 16:25 pm",8,NULL
+1177,"2025-11-17 16:23:46",144,Pickup,1,28,"flatbed/ 2 white pickup trucks, left at 16:34 pm",8,NULL
+1178,"2025-11-17 16:54:00",144,"Delivery in",1,01,"RL CARRIERS, LEFT AT 15:05 PM",8,NULL
+1179,"2025-11-17 17:15:39",144,"Delivery in",1,26,"rcl, left at 17:44 pm",8,NULL
+1180,"2025-11-17 17:15:00",144,"Delivery in",1,26,"ups, left at 16:18 pm",8,NULL
+1181,"2025-11-17 17:26:00",144,"Delivery in",1,26,"intex, left at 17:55 pm",8,NULL
+1182,"2025-11-17 17:12:00",144,Pickup,1,31,"1 white pickup",8,NULL
+1183,"2025-11-17 19:12:00",123,"Cleaner in",1,,"by call",8,NULL
+1184,"2025-11-17 21:02:51",168,"Cleaner in",5,0,"by call",8,NULL
+1185,"2025-11-17 21:08:40",156,"Cleaner on site",1,59,"1 woman",8,NULL
+1186,"2025-11-17 21:13:20",144,"Site Down",0,0,"back at 21:14 pm",8,NULL
+1187,"2025-11-17 21:38:24",156,"Delivery out",1,40,DHL,8,NULL
+1188,"2025-11-17 19:54:40",291,"START SHIFT",0,,"Do Not Edit - No Editar",36,NULL
+1189,"2025-11-17 21:47:33",291,"START SHIFT",0,,"Do Not Edit - No Editar",34,NULL
+1190,"2025-11-17 21:47:34",291,"START SHIFT",0,,"Do Not Edit - No Editar",59,NULL
+1191,"2025-11-17 21:48:30",291,"START SHIFT",0,,"Do Not Edit - No Editar",85,NULL
+1193,"2025-11-17 21:50:25",291,"START SHIFT",0,,"Do Not Edit - No Editar",27,NULL
+1195,"2025-11-17 21:52:36",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",8,NULL
+1196,"2025-11-17 21:27:22",291,"START SHIFT",0,,"Do Not Edit - No Editar",20,NULL
+1197,"2025-11-17 21:54:12",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",80,NULL
+1198,"2025-11-17 21:27:42",291,"Change Split",0,,"24 hrs",20,NULL
+1199,"2025-11-17 21:00:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",39,NULL
+1200,"2025-11-17 21:58:17",291,"START SHIFT",0,,"Do Not Edit - No Editar",79,NULL
+1201,"2025-11-17 21:59:54",291,"START SHIFT",0,,"Do Not Edit - No Editar",25,NULL
+1202,"2025-11-17 21:02:43",177,"Cleaner out",1,07,"1, black suv",39,NULL
+1203,"2025-11-17 22:00:42",291,"START SHIFT",0,,"Do Not Edit - No Editar",35,NULL
+1204,"2025-11-17 22:00:49",126,"Cleaner on site",2,29,,25,NULL
+1205,"2025-11-17 22:01:43",291,"START SHIFT",0,,"Do Not Edit - No Editar",77,NULL
+1206,"2025-11-17 22:01:14",119,"Cleaner on site",1,19,"white van, pass to st2 lux7",36,NULL
+1207,"2025-11-17 22:00:00",291,"Start Shift",0,,,31,NULL
+1208,"2025-11-17 22:02:03",291,"START SHIFT",0,,"Do Not Edit - No Editar",26,NULL
+1209,"2025-11-17 22:00:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",72,NULL
+1210,"2025-11-17 22:01:47",291,"Change Split",0,,12/1,35,NULL
+1211,"2025-11-17 22:00:00",124,"Cleaner on site",1,38,"Picatruck blanco - Out 10:56 PM camara - CAM 05",31,NULL
+1212,"2025-11-17 22:01:18",127,"Cleaner on site",1,38,"Left at 22:14",26,NULL
+1213,"2025-11-17 21:59:23",291,"Change Split",0,,"omnia, split 12 station 10",20,NULL
+1214,"2025-11-17 22:00:32",291,"Took station over",0,,"Split 12, station 8",72,NULL
+1215,"2025-11-17 22:03:29",341,"Employee on site",3,26,"white pick up truck, black suv and black sedan, left at 22:07pm",36,NULL
+1216,"2025-11-17 21:22:20",188,"Cleaner on site",2,04,"2, red suv",39,NULL
+1217,"2025-11-17 22:04:23",188,"Delivery in",1,02,,34,NULL
+1218,"2025-11-17 22:03:43",176,"Cleaner on site",2,25,"Out at 22:26",72,NULL
+1219,"2025-11-17 22:00:10",159,"Cleaner on site",2,121/107,"Picatruck negro Out 10:36 PM camara -  CAM 98",31,NULL
+1220,"2025-11-17 22:03:49",230,"Cleaner on site",1,42,"Una persona",77,NULL
+1221,"2025-11-17 22:00:09",291,"Change Split",0,,"split 12 st 12",39,NULL
+1222,"2025-11-17 22:05:32",291,"START SHIFT",0,,"Do Not Edit - No Editar",40,NULL
+1223,"2025-11-17 22:05:38",121,"Cleaner on site",2,08,,20,NULL
+1224,"2025-11-17 22:06:03",291,"END OF SHIFT",0,,"Do Not Edit - No Editar",91,NULL
+1225,"2025-11-17 22:00:40",306,"Employee on site",2,30,"Employees Out 22:05",NULL,NULL
+1226,"2025-11-17 22:06:08",291,"START SHIFT",0,,"Do Not Edit - No Editar",91,NULL
+1227,"2025-11-17 19:30:28",291,"START SHIFT",0,,"Do Not Edit - No Editar",71,NULL
+1228,"2025-11-17 22:00:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",22,NULL
+1229,"2025-11-17 22:06:38",337,"Cleaner on site",2,59,,NULL,NULL
+1230,"2025-11-17 22:07:41",343,"Employee on site",4,15,,34,NULL
+1232,"2025-11-17 22:06:36",215,"Employee on site",0,24,10:20,40,NULL
+1233,"2025-11-17 22:09:47",162,"Cleaner on site",2,51,"on a white put",20,NULL
+1234,"2025-11-17 22:09:25",235,"Employee on site",3,40,"Empleados y clientes OUT 10:37 SEDAN BLANCO",91,NULL
+1235,"2025-11-17 22:09:50",336,"employee on site",1,35,"black sedan and red suv, left at 22:39pm",36,NULL
+1236,"2025-11-17 22:09:47",303,"Cleaner in",1,20,"grey sedan",59,NULL
+1237,"2025-11-17 21:30:22",291,"START SHIFT",0,,"Do Not Edit - No Editar",NULL,NULL
+1238,"2025-11-17 22:10:57",144,"Cleaner on site",0,A04,"10:12 red sedan",35,NULL
+1239,"2025-11-17 22:11:15",342,"Cleaner on site",2,41,,59,NULL
+1240,"2025-11-17 22:12:40",342,"Employee out",4,14,"grey put and blue suv, grey sedan",59,NULL
+1241,"2025-11-17 22:13:24",291,"START SHIFT",0,,"Do Not Edit - No Editar",80,NULL
+1242,"2025-11-17 22:11:49",156,"Employee on site",0,23,"black suv / white truck",35,NULL
+1243,"2025-11-17 22:14:58",291,"START SHIFT",0,,"Do Not Edit - No Editar",19,NULL
+1244,"2025-11-17 22:02:08",127,"Cleaner on site",1,38,"Left at 23:49",26,NULL
+1245,"2025-11-17 22:15:49",128,Delivery,0,22,"DHL / 22:21",35,NULL
+1246,"2025-11-17 22:17:04",160,"Cleaner on site",1,30,1P,71,NULL
+1247,"2025-11-17 22:01:37",193,"Employee on site",1,27,"1 Security chaqueta verde reflectiva Out 22:45",22,NULL
+1248,"2025-11-17 22:13:28",343,"Employee out",1,05,"sedan gray",34,NULL
+1249,"2025-11-17 22:18:52",187,"Cleaner on site",2,17,,72,NULL
+1250,"2025-11-17 22:18:53",337,"Detailer in",2,06,"Silver Sedan",NULL,NULL
+1251,"2025-11-17 22:19:49",219,"Cleaner on site",1,58,,79,NULL
+1252,"2025-11-17 22:20:16",195,"Cleaner in",2,33,.,40,NULL
+1255,"2025-11-17 22:17:23",324,"Contractor on site",0,3,"wright company",19,NULL
+1256,"2025-11-17 22:23:42",149,"Cleaner on site",3,03,"black suv out at 22:26",39,NULL
+1258,"2025-11-17 22:29:57",348,Dropoff,1,2,"white suv",19,NULL
+1259,"2025-11-17 22:32:48",159,"Cleaner on site",1,21,"black pickup truck",27,NULL
+1260,"2025-11-17 22:33:02",193,"Employee out",3,01,"3 personas a pie",22,NULL
+1261,"2025-11-17 22:35:30",155,"Employee out",1,15,,25,NULL
+1262,"2025-11-17 22:35:00",189,"Cleaner on site",1,28,,80,NULL
+1263,"2025-11-17 22:36:28",291,"START SHIFT",0,,"Do Not Edit - No Editar",74,NULL
+1264,"2025-11-17 22:37:12",159,"Cleaner out",2,22,"black pickup truck",27,NULL
+1265,"2025-11-17 22:38:45",230,"Cleaner out",1,29,"sale en suv dorado",77,NULL
+1266,"2025-11-17 22:46:53",188,"Delivery out",1,01,,34,NULL
+1268,"2025-11-17 22:51:42",131,"Cleaner in",1,"BY CALL",,79,NULL
+1269,"2025-11-17 22:52:13",213,"Employee out",0,01,"WHITE SUV",35,NULL
+1270,"2025-11-17 22:52:57",291,"START SHIFT",0,,"Do Not Edit - No Editar",14,NULL
+1271,"2025-11-17 22:52:20",339,"Cleaner in",2,08,"black SUV",59,NULL
+1272,"2025-11-17 22:50:51",164,Dropoff,1,12,"1 Lancha azul blanca",22,NULL
+1273,"2025-11-17 22:52:57",163,"Change Station",0,0,,91,NULL
+1274,"2025-11-17 22:47:49",338,"Employee out",2,08,"suv black",34,NULL
+1277,"2025-11-17 22:54:40",291,"START SHIFT",0,,"Do Not Edit - No Editar",13,NULL
+1278,"2025-11-17 22:54:50",163,"Took station over",0,,"3 del 12",13,NULL
+1279,"2025-11-17 22:55:37",163,"Change Split",0,0,19/10,91,NULL
+1280,"2025-11-17 22:56:42",291,"START SHIFT",0,,"Do Not Edit - No Editar",69,NULL
+1281,"2025-11-17 21:56:33",168,Dropoff,0,,,26,NULL
+1282,"2025-11-17 22:55:51",291,"Took station over",1,,"Split 12 st 11/OMNIA",14,NULL
+1283,"2025-11-17 22:56:50",162,"Cleaner on site",2,112,,91,NULL
+1284,"2025-11-17 22:56:38",295,"Cleaner on site",1,55,,80,NULL
+1285,"2025-11-17 22:57:25",230,"Cleaner on site",1,36,,56,NULL
+1286,"2025-11-17 22:58:21",305,"Change Split",0,,,27,NULL
+1287,"2025-11-17 22:57:46",291,"Change Split",0,,LUXRIOT10/ST8,74,NULL
+1288,"2025-11-17 22:59:45",291,"START SHIFT",0,,"Do Not Edit - No Editar",52,NULL
+1289,"2025-11-17 22:59:51",291,"START SHIFT",0,,"Do Not Edit - No Editar",45,NULL
+1290,"2025-11-17 23:00:16",291,"Change Split",0,,19/1,35,NULL
+1291,"2025-11-17 23:00:20",291,"Change Split",0,,"Split 19, sation 6",72,NULL
+1292,"2025-11-17 23:00:00",291,"Change Split",0,,SP19-ST9,31,NULL
+1293,"2025-11-17 23:00:21",163,"Change Split",0,,"3 del 19",13,NULL
+1294,"2025-11-17 23:00:27",291,"Change Split",1,,19/19,52,NULL
+1295,"2025-11-17 23:00:28",291,"Change Split",0,,"SP19 ST2",79,NULL
+1296,"2025-11-17 23:00:50",249,"Cleaner on site",3,26,"OUT 00:00",25,NULL
+1297,"2025-11-17 23:01:05",258,"Employee out",0,03,"RED PICKUP TRUCK",35,NULL
+1298,"2025-11-17 23:01:52",131,"Cleaner on site",1,45,,27,NULL
+1299,"2025-11-17 23:00:54",291,"Change Split",0,,19/17,45,NULL
+1300,"2025-11-17 23:00:27",291,"Change Split",0,,"Split 19 sta 4",40,NULL
+1301,"2025-11-17 23:01:31",195,"Cleaner on site",2,31,"Left at  12:26",72,NULL
+1302,"2025-11-17 23:00:11",291,"START SHIFT",0,,"Do Not Edit - No Editar",12,NULL
+1303,"2025-11-17 23:01:45",147,"Cleaner on site",1,19,"gray offroad left 0:27",13,NULL
+1304,"2025-11-17 23:00:42",291,"Took station over",1,,"Split 10 st 9/LUXRIOT",14,NULL
+1306,"2025-11-17 23:00:42",291,"Change Split",1,,"omnia, split 19 station 12",20,NULL
+1307,"2025-11-17 23:02:40",166,"Cleaner on site",9,9,,27,NULL
+1308,"2025-11-17 23:00:16",224,"Cleaner on site",2,44,"Picka truck Red - 11:15 Seda withe",40,NULL
+1309,"2025-11-17 23:02:04",291,"Change Split",1,,10/3,59,NULL
+1310,"2025-11-17 23:00:43",291,"START SHIFT",0,,"Do Not Edit - No Editar",63,NULL
+1311,"2025-11-17 23:03:40",169,Delivery,0,35,"left 23:09",13,NULL
+1312,"2025-11-17 23:00:39",291,"Change Split",0,,"split 10/4",19,NULL
+1313,"2025-11-17 23:04:21",271,"Cleaner on site",2,53,,20,NULL
+1314,"2025-11-17 23:00:30",214,"Cleaner on site",2,46,"Out 12:33 Seda red",40,NULL
+1315,"2025-11-17 11:04:22",148,"Change Split",10,n/a,"se cambia a un split 10  de lux riot",32,NULL
+1316,"2025-11-17 23:04:42",272,"Cleaner on site",1,31,"gray suv laft 0:38",13,NULL
+1317,"2025-11-17 19:42:24",162,"Employee on site",2,168,,71,NULL
+1318,"2025-11-17 23:07:05",288,"Cleaner on site",1,41,,69,NULL
+1319,"2025-11-17 23:05:19",171,"Cleaner on site",2,16,,20,NULL
+1320,"2025-11-17 23:02:55",291,"Change Split",0,,10/10,39,NULL
+1321,"2025-11-17 23:00:37",291,"Change Split",0,,"SP 19 ST 18",63,NULL
+1322,"2025-11-17 23:05:12",292,"Detailer on site",1,59,"Red Sedan/Left at 03:50",14,NULL
+1323,"2025-11-17 23:05:57",280,"Security Patroling",1,20,"silver suv",34,NULL
+1324,"2025-11-17 23:05:43",158,"Cleaner on site",1,11,,25,NULL
+1325,"2025-11-17 23:05:25",274,"Security Patroling",1,18,,40,NULL
+1326,"2025-11-17 23:06:54",131,Dropoff,3,13,"4 vehicles",27,NULL
+1327,"2025-11-17 23:06:19",137,"Employee in",2,04,"OUT 00:34",25,NULL
+1329,"2025-11-17 23:07:07",322,"Cleaner in",2,11,"out at 1:07am",19,NULL
+1331,"2025-11-17 23:07:29",238,"Cleaner in",2,42,"OUT 11:21 SUV AZUL CAM34",79,NULL
+1332,"2025-11-17 23:05:20",291,"Change Split",0,,"SP 10 / ST 1 LUXRIOT",NULL,NULL
+1333,"2025-11-17 23:08:12",357,"Cleaner on site",0,27,"black suv out at 00:20",39,NULL
+1334,"2025-11-17 11:06:00",318,"Cleaner in",2,n/a,"checking in by phone call",32,NULL
+1335,"2025-11-17 23:07:55",291,"Change Split",0,,"Split 10 Station 2",69,NULL
+1336,"2025-11-17 23:08:50",275,"Cleaner on site",1,30,"Left At: 23:45 pm",56,NULL
+1337,"2025-11-17 23:01:20",291,"Change Split",0,0,"SP 19 ST 18",63,NULL
+1338,"2025-11-17 23:09:13",126,"Cleaner on site",1,29,,52,NULL
+1339,"2025-11-17 23:00:50",187,"Cleaner on site",2,17,"OUT 11:23 SEDA BLACK CAM 9",40,NULL
+1340,"2025-11-17 22:00:02",291,"START SHIFT",0,,"Do Not Edit - No Editar",32,NULL
+1341,"2025-11-17 23:01:37",202,"Cleaner on site",2,37,,63,NULL
+1342,"2025-11-17 23:10:25",280,"Cleaner on site",2,47,02:23,34,NULL
+1343,"2025-11-17 23:10:05",275,"Detailer on site",1,41,,56,NULL
+1344,"2025-11-17 23:01:00",291,"Covered by",1,,"Samuel - 11:09",31,NULL
+1345,"2025-11-17 23:01:20",136,"Cleaner on site",1,66,"Out 00:49 (1) /",63,NULL
+1346,"2025-11-17 23:09:10",303,Delivery,0,17,"out at 23:33",39,NULL
+1347,"2025-11-17 11:06:09",318,"Cleaner in",2,n/a,"checking in by phone call",32,NULL
+1348,"2025-11-17 23:04:00",291,"Change Split",0,,"split 10/6",80,NULL
+1349,"2025-11-17 23:10:47",266,"Cleaner on site",1,33,"Silver sedan - Out:",31,NULL
+1350,"2025-11-17 23:05:43",323,"Security Patroling",1,05,"Seda withe",40,NULL
+1351,"2025-11-17 23:11:55",318,"Cleaner in",2,n/a,"checking in by phone call.",32,NULL
+1352,"2025-11-17 23:01:49",121,"Cleaner on site",2,36,"Out 23:45 (1) /",63,NULL
+1353,"2025-11-17 23:11:30",170,"Cleaner out",1,01,"White jeep",26,NULL
+1354,"2025-11-17 23:12:32",303,"Cleaner on site",2,20,"gray suv, black suv out at 00:14",39,NULL
+1355,"2025-11-17 23:12:22",141,Dropoff,1,6,"Deja audi q5 blanca",77,NULL
+1356,"2025-11-17 23:12:07",337,"Cleaner on site",3,66,,74,NULL
+1357,"2025-11-17 23:13:53",286,"Security Patroling",1,04,"suv white",34,NULL
+1358,"2025-11-17 23:00:00",291,"Change Split",0,,19-16,22,NULL
+1359,"2025-11-17 23:13:35",162,"Delivery in",1,51,"OUT 11:25",91,NULL
+1360,"2025-11-17 23:14:15",152,"Cleaner on site",1,20,"Out 23:35",22,NULL
+1361,"2025-11-17 23:12:50",160,"Cleaner on site",1,47,,52,NULL
+1362,"2025-11-17 23:15:12",230,"Cleaner on site",3,32,"Out 00:09 cam27",22,NULL
+1364,"2025-11-17 23:12:00",287,"Cleaner on site",1,46,,80,NULL
+1365,"2025-11-17 23:14:57",291,"OMNIA Crash",0,,"Back 23:16 PM",63,NULL
+1366,"2025-11-17 22:51:52",289,Dropoff,1,15,"1 svc blaanco",80,NULL
+1367,"2025-11-17 23:17:42",229,"Cleaner on site",2,28,,52,NULL
+1368,"2025-11-17 23:16:24",342,"Cleaner on site",2,41,"Black SUV/Left at 00:51",14,NULL
+1369,"2025-11-17 23:18:31",217,"Cleaner on site",1,26,,56,NULL
+1370,"2025-11-17 23:15:06",280,"Cleaner out",2,01,"sedan  plate",34,NULL
+1371,"2025-11-17 23:20:44",191,"Cleaner on site",2,7,,71,NULL
+1372,"2025-11-17 23:21:16",331,"Employee on site",17,,"out at 23:42, black suv",39,NULL
+1373,"2025-11-17 23:21:17",334,"Site Down",0,,,74,NULL
+1374,"2025-11-17 23:22:42",151,"Cleaner on site",1,26,,45,NULL
+1375,"2025-11-17 23:22:22",272,"Security Patroling",0,17,citadel,13,NULL
+1376,"2025-11-17 23:10:25",144,"Employee out",2,08,"gray sedan",36,NULL
+1377,"2025-11-17 23:22:56",177,"Delivery in",1,06,PENSKE,74,NULL
+1378,"2025-11-17 23:24:01",346,"Security Patroling",1,03,"sedan white and blue",34,NULL
+1379,"2025-11-17 23:24:12",166,"Cleaner out",2,3,"2 blacks suv",27,NULL
+1380,"2025-11-17 23:24:04",315,"Cleaner in",1,14,"Suv Red/ Out 01:41",69,NULL
+1381,"2025-11-17 23:24:30",141,"Cleaner out",1,19,"Sale en 4x4 gris",77,NULL
+1382,"2025-11-17 23:23:49",264,"Cleaner in",2,2,"Beige SUV, left at 12:18",72,NULL
+1383,"2025-11-17 23:26:15",291,"Took station over",1,,"omnia, split 19 station 9",20,NULL
+1384,"2025-11-17 23:27:25",141,"Cleaner out",1,16,"black pick up truck",36,NULL
+1385,"2025-11-18 23:28:27",291,"START SHIFT",0,,"Do Not Edit - No Editar",15,NULL
+1386,"2025-11-17 23:28:35",235,"Delivery in",1,31,"OUT 11:35",79,NULL
+1387,"2025-11-17 23:28:53",236,Delivery,1,09,"left at 23:48pm",36,NULL
+1388,"2025-11-17 23:10:28",291,"Covered by",1,,"samuel / back 11:13",59,NULL
+1389,"2025-11-17 23:11:55",291,"Change Split",10,n/a,"lux riot changed  to split  10",32,NULL
+1390,"2025-11-17 23:30:51",266,"Cleaner on site",1,87,,20,NULL
+1391,"2025-11-17 23:24:27",291,"Covered by",0,,"Samuel R. 23:28 Out",NULL,NULL
+1392,"2025-11-17 23:29:43",141,"Cleaner in",2,41,"2 personas llegan en 2 sedanes",77,NULL
+1393,"2025-11-17 01:00:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",16,NULL
+1394,"2025-11-17 23:34:05",193,Delivery,0,16,UMBRAND/23:57,35,NULL
+1395,"2025-11-17 23:34:40",126,"Employee on site",1,33,"Selling a car possibly",52,NULL
+1396,"2025-11-17 23:35:24",125,"Cleaner in",1,5,"Red SUV left 2:36",13,NULL
+1397,"2025-11-17 23:41:20",136,Delivery,0,"24A, 25","Out 00:47",63,NULL
+1398,"2025-11-17 23:30:43",345,"Delivery in",1,3,"out at 11:41pm",19,NULL
+1399,"2025-11-17 10:44:02",318,"Delivery in",1,02,"white van delivery-left at 10:47pm",32,NULL
+1400,"2025-11-17 23:47:37",171,"Cleaner out",2,07,"left in a white sedan",20,NULL
+1401,"2025-11-17 23:50:05",337,"Delivery in",0,30,"PENSKE / LEFT AT 00:28",74,NULL
+1402,"2025-11-17 23:44:25",219,"Cleaner out",2,21,"Black suv",12,NULL
+1403,"2025-11-17 23:50:13",197,Pickup,1,09,"White SUV",22,NULL
+1404,"2025-11-17 10:44:50",318,"Detailer in",1,2,"van delivery - left at 1:47pm",32,NULL
+1405,"2025-11-17 23:52:29",277,"Cleaner in",1,10,"Blue SUV, left at 1:29",72,NULL
+1406,"2025-11-17 10:44:58",318,"Delivery in",1,2,"van delivery left at 10:47pm",32,NULL
+1407,"2025-11-17 23:56:16",144,"Cleaner out",2,21,"white sedan",36,NULL
+1408,"2025-11-17 21:00:00",291,"START SHIFT",0,,"Do Not Edit - No Editar",30,NULL
+1409,"2025-11-17 23:56:47",162,"Detailer on site",1,111,,91,NULL
+1410,"2025-11-17 23:58:11",256,"Cleaner on site",1,12,,45,NULL
+1411,"2025-11-18 00:00:12",266,"Cleaner out",1,11,"black SUV",20,NULL
+1412,"2025-11-17 11:54:00",177,"Delivery out",1,06,Penske,31,NULL
+1413,"2025-11-17 11:55:00",337,"Cleaner out",1,21,"Out suv",31,NULL
+1414,"2025-11-17 10:44:10",318,"Delivery in",1,2,"van delivery left at 1:47pm",32,NULL
+1415,"2025-11-18 00:07:04",284,"Cleaner on site",1,23,"LEFT  AT 01:39 A.M",74,NULL
+1416,"2025-11-18 00:06:47",145,Pickup,1,2,"Black SUV",63,NULL
+1417,"2025-11-18 00:07:09",135,"Cleaner in",2,35,,52,NULL
+1418,"2025-11-17 22:44:37",318,"Delivery in",1,2,"van delivery lert at 22:47pm",32,NULL
+1419,"2025-11-18 00:08:56",242,"Cleaner on site",2,32,,45,NULL
+1420,"2025-11-18 00:07:32",283,"Cleaner on site",1,23,,31,NULL
+1421,"2025-11-18 00:09:31",127,Delivery,1,14,"Left at 00:27",26,NULL
+1422,"2025-11-18 00:09:01",156,"Security Patroling",0,02,,35,NULL
+1423,"2025-11-18 00:11:56",168,"Delivery in",1,21,"penske // left at: 00:30",56,NULL
+1424,"2025-11-18 19:45:01",162,"Cleaner on site",2,135,,71,NULL
+1425,"2025-11-18 00:13:30",119,"Cleaner on site",0,18,,39,NULL
+1426,"2025-11-18 20:18:00",162,"Cleaner on site",2,177,,71,NULL
+1427,"2025-11-18 00:11:43",213,"Cleaner in",2,09,"gray put",20,NULL
+1428,"2025-11-18 00:14:55",130,"Cleaner on site",2,47,,91,NULL
+1429,"2025-11-18 21:00:19",162,"Employee on site",2,27,,71,NULL
+1430,"2025-11-18 00:15:57",284,"Employee on site",2,23,,74,NULL
+1431,"2025-11-18 00:17:18",190,Delivery,1,7,,72,NULL
+1434,"2025-11-18 00:19:34",240,"Cleaner in",2,42,,25,NULL
+1435,"2025-11-18 00:20:01",167,"Cleaner in",1,16,"llega en 4x4 negra",77,NULL
+1438,"2025-11-18 00:23:28",349,"Cleaner out",5,Call,"Announced by call/site down",14,NULL
+1439,"2025-11-18 00:25:10",131,Delivery,0,6,"left at 12:47",27,NULL
+1440,"2025-11-18 00:25:28",214,Delivery,1,12,12:26,40,NULL

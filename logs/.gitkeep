@@ -1,0 +1,5 @@
+# Logs de la aplicación
+
+Este directorio contiene los archivos de log generados por la aplicación.
+
+Los logs NO deben ser versionados en git (están en .gitignore).

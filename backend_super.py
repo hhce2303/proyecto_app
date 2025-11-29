@@ -18,8 +18,15 @@ import tkcalendar
 from tkinter import font as tkfont
 import pymysql
 import time
+from tksheet import Sheet
 
-
+# Global flag for tksheet availability
+USE_SHEET = False
+try:
+    from tksheet import Sheet as _SheetTest
+    USE_SHEET = True
+except Exception:
+    USE_SHEET = False
 
 opened_windows = {}
 
@@ -83,7 +90,7 @@ def Dinamic_button_Shift(username):
         # Buscar el último evento de turno en toda la historia (sin recortar por día)
         cur.execute(
             """
-            SELECT e.Nombre_Actividad
+            SELECT e.Nombre_Actividad, e.FechaHora
             FROM Eventos e
             INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
             WHERE u.Nombre_Usuario = %s
@@ -100,13 +107,19 @@ def Dinamic_button_Shift(username):
 
         # Si no hay eventos de turno, permitir iniciar
         if not row:
+            print(f"[DEBUG] Dinamic_button_Shift({username}): No hay eventos de turno -> retorna True (Start Shift)")
             return True
 
         ultimo_evento = (row[0] or '').strip().upper()
+        fecha_evento = row[1]
+        print(f"[DEBUG] Dinamic_button_Shift({username}): Último evento = '{ultimo_evento}' en {fecha_evento}")
+        
         if ultimo_evento == 'START SHIFT':
             # Último fue START => turno abierto => NO permitir nuevo start
+            print(f"[DEBUG] Dinamic_button_Shift({username}): Turno activo -> retorna False (End of Shift)")
             return False
         # Último fue END OF SHIFT => permitir iniciar
+        print(f"[DEBUG] Dinamic_button_Shift({username}): Sin turno activo -> retorna True (Start Shift)")
         return True
 
     except Exception as e:
@@ -126,44 +139,314 @@ def update_event_button(username):
         print(f"[ERROR] update_event_button: {e}")
         return True
 
-def on_start_shift(username):
-    """Acción al presionar Start Shift"""
+def on_start_shift(username, parent_window=None):
+    """Acción al presionar Start Shift con selector de fecha/hora
+    
+    Returns:
+        bool: True si se registró el START SHIFT exitosamente, False si se canceló o hubo error
+    """
     print(f"DEBUG: Start Shift presionado por {username}")
-    # Aquí irá la lógica real de inicio de turno
+    
+    # ⭐ VERIFICAR SI YA HAY UN TURNO ACTIVO ANTES DE ABRIR EL PICKER
     try:
         conn = under_super.get_connection()
         cur = conn.cursor()
         
-        # Obtener el ID_Usuario a partir del username
         cur.execute("""
-            SELECT ID_Usuario 
-            FROM user 
-            WHERE Nombre_Usuario = %s
+            SELECT e.Nombre_Actividad, e.FechaHora
+            FROM Eventos e
+            INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
+            WHERE u.Nombre_Usuario = %s
+              AND e.Nombre_Actividad IN ('START SHIFT', 'END OF SHIFT')
+            ORDER BY e.FechaHora DESC
+            LIMIT 1
         """, (username,))
         
         row = cur.fetchone()
-        if not row:
-            print(f"[ERROR] Usuario {username} no encontrado en la base de datos")
-            cur.close()
-            conn.close()
-            return
-        
-        ID_Usuario = row[0]
-        
-        # Insertar el evento START SHIFT
-        cur.execute("""
-            INSERT INTO Eventos (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, ID_Usuario)
-            VALUES (NOW(), %s, %s, %s, %s, %s, %s)
-        """, (291, 'START SHIFT', 0, '', 'Do Not Edit - No Editar', ID_Usuario))
-        
-        conn.commit()
         cur.close()
         conn.close()
-
-        print(f"[DEBUG] START SHIFT registrado correctamente para {username}")
-
+        
+        if row:
+            ultimo_evento = (row[0] or '').strip().upper()
+            if ultimo_evento == 'START SHIFT':
+                messagebox.showwarning("Turno activo", 
+                                      f"Ya tienes un turno activo desde {row[1]}.\n\nDebes finalizar el turno antes de iniciar uno nuevo.",
+                                      parent=parent_window)
+                print(f"[DEBUG] Intento de iniciar turno cuando ya hay uno activo desde {row[1]}")
+                return False
     except Exception as e:
-        print(f"[ERROR] on_start_shift: {e}")
+        print(f"[ERROR] Verificación de turno activo: {e}")
+        traceback.print_exc()
+    
+    # Variable para rastrear si se completó
+    shift_registered = [False]  # Usar lista para poder modificar en closure
+    
+    # Importar módulos necesarios
+    try:
+        import tkcalendar
+    except ImportError:
+        messagebox.showerror("Error", "tkcalendar no está instalado.\nInstala con: pip install tkcalendar")
+        return False
+    
+    try:
+        import customtkinter as ctk
+        UI = ctk
+    except:
+        UI = None
+    
+    # Crear ventana de selección de fecha/hora
+    if UI is not None:
+        picker_win = UI.CTkToplevel(parent_window)
+        picker_win.title("Seleccionar Fecha y Hora - Start Shift")
+        picker_win.geometry("500x450")
+        picker_win.resizable(False, False)
+        picker_win.configure(fg_color="#1e1e1e")
+        if parent_window:
+            picker_win.transient(parent_window)
+        picker_win.grab_set()
+        
+        # Header
+        header = UI.CTkFrame(picker_win, fg_color="#1a1a1a", corner_radius=0, height=60)
+        header.pack(fill="x", padx=0, pady=0)
+        header.pack_propagate(False)
+        
+        UI.CTkLabel(header, text="🚀 Start Shift", 
+                   font=("Segoe UI", 20, "bold"),
+                   text_color="#00c853").pack(pady=15)
+        
+        # Contenido principal
+        content = UI.CTkFrame(picker_win, fg_color="transparent")
+        content.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Sección de Fecha
+        date_section = UI.CTkFrame(content, fg_color="#2b2b2b", corner_radius=10)
+        date_section.pack(fill="x", pady=(0, 15))
+        
+        UI.CTkLabel(date_section, text="📅 Fecha:", 
+                   font=("Segoe UI", 14, "bold"),
+                   text_color="#e0e0e0").pack(anchor="w", padx=15, pady=(15, 10))
+        
+        # Frame para calendario
+        cal_wrapper = tk.Frame(date_section, bg="#2b2b2b")
+        cal_wrapper.pack(padx=15, pady=(0, 15))
+        
+        now = datetime.now()
+        cal = tkcalendar.DateEntry(cal_wrapper, width=30, background='#00c853',
+                                   foreground='white', borderwidth=2,
+                                   year=now.year, month=now.month, day=now.day,
+                                   date_pattern='yyyy-mm-dd',
+                                   font=("Segoe UI", 11))
+        cal.pack()
+        
+        # Sección de Hora
+        time_section = UI.CTkFrame(content, fg_color="#2b2b2b", corner_radius=10)
+        time_section.pack(fill="x", pady=(0, 15))
+        
+        UI.CTkLabel(time_section, text="🕐 Hora:", 
+                   font=("Segoe UI", 14, "bold"),
+                   text_color="#e0e0e0").pack(anchor="w", padx=15, pady=(15, 10))
+        
+        # Variables para hora
+        hour_var = tk.IntVar(value=now.hour)
+        minute_var = tk.IntVar(value=now.minute)
+        second_var = tk.IntVar(value=now.second)
+        
+        # Frame para spinboxes
+        spinbox_container = tk.Frame(time_section, bg="#2b2b2b")
+        spinbox_container.pack(padx=15, pady=(0, 10))
+        
+        # Hora
+        tk.Label(spinbox_container, text="Hora:", bg="#2b2b2b", fg="#a3c9f9",
+                font=("Segoe UI", 11)).grid(row=0, column=0, padx=5, pady=5)
+        hour_spin = tk.Spinbox(spinbox_container, from_=0, to=23, textvariable=hour_var,
+                              width=8, font=("Segoe UI", 12), justify="center")
+        hour_spin.grid(row=0, column=1, padx=5, pady=5)
+        
+        # Minuto
+        tk.Label(spinbox_container, text="Min:", bg="#2b2b2b", fg="#a3c9f9",
+                font=("Segoe UI", 11)).grid(row=0, column=2, padx=5, pady=5)
+        minute_spin = tk.Spinbox(spinbox_container, from_=0, to=59, textvariable=minute_var,
+                                width=8, font=("Segoe UI", 12), justify="center")
+        minute_spin.grid(row=0, column=3, padx=5, pady=5)
+        
+        # Segundo
+        tk.Label(spinbox_container, text="Seg:", bg="#2b2b2b", fg="#a3c9f9",
+                font=("Segoe UI", 11)).grid(row=0, column=4, padx=5, pady=5)
+        second_spin = tk.Spinbox(spinbox_container, from_=0, to=59, textvariable=second_var,
+                                width=8, font=("Segoe UI", 12), justify="center")
+        second_spin.grid(row=0, column=5, padx=5, pady=5)
+        
+        # Botón "Ahora"
+        def set_now():
+            ahora = datetime.now()
+            cal.set_date(ahora.date())
+            hour_var.set(ahora.hour)
+            minute_var.set(ahora.minute)
+            second_var.set(ahora.second)
+        
+        UI.CTkButton(time_section, text="⏰ Establecer Hora Actual", command=set_now,
+                    fg_color="#4a90e2", hover_color="#3a7bc2",
+                    font=("Segoe UI", 11),
+                    width=200, height=35).pack(pady=(5, 15))
+        
+        # Botones Aceptar/Cancelar
+        btn_frame = UI.CTkFrame(content, fg_color="transparent")
+        btn_frame.pack(pady=10)
+        
+        def accept_ctk():
+            try:
+                fecha = cal.get_date()
+                hora = hour_var.get()
+                minuto = minute_var.get()
+                segundo = second_var.get()
+                
+                # Construir datetime
+                fecha_hora = datetime.combine(fecha, datetime.min.time()).replace(
+                    hour=hora, minute=minuto, second=segundo
+                )
+                
+                # Insertar en BD
+                conn = under_super.get_connection()
+                cur = conn.cursor()
+                
+                # Obtener ID_Usuario
+                cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
+                row = cur.fetchone()
+                if not row:
+                    messagebox.showerror("Error", f"Usuario {username} no encontrado", parent=picker_win)
+                    cur.close()
+                    conn.close()
+                    return
+                
+                ID_Usuario = row[0]
+                
+                # Insertar START SHIFT con fecha/hora seleccionada
+                cur.execute("""
+                    INSERT INTO Eventos (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, ID_Usuario)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (fecha_hora, 291, 'START SHIFT', 0, '', 'Do Not Edit - No Editar', ID_Usuario))
+                
+                conn.commit()
+                cur.close()
+                conn.close()
+                
+                print(f"[DEBUG] START SHIFT registrado: {fecha_hora} para {username}")
+                shift_registered[0] = True
+                picker_win.destroy()
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo registrar START SHIFT:\n{e}", parent=picker_win)
+                print(f"[ERROR] on_start_shift accept_ctk: {e}")
+                traceback.print_exc()
+        
+        UI.CTkButton(btn_frame, text="✅ Aceptar", command=accept_ctk,
+                    fg_color="#00c853", hover_color="#00a043",
+                    font=("Segoe UI", 12, "bold"),
+                    width=120, height=40).pack(side="left", padx=10)
+        
+        UI.CTkButton(btn_frame, text="❌ Cancelar", command=picker_win.destroy,
+                    fg_color="#666666", hover_color="#555555",
+                    font=("Segoe UI", 12),
+                    width=120, height=40).pack(side="left", padx=10)
+        
+    else:
+        # Fallback sin CustomTkinter
+        picker_win = tk.Toplevel(parent_window)
+        picker_win.title("Seleccionar Fecha y Hora - Start Shift")
+        picker_win.geometry("400x400")
+        picker_win.configure(bg="#2b2b2b")
+        if parent_window:
+            picker_win.transient(parent_window)
+        picker_win.grab_set()
+        
+        content = tk.Frame(picker_win, bg="#2b2b2b")
+        content.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        tk.Label(content, text="Fecha:", bg="#2b2b2b", fg="#ffffff",
+                font=("Segoe UI", 12, "bold")).pack(anchor="w", pady=(10,5))
+        
+        now = datetime.now()
+        cal = tkcalendar.DateEntry(content, width=25, background='#00c853',
+                                  foreground='white', borderwidth=2,
+                                  year=now.year, month=now.month, day=now.day)
+        cal.pack(pady=5, fill="x")
+        
+        tk.Label(content, text="Hora:", bg="#2b2b2b", fg="#ffffff",
+                font=("Segoe UI", 12, "bold")).pack(anchor="w", pady=(20,5))
+        
+        time_frame = tk.Frame(content, bg="#2b2b2b")
+        time_frame.pack(fill="x", pady=5)
+        
+        hour_var = tk.IntVar(value=now.hour)
+        minute_var = tk.IntVar(value=now.minute)
+        second_var = tk.IntVar(value=now.second)
+        
+        hour_spin = tk.Spinbox(time_frame, from_=0, to=23, textvariable=hour_var, width=8)
+        hour_spin.pack(side="left", padx=5)
+        minute_spin = tk.Spinbox(time_frame, from_=0, to=59, textvariable=minute_var, width=8)
+        minute_spin.pack(side="left", padx=5)
+        second_spin = tk.Spinbox(time_frame, from_=0, to=59, textvariable=second_var, width=8)
+        second_spin.pack(side="left", padx=5)
+        
+        def accept_tk():
+            try:
+                fecha = cal.get_date()
+                hora = hour_var.get()
+                minuto = minute_var.get()
+                segundo = second_var.get()
+                
+                fecha_hora = datetime.combine(fecha, datetime.min.time()).replace(
+                    hour=hora, minute=minuto, second=segundo
+                )
+                
+                conn = under_super.get_connection()
+                cur = conn.cursor()
+                
+                cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
+                row = cur.fetchone()
+                if not row:
+                    messagebox.showerror("Error", f"Usuario {username} no encontrado", parent=picker_win)
+                    cur.close()
+                    conn.close()
+                    return
+                
+                ID_Usuario = row[0]
+                
+                cur.execute("""
+                    INSERT INTO Eventos (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, ID_Usuario)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (fecha_hora, 291, 'START SHIFT', 0, '', 'Do Not Edit - No Editar', ID_Usuario))
+                
+                conn.commit()
+                cur.close()
+                conn.close()
+                
+                print(f"[DEBUG] START SHIFT registrado: {fecha_hora} para {username}")
+                shift_registered[0] = True
+                picker_win.destroy()
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo registrar START SHIFT:\n{e}", parent=picker_win)
+                print(f"[ERROR] on_start_shift accept_tk: {e}")
+                traceback.print_exc()
+        
+        btn_frame = tk.Frame(content, bg="#2b2b2b")
+        btn_frame.pack(side="bottom", pady=20)
+        tk.Button(btn_frame, text="Aceptar", command=accept_tk, bg="#00c853", fg="white", width=10).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Cancelar", command=picker_win.destroy, bg="#666666", fg="white", width=10).pack(side="left", padx=5)
+
+
+    
+    # Esperar a que la ventana se cierre (wait_window hace esto)
+    try:
+        if UI is not None:
+            picker_win.wait_window()
+        else:
+            picker_win.wait_window()
+    except:
+        pass
+    
+    return shift_registered[0]
 
 def on_end_shift(username):
     """Acción al presionar End of Shift"""
@@ -452,7 +735,7 @@ def show_info():
     except Exception as e:
         print(f"[ERROR] show_info: {e}")
 
-
+#implementacion de Covers, en rol de supervisor completado
 def open_hybrid_events_supervisor(username, session_id=None, station=None, root=None):
     """
     🚀 VENTANA HÍBRIDA PARA SUPERVISORES: Visualización de Specials
@@ -546,18 +829,14 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             is_start = Dinamic_button_Shift(username)
             
             if is_start:
-                on_start_shift(username)
-                messagebox.showinfo("Start Shift", 
-                                   f"✅ Turno iniciado correctamente para {username}",
-                                   parent=top)
+                success = on_start_shift(username, parent_window=top)
+                if success:
+                    update_shift_button()
+                    load_data()
             else:
                 on_end_shift(username)
-                messagebox.showinfo("End of Shift", 
-                                   f"✅ Turno finalizado correctamente para {username}",
-                                   parent=top)
-            
-            update_shift_button()
-            load_data()
+                update_shift_button()
+                load_data()
             
         except Exception as e:
             messagebox.showerror("Error", f"Error al cambiar turno:\n{e}", parent=top)
@@ -708,8 +987,8 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
     except Exception:
         pass
 
-    # ==================== MODO SELECTOR (Specials / Audit / Cover Time) ====================
-    current_mode = {'value': 'specials'}  # 'specials', 'audit' o 'cover_time'
+    # ==================== MODO SELECTOR (Specials / Audit / Cover Time / Breaks / Rol de Cover) ====================
+    current_mode = {'value': 'specials'}  # 'specials', 'audit', 'cover_time', 'breaks', 'rol_cover'
     
     if UI is not None:
         mode_frame = UI.CTkFrame(top, fg_color="#23272a", corner_radius=0, height=50)
@@ -719,13 +998,15 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
     mode_frame.pack_propagate(False)
 
     def switch_mode(new_mode):
-        """Cambia entre modo Specials, Audit y Cover Time"""
+        """Cambia entre modo Specials, Audit, Cover Time, Breaks y Rol de Cover"""
         current_mode['value'] = new_mode
         
         # Ocultar todos los contenedores
         specials_container.pack_forget()
         audit_container.pack_forget()
         cover_container.pack_forget()
+        breaks_container.pack_forget()
+        rol_cover_container.pack_forget()
         
         
         # Resetear colores de todos los botones
@@ -738,10 +1019,14 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             btn_specials.configure(fg_color=inactive_color, hover_color=inactive_hover)
             btn_audit.configure(fg_color=inactive_color, hover_color=inactive_hover)
             btn_cover.configure(fg_color=inactive_color, hover_color=inactive_hover)
+            btn_breaks.configure(fg_color=inactive_color, hover_color=inactive_hover)
+            btn_rol_cover.configure(fg_color=inactive_color, hover_color=inactive_hover)
         else:
             btn_specials.configure(bg=inactive_color, activebackground=inactive_hover)
             btn_audit.configure(bg=inactive_color, activebackground=inactive_hover)
             btn_cover.configure(bg=inactive_color, activebackground=inactive_hover)
+            btn_breaks.configure(bg=inactive_color, activebackground=inactive_hover)
+            btn_rol_cover.configure(bg=inactive_color, activebackground=inactive_hover)
         
         # Mostrar contenedor activo y resaltar botón
         if new_mode == 'specials':
@@ -763,6 +1048,20 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
                 btn_cover.configure(fg_color=active_color, hover_color=active_hover)
             else:
                 btn_cover.configure(bg=active_color, activebackground=active_hover)
+        elif new_mode == 'breaks':
+            breaks_container.pack(fill="both", expand=True, padx=10, pady=10)
+            if UI is not None:
+                btn_breaks.configure(fg_color=active_color, hover_color=active_hover)
+            else:
+                btn_breaks.configure(bg=active_color, activebackground=active_hover)
+            refrescar_tabla_breaks()
+        elif new_mode == 'rol_cover':
+            rol_cover_container.pack(fill="both", expand=True, padx=10, pady=10)
+            if UI is not None:
+                btn_rol_cover.configure(fg_color=active_color, hover_color=active_hover)
+            else:
+                btn_rol_cover.configure(bg=active_color, activebackground=active_hover)
+            refrescar_lista_operadores()
 
     # Botones de modo
     if UI is not None:
@@ -801,6 +1100,30 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             font=("Segoe UI", 12, "bold")
         )
         btn_cover.pack(side="left", padx=5, pady=8)
+        
+        btn_breaks = UI.CTkButton(
+            mode_frame, 
+            text="☕ Breaks", 
+            command=lambda: switch_mode('breaks'),
+            fg_color="#3b4754",
+            hover_color="#4a5560",
+            width=130,
+            height=35,
+            font=("Segoe UI", 12, "bold")
+        )
+        btn_breaks.pack(side="left", padx=5, pady=8)
+        
+        btn_rol_cover = UI.CTkButton(
+            mode_frame, 
+            text="🎭 Rol de Cover", 
+            command=lambda: switch_mode('rol_cover'),
+            fg_color="#3b4754",
+            hover_color="#4a5560",
+            width=150,
+            height=35,
+            font=("Segoe UI", 12, "bold")
+        )
+        btn_rol_cover.pack(side="left", padx=5, pady=8)
     else:
         btn_specials = tk.Button(
             mode_frame,
@@ -840,6 +1163,32 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             width=13
         )
         btn_cover.pack(side="left", padx=5, pady=8)
+        
+        btn_breaks = tk.Button(
+            mode_frame,
+            text="☕ Breaks",
+            command=lambda: switch_mode('breaks'),
+            bg="#3b4754",
+            fg="white",
+            activebackground="#4a5560",
+            font=("Segoe UI", 12, "bold"),
+            relief="flat",
+            width=11
+        )
+        btn_breaks.pack(side="left", padx=5, pady=8)
+        
+        btn_rol_cover = tk.Button(
+            mode_frame,
+            text="🎭 Rol de Cover",
+            command=lambda: switch_mode('rol_cover'),
+            bg="#3b4754",
+            fg="white",
+            activebackground="#4a5560",
+            font=("Segoe UI", 12, "bold"),
+            relief="flat",
+            width=14
+        )
+        btn_rol_cover.pack(side="left", padx=5, pady=8)
 
     # ==================== SPECIALS CONTAINER ====================
     if UI is not None:
@@ -1089,7 +1438,6 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
         """Marca los registros seleccionados como 'Registrado'"""
         sel = get_selected_ids()
         if not sel:
-            messagebox.showinfo("Marcar", "Selecciona uno o más specials para marcar como Registrado.", parent=top)
             return
         
         try:
@@ -1108,7 +1456,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             conn.close()
             
             load_data()
-            messagebox.showinfo("Marcar", f"✅ {len(sel)} registro(s) marcado(s) como Registrado", parent=top)
+
             
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo marcar:\n{e}", parent=top)
@@ -1137,7 +1485,6 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             conn.close()
             
             load_data()
-            messagebox.showinfo("Marcar", f"🔄 {len(sel)} registro(s) marcado(s) como En Progreso", parent=top)
             
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo marcar:\n{e}", parent=top)
@@ -1194,7 +1541,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             conn.close()
             
             load_data()
-            messagebox.showinfo("Eliminar", f"✅ {len(sel)} registro(s) eliminado(s)", parent=top)
+
             
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo eliminar:\n{e}", parent=top)
@@ -1838,6 +2185,845 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
     audit_sheet.pack(fill="both", expand=True)
     audit_sheet.change_theme("dark blue")
 
+    # ==================== BREAKS CONTAINER ====================
+    if UI is not None:
+        breaks_container = UI.CTkFrame(top, fg_color="#2c2f33")
+    else:
+        breaks_container = tk.Frame(top, bg="#2c2f33")
+    # NO hacer pack() aquí - se mostrará solo cuando se cambie a modo Breaks
+
+    # Frame de controles (comboboxes y botones) para Breaks
+    if UI is not None:
+        breaks_controls_frame = UI.CTkFrame(breaks_container, fg_color="#23272a", corner_radius=8)
+    else:
+        breaks_controls_frame = tk.Frame(breaks_container, bg="#23272a")
+    breaks_controls_frame.pack(fill="x", padx=10, pady=10)
+
+    # Función para cargar usuarios desde la BD
+    def load_users_breaks():
+        """Carga lista de usuarios desde la base de datos"""
+        try:
+            users = under_super.load_users()
+            return users if users else []
+        except Exception as e:
+            print(f"[ERROR] load_users_breaks: {e}")
+            traceback.print_exc()
+            return []
+
+    # Función para cargar covers desde la BD
+    def load_covers_from_db():
+        """Carga covers activos desde gestion_breaks_programados con nombres de usuario"""
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            query = """
+                SELECT 
+                    u_covered.Nombre_Usuario as usuario_cubierto,
+                    u_covering.Nombre_Usuario as usuario_cubre,
+                    TIME(gbp.Fecha_hora_cover) as hora
+                FROM gestion_breaks_programados gbp
+                INNER JOIN user u_covered ON gbp.User_covered = u_covered.ID_Usuario
+                INNER JOIN user u_covering ON gbp.User_covering = u_covering.ID_Usuario
+                WHERE gbp.is_Active = 1
+                ORDER BY gbp.Fecha_hora_cover
+            """
+            cur.execute(query)
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            # Debug: Imprimir los datos cargados
+            print(f"[DEBUG] Covers cargados desde BD: {len(rows)} registros")
+            for row in rows:
+                print(f"[DEBUG] Cover: {row[0]} cubierto por {row[1]} a las {row[2]}")
+            
+            return rows
+        except Exception as e:
+            print(f"[ERROR] load_covers_from_db: {e}")
+            traceback.print_exc()
+            return []
+
+    # Variables para comboboxes
+    usuario_a_cubrir_var = tk.StringVar()
+    cubierto_por_var = tk.StringVar()
+    hora_var = tk.StringVar()
+
+    # Cargar usuarios
+    users_list = load_users_breaks()
+
+    # Primera fila: Usuario a cubrir
+    row1_frame_breaks = tk.Frame(breaks_controls_frame, bg="#23272a")
+    row1_frame_breaks.pack(fill="x", padx=20, pady=(15, 5))
+
+    if UI is not None:
+        UI.CTkLabel(row1_frame_breaks, text="👤 Usuario a Cubrir:", 
+                   text_color="#ffffff", font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+    else:
+        tk.Label(row1_frame_breaks, text="👤 Usuario a Cubrir:", bg="#23272a", fg="#ffffff", 
+                font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+
+    if UI is not None:
+        usuario_combo_breaks = under_super.FilteredCombobox(row1_frame_breaks, textvariable=usuario_a_cubrir_var,
+                                                     values=users_list, width=40, state="readonly",
+                                                     font=("Segoe UI", 11))
+        usuario_combo_breaks.set("")  # Establecer vacío inicialmente
+    else:
+        usuario_combo_breaks = ttk.Combobox(row1_frame_breaks, textvariable=usuario_a_cubrir_var,
+                                           values=users_list, width=25, state="readonly")
+    usuario_combo_breaks.pack(side="left", padx=5)
+
+    # Segunda fila: Cubierto por
+    row2_frame_breaks = tk.Frame(breaks_controls_frame, bg="#23272a")
+    row2_frame_breaks.pack(fill="x", padx=20, pady=5)
+
+    if UI is not None:
+        UI.CTkLabel(row2_frame_breaks, text="🔄 Cubierto Por:", 
+                   text_color="#ffffff", font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+    else:
+        tk.Label(row2_frame_breaks, text="🔄 Cubierto Por:", bg="#23272a", fg="#ffffff", 
+                font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+
+    if UI is not None:
+        cover_by_combo_breaks = under_super.FilteredCombobox(row2_frame_breaks, textvariable=cubierto_por_var,
+                                              values=users_list, width=40, state="readonly",
+                                              font=("Segoe UI", 11))
+        cover_by_combo_breaks.set("")  # Establecer vacío inicialmente
+    else:
+        cover_by_combo_breaks = ttk.Combobox(row2_frame_breaks, textvariable=cubierto_por_var,
+                                            values=users_list, width=25, state="readonly")
+    cover_by_combo_breaks.pack(side="left", padx=5)
+
+    # Generar lista de horas en formato HH:00:00 (cada hora del día)
+    horas_disponibles = [f"{h:02d}:00:00" for h in range(24)]
+
+    # Tercera fila: Hora
+    row3_frame_breaks = tk.Frame(breaks_controls_frame, bg="#23272a")
+    row3_frame_breaks.pack(fill="x", padx=20, pady=5)
+
+    if UI is not None:
+        UI.CTkLabel(row3_frame_breaks, text="🕐 Hora Programada:", 
+                   text_color="#ffffff", font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+    else:
+        tk.Label(row3_frame_breaks, text="🕐 Hora Programada:", bg="#23272a", fg="#ffffff", 
+                font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+
+    if UI is not None:
+        hora_combo_breaks = under_super.FilteredCombobox(
+            row3_frame_breaks, 
+            textvariable=hora_var,
+            values=horas_disponibles,
+            width=25,
+            font=("Segoe UI", 13),
+            background='#2b2b2b', 
+            foreground='#ffffff',
+            bordercolor='#4a90e2', 
+            arrowcolor='#ffffff'
+        )
+        hora_combo_breaks.pack(side="left", padx=5)
+    else:
+        hora_entry_breaks = tk.Entry(row3_frame_breaks, textvariable=hora_var, width=27)
+        hora_entry_breaks.pack(side="left", padx=5)
+
+    # Función para cargar datos agrupados (matriz)
+    def cargar_datos_agrupados_breaks():
+        """Carga datos agrupados por quien cubre (covered_by como columnas)"""
+        try:
+            rows = load_covers_from_db()
+            
+            # Obtener lista única de "Cubierto Por" (nombres) para las columnas
+            covered_by_set = sorted(set(row[1] for row in rows if row[1]))
+            
+            # Headers: hora primero + columnas de personas que cubren (nombres)
+            headers = ["Hora Programada"]
+            for cb in covered_by_set:
+                headers.append(cb)  # Ya son nombres de usuario
+            
+            # Agrupar por hora - solo el PRIMER usuario por covered_by y hora
+            horas_dict = {}
+            for row in rows:
+                usuario_cubierto = row[0]  # Nombre del usuario a cubrir
+                usuario_cubre = row[1]     # Nombre del usuario que cubre
+                hora = str(row[2])          # Hora en formato HH:MM:SS
+                
+                if hora not in horas_dict:
+                    horas_dict[hora] = {cb: "" for cb in covered_by_set}
+                
+                # Solo asignar si la celda está vacía (un usuario por celda)
+                if usuario_cubre in horas_dict[hora] and not horas_dict[hora][usuario_cubre]:
+                    horas_dict[hora][usuario_cubre] = usuario_cubierto
+            
+            # Convertir a lista de filas para el sheet
+            data = []
+            for hora in sorted(horas_dict.keys()):
+                fila = [hora]
+                for covered_by in covered_by_set:
+                    fila.append(horas_dict[hora][covered_by])
+                data.append(fila)
+            
+            print(f"[DEBUG] Headers construidos para breaks: {headers}")
+            print(f"[DEBUG] Data construida: {len(data)} filas")
+            
+            return headers, data
+            
+        except Exception as e:
+            print(f"[ERROR] cargar_datos_agrupados_breaks: {e}")
+            traceback.print_exc()
+            return ["Hora Programada"], [[]]
+
+    # Función para limpiar formulario
+    def limpiar_breaks():
+        usuario_combo_breaks.set("")
+        cover_by_combo_breaks.set("")
+        hora_var.set("")
+    
+    # Función wrapper para eliminar cover
+    def eliminar_cover_breaks():
+        """Wrapper que llama a under_super.eliminar_cover_breaks con todos los parámetros necesarios"""
+        if not USE_SHEET:
+            return
+        
+        success, mensaje, rows = under_super.eliminar_cover_breaks(
+            breaks_sheet=breaks_sheet,
+            parent_window=top
+        )
+        
+        # Si fue exitoso, refrescar la tabla
+        if success:
+            refrescar_tabla_breaks()
+
+    # Función para refrescar tabla
+    def refrescar_tabla_breaks():
+        if not USE_SHEET:
+            return
+        headers, data = cargar_datos_agrupados_breaks()
+        breaks_sheet.headers(headers)
+        breaks_sheet.set_sheet_data(data)
+        # Reajustar anchos después de refrescar
+        for i in range(len(headers)):
+            breaks_sheet.column_width(column=i, width=120)
+        breaks_sheet.redraw()
+
+    # Función wrapper para agregar y refrescar
+    def agregar_y_refrescar():
+        """Agrega un cover y luego refresca la tabla"""
+        try:
+            under_super.select_covered_by(
+                username, 
+                hora=hora_var.get(), 
+                usuario=cubierto_por_var.get(),
+                cover=usuario_a_cubrir_var.get()
+            )
+            # Refrescar tabla y limpiar formulario después de agregar
+            limpiar_breaks()
+            refrescar_tabla_breaks()
+        except Exception as e:
+            print(f"[ERROR] agregar_y_refrescar: {e}")
+            traceback.print_exc()
+
+    # Cuarta fila: Botones
+    row4_frame_breaks = tk.Frame(breaks_controls_frame, bg="#23272a")
+    row4_frame_breaks.pack(fill="x", padx=20, pady=(5, 15))
+
+    if UI is not None:
+        UI.CTkButton(row4_frame_breaks, text="➕ Agregar",
+                    command=agregar_y_refrescar,
+                    fg_color="#28a745", hover_color="#218838",
+                    font=("Segoe UI", 13, "bold"),
+                    width=150).pack(side="left", padx=5)
+        
+        UI.CTkButton(row4_frame_breaks, text="🔄 Limpiar",
+                    command=limpiar_breaks,
+                    fg_color="#6c757d", hover_color="#5a6268",
+                    font=("Segoe UI", 13),
+                    width=120).pack(side="left", padx=5)
+        
+        UI.CTkButton(row4_frame_breaks, text="🗑️ Eliminar Cover Seleccionado",
+                    command=eliminar_cover_breaks,
+                    fg_color="#dc3545", hover_color="#c82333",
+                    font=("Segoe UI", 13),
+                    width=220).pack(side="left", padx=5)
+    else:
+        tk.Button(row4_frame_breaks, text="➕ Agregar",
+                 command=agregar_y_refrescar,
+                 bg="#28a745", fg="white",
+                 font=("Segoe UI", 13, "bold"),
+                 relief="flat", width=12).pack(side="left", padx=5)
+        
+        tk.Button(row4_frame_breaks, text="🔄 Limpiar",
+                 command=limpiar_breaks,
+                 bg="#6c757d", fg="white",
+                 font=("Segoe UI", 13),
+                 relief="flat", width=10).pack(side="left", padx=5)
+        
+        tk.Button(row4_frame_breaks, text="🗑️ Eliminar Cover Seleccionado",
+                 command=eliminar_cover_breaks,
+                 bg="#dc3545", fg="white",
+                 font=("Segoe UI", 13),
+                 relief="flat", width=24).pack(side="left", padx=5)
+
+    # Frame para tksheet de Breaks
+    if UI is not None:
+        breaks_sheet_frame = UI.CTkFrame(breaks_container, fg_color="#2c2f33")
+    else:
+        breaks_sheet_frame = tk.Frame(breaks_container, bg="#2c2f33")
+    breaks_sheet_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+    if USE_SHEET:
+        headers, data = cargar_datos_agrupados_breaks()
+        
+        breaks_sheet = SheetClass(breaks_sheet_frame,
+                                 headers=headers,
+                                 theme="dark blue",
+                                 width=1280,
+                                 height=450)
+        breaks_sheet.enable_bindings([
+            "single_select",
+            "drag_select",
+            "row_select",
+            "column_select",
+            "column_width_resize",
+            "double_click_column_resize",
+            "arrowkeys",
+            "copy",
+            "select_all"
+        ])
+        breaks_sheet.pack(fill="both", expand=True)
+        
+        breaks_sheet.set_sheet_data(data)
+        breaks_sheet.change_theme("dark blue")
+        
+        # Ajustar anchos de columnas
+        for i in range(len(headers)):
+            breaks_sheet.column_width(column=i, width=120)
+        
+        # Función para editar celda con doble clic
+        def editar_celda_breaks(event):
+            try:
+                # Obtener la celda seleccionada
+                selection = breaks_sheet.get_currently_selected()
+                if not selection:
+                    return
+                
+                row, col = selection.row, selection.column
+                
+                # Ignorar primera columna (hora) y primera fila (headers)
+                if col == 0 or row < 0:
+                    return
+                
+                # Obtener datos de la celda
+                current_data = breaks_sheet.get_sheet_data()
+                if row >= len(current_data):
+                    return
+                
+                hora_actual = current_data[row][0]  # Primera columna es la hora
+                usuario_cubierto_actual = current_data[row][col] if col < len(current_data[row]) else ""  # El que ESTÁ cubierto
+                
+                # ⭐ OBTENER HEADERS DEL BREAKS_SHEET DIRECTAMENTE (no usar variable 'headers' que puede ser de otra tabla)
+                breaks_headers = breaks_sheet.headers()
+                usuario_cubre_actual = breaks_headers[col]  # El header es el usuario que HACE el cover
+                
+                # Si la celda está vacía, no permitir edición
+                if not usuario_cubierto_actual or usuario_cubierto_actual.strip() == "":
+                    messagebox.showinfo("Información", 
+                                      "No hay cover asignado en esta celda.\n\nUsa el botón 'Añadir' para crear un nuevo cover.",
+                                      parent=top)
+                    return
+                
+                # Crear ventana de edición
+                if UI is not None:
+                    edit_win = UI.CTkToplevel(top)
+                    edit_win.title("Editar Cover")
+                    edit_win.geometry("500x400")
+                    edit_win.configure(fg_color="#2c2f33")
+                else:
+                    edit_win = tk.Toplevel(top)
+                    edit_win.title("Editar Cover")
+                    edit_win.geometry("500x400")
+                    edit_win.configure(bg="#2c2f33")
+                
+                edit_win.transient(top)
+                edit_win.grab_set()
+                
+                # Frame principal
+                if UI is not None:
+                    main_frame = UI.CTkFrame(edit_win, fg_color="#23272a", corner_radius=10)
+                else:
+                    main_frame = tk.Frame(edit_win, bg="#23272a")
+                main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+                
+                # Título
+                if UI is not None:
+                    UI.CTkLabel(main_frame, text="✏️ Editar Cover de Break", 
+                               font=("Segoe UI", 20, "bold"),
+                               text_color="#ffffff").pack(pady=(10, 20))
+                else:
+                    tk.Label(main_frame, text="✏️ Editar Cover de Break", 
+                            font=("Segoe UI", 20, "bold"),
+                            bg="#23272a", fg="#ffffff").pack(pady=(10, 20))
+                
+                # Información del cover con mejor formato
+                if UI is not None:
+                    info_frame = UI.CTkFrame(main_frame, fg_color="#2c2f33", corner_radius=8)
+                else:
+                    info_frame = tk.Frame(main_frame, bg="#2c2f33")
+                info_frame.pack(fill="x", padx=10, pady=10)
+                
+                # Fila 1: Hora
+                hora_row = tk.Frame(info_frame, bg="#2c2f33")
+                hora_row.pack(fill="x", padx=15, pady=8)
+                if UI is not None:
+                    UI.CTkLabel(hora_row, text="🕐 Hora:", 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#99aab5", width=150).pack(side="left")
+                    UI.CTkLabel(hora_row, text=hora_actual, 
+                               font=("Segoe UI", 13),
+                               text_color="#ffffff").pack(side="left")
+                else:
+                    tk.Label(hora_row, text="🕐 Hora:", 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#2c2f33", fg="#99aab5", width=15, anchor="w").pack(side="left")
+                    tk.Label(hora_row, text=hora_actual, 
+                            font=("Segoe UI", 13),
+                            bg="#2c2f33", fg="#ffffff").pack(side="left")
+                
+                # Fila 2: Usuario que hace el cover
+                covering_row = tk.Frame(info_frame, bg="#2c2f33")
+                covering_row.pack(fill="x", padx=15, pady=8)
+                if UI is not None:
+                    UI.CTkLabel(covering_row, text="👤 Usuario que cubre:", 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#99aab5", width=150).pack(side="left")
+                    UI.CTkLabel(covering_row, text=usuario_cubre_actual, 
+                               font=("Segoe UI", 13),
+                               text_color="#4aa3ff").pack(side="left")
+                else:
+                    tk.Label(covering_row, text="👤 Usuario que cubre:", 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#2c2f33", fg="#99aab5", width=15, anchor="w").pack(side="left")
+                    tk.Label(covering_row, text=usuario_cubre_actual, 
+                            font=("Segoe UI", 13),
+                            bg="#2c2f33", fg="#4aa3ff").pack(side="left")
+                
+                # Fila 3: Usuario cubierto actual
+                actual_row = tk.Frame(info_frame, bg="#2c2f33")
+                actual_row.pack(fill="x", padx=15, pady=8)
+                if UI is not None:
+                    UI.CTkLabel(actual_row, text="📋 Usuario cubierto:", 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#99aab5", width=150).pack(side="left")
+                    UI.CTkLabel(actual_row, text=usuario_cubierto_actual, 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#7289da").pack(side="left")
+                else:
+                    tk.Label(actual_row, text="📋 Usuario cubierto:", 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#2c2f33", fg="#99aab5", width=15, anchor="w").pack(side="left")
+                    tk.Label(actual_row, text=usuario_cubierto_actual, 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#2c2f33", fg="#7289da").pack(side="left")
+                
+                # Selector de nuevo usuario cubierto
+                if UI is not None:
+                    UI.CTkLabel(main_frame, text="➡️ Cambiar a (nuevo usuario cubierto):", 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#ffffff").pack(anchor="w", padx=10, pady=(15, 5))
+                else:
+                    tk.Label(main_frame, text="➡️ Cambiar a (nuevo usuario cubierto):", 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#23272a", fg="#ffffff").pack(anchor="w", padx=10, pady=(15, 5))
+                
+                # Obtener lista de usuarios
+                usuarios_disponibles = []
+                try:
+                    conn = under_super.get_connection()
+                    cur = conn.cursor()
+                    cur.execute("SELECT Nombre_Usuario FROM user ORDER BY Nombre_Usuario")
+                    usuarios_disponibles = [row[0] for row in cur.fetchall()]
+                    cur.close()
+                    conn.close()
+                except Exception as e:
+                    print(f"[ERROR] No se pudieron cargar usuarios: {e}")
+                
+                nuevo_usuario_cubierto_var = tk.StringVar(value=usuario_cubierto_actual)
+                
+                # Usar FilteredCombobox para mejor búsqueda
+                usuario_combo = under_super.FilteredCombobox(
+                    main_frame,
+                    textvariable=nuevo_usuario_cubierto_var,
+                    values=usuarios_disponibles,
+                    width=35,
+                    font=("Segoe UI", 12),
+                    bordercolor="#5ab4ff",
+                    borderwidth=2,
+                    background="#2b2b2b",
+                    foreground="#ffffff",
+                    fieldbackground="#2b2b2b"
+                )
+                usuario_combo.pack(padx=10, pady=5, fill="x")
+                
+                # Función para guardar cambios
+                def guardar_cambios():
+                    nuevo_usuario_cubierto = nuevo_usuario_cubierto_var.get().strip()
+                    if not nuevo_usuario_cubierto:
+                        messagebox.showwarning("Advertencia", "Debe seleccionar un usuario", parent=edit_win)
+                        return
+                    
+                    # Llamar a la función de under_super para actualizar el cover
+                    # Parámetros: supervisor, hora, quien_cubre, usuario_cubierto_anterior, nuevo_usuario_cubierto
+                    exito = under_super.actualizar_cover_breaks(
+                        username=username,
+                        hora_actual=hora_actual,
+                        covered_by_actual=usuario_cubre_actual,
+                        usuario_actual=usuario_cubierto_actual,
+                        nuevo_usuario=nuevo_usuario_cubierto
+                    )
+                    
+                    if exito:
+                        messagebox.showinfo("Éxito", "Cover actualizado exitosamente", parent=edit_win)
+                        edit_win.destroy()
+                        refrescar_tabla_breaks()
+                    else:
+                        messagebox.showerror("Error", "No se pudo actualizar el cover", parent=edit_win)
+                
+                # Botones
+                if UI is not None:
+                    buttons_frame = UI.CTkFrame(main_frame, fg_color="transparent")
+                else:
+                    buttons_frame = tk.Frame(main_frame, bg="#23272a")
+                buttons_frame.pack(pady=20)
+                
+                if UI is not None:
+                    UI.CTkButton(buttons_frame, text="💾 Guardar", 
+                                command=guardar_cambios,
+                                fg_color="#43b581",
+                                hover_color="#3ca374",
+                                width=120,
+                                font=("Segoe UI", 12, "bold")).pack(side="left", padx=5)
+                    UI.CTkButton(buttons_frame, text="❌ Cancelar", 
+                                command=edit_win.destroy,
+                                fg_color="#f04747",
+                                hover_color="#d84040",
+                                width=120,
+                                font=("Segoe UI", 12, "bold")).pack(side="left", padx=5)
+                else:
+                    tk.Button(buttons_frame, text="💾 Guardar", 
+                             command=guardar_cambios,
+                             bg="#43b581",
+                             fg="white",
+                             font=("Segoe UI", 12, "bold"),
+                             width=12).pack(side="left", padx=5)
+                    tk.Button(buttons_frame, text="❌ Cancelar", 
+                             command=edit_win.destroy,
+                             bg="#f04747",
+                             fg="white",
+                             font=("Segoe UI", 12, "bold"),
+                             width=12).pack(side="left", padx=5)
+                
+            except Exception as e:
+                print(f"[ERROR] editar_celda_breaks: {e}")
+                traceback.print_exc()
+                messagebox.showerror("Error", f"Error al editar celda: {e}")
+        
+        # Vincular evento de doble clic
+        breaks_sheet.bind("<Double-Button-1>", editar_celda_breaks)
+        
+    else:
+        if UI is not None:
+            UI.CTkLabel(breaks_sheet_frame, text="⚠️ tksheet no instalado", 
+                       text_color="#ff6b6b", font=("Segoe UI", 16)).pack(pady=20)
+        else:
+            tk.Label(breaks_sheet_frame, text="⚠️ tksheet no instalado", 
+                    bg="#2c2f33", fg="#ff6b6b", font=("Segoe UI", 16)).pack(pady=20)
+
+    # ==================== ROL DE COVER CONTAINER ====================
+    if UI is not None:
+        rol_cover_container = UI.CTkFrame(top, fg_color="#2c2f33")
+    else:
+        rol_cover_container = tk.Frame(top, bg="#2c2f33")
+    # NO hacer pack() aquí - se mostrará solo cuando se cambie a modo Rol de Cover
+
+    # Frame de instrucciones
+    if UI is not None:
+        info_frame_rol = UI.CTkFrame(rol_cover_container, fg_color="#23272a", corner_radius=8)
+    else:
+        info_frame_rol = tk.Frame(rol_cover_container, bg="#23272a")
+    info_frame_rol.pack(fill="x", padx=10, pady=10)
+
+    if UI is not None:
+        UI.CTkLabel(info_frame_rol, 
+                   text="🎭 Gestión de Rol de Cover - Habilitar operadores que pueden ver la lista de covers",
+                   text_color="#00bfae", 
+                   font=("Segoe UI", 14, "bold")).pack(pady=15)
+    else:
+        tk.Label(info_frame_rol, 
+                text="🎭 Gestión de Rol de Cover - Habilitar operadores que pueden ver la lista de covers",
+                bg="#23272a", fg="#00bfae", 
+                font=("Segoe UI", 14, "bold")).pack(pady=15)
+
+    # Frame principal con dos columnas
+    if UI is not None:
+        main_frame_rol = UI.CTkFrame(rol_cover_container, fg_color="#2c2f33")
+    else:
+        main_frame_rol = tk.Frame(rol_cover_container, bg="#2c2f33")
+    main_frame_rol.pack(fill="both", expand=True, padx=10, pady=10)
+
+    # Columna izquierda: Operadores disponibles (Active = 1)
+    if UI is not None:
+        left_frame_rol = UI.CTkFrame(main_frame_rol, fg_color="#23272a", corner_radius=8)
+    else:
+        left_frame_rol = tk.Frame(main_frame_rol, bg="#23272a")
+    left_frame_rol.pack(side="left", fill="both", expand=True, padx=(0, 5))
+
+    if UI is not None:
+        UI.CTkLabel(left_frame_rol, 
+                   text="👤 Operadores Activos (Sin acceso a covers)",
+                   text_color="#ffffff", 
+                   font=("Segoe UI", 13, "bold")).pack(pady=10)
+    else:
+        tk.Label(left_frame_rol, 
+                text="👤 Operadores Activos (Sin acceso a covers)",
+                bg="#23272a", fg="#ffffff", 
+                font=("Segoe UI", 13, "bold")).pack(pady=10)
+
+    # Listbox para operadores sin acceso
+    list_frame_sin_acceso = tk.Frame(left_frame_rol, bg="#23272a")
+    list_frame_sin_acceso.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+    scroll_sin_acceso = tk.Scrollbar(list_frame_sin_acceso, orient="vertical")
+    scroll_sin_acceso.pack(side="right", fill="y")
+
+    listbox_sin_acceso = tk.Listbox(list_frame_sin_acceso, 
+                                    selectmode="extended",
+                                    bg="#262a31", 
+                                    fg="#ffffff", 
+                                    font=("Segoe UI", 11),
+                                    yscrollcommand=scroll_sin_acceso.set,
+                                    selectbackground="#4a90e2",
+                                    height=20)
+    listbox_sin_acceso.pack(side="left", fill="both", expand=True)
+    scroll_sin_acceso.config(command=listbox_sin_acceso.yview)
+
+    # Columna derecha: Operadores con acceso (Active = 2)
+    if UI is not None:
+        right_frame_rol = UI.CTkFrame(main_frame_rol, fg_color="#23272a", corner_radius=8)
+    else:
+        right_frame_rol = tk.Frame(main_frame_rol, bg="#23272a")
+    right_frame_rol.pack(side="left", fill="both", expand=True, padx=(5, 0))
+
+    if UI is not None:
+        UI.CTkLabel(right_frame_rol, 
+                   text="✅ Operadores con Acceso a Covers",
+                   text_color="#00c853", 
+                   font=("Segoe UI", 13, "bold")).pack(pady=10)
+    else:
+        tk.Label(right_frame_rol, 
+                text="✅ Operadores con Acceso a Covers",
+                bg="#23272a", fg="#00c853", 
+                font=("Segoe UI", 13, "bold")).pack(pady=10)
+
+    # Listbox para operadores con acceso
+    list_frame_con_acceso = tk.Frame(right_frame_rol, bg="#23272a")
+    list_frame_con_acceso.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+    scroll_con_acceso = tk.Scrollbar(list_frame_con_acceso, orient="vertical")
+    scroll_con_acceso.pack(side="right", fill="y")
+
+    listbox_con_acceso = tk.Listbox(list_frame_con_acceso, 
+                                    selectmode="extended",
+                                    bg="#262a31", 
+                                    fg="#00c853", 
+                                    font=("Segoe UI", 11),
+                                    yscrollcommand=scroll_con_acceso.set,
+                                    selectbackground="#4a90e2",
+                                    height=20)
+    listbox_con_acceso.pack(side="left", fill="both", expand=True)
+    scroll_con_acceso.config(command=listbox_con_acceso.yview)
+
+    # Frame de botones entre las dos columnas
+    if UI is not None:
+        buttons_frame_rol = UI.CTkFrame(rol_cover_container, fg_color="#2c2f33")
+    else:
+        buttons_frame_rol = tk.Frame(rol_cover_container, bg="#2c2f33")
+    buttons_frame_rol.pack(fill="x", padx=10, pady=10)
+
+    def cargar_operadores_rol():
+        """Carga operadores separados por su estado Active en sesion"""
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            # Limpiar listboxes
+            listbox_sin_acceso.delete(0, tk.END)
+            listbox_con_acceso.delete(0, tk.END)
+            
+            # Operadores con Active = 1 (sin acceso a covers)
+            cur.execute("""
+                SELECT DISTINCT s.ID_user 
+                FROM sesion s
+                INNER JOIN user u ON s.ID_user = u.Nombre_Usuario
+                WHERE s.Active = 1 AND u.Rol = 'Operador'
+                ORDER BY s.ID_user
+            """)
+            sin_acceso = cur.fetchall()
+            
+            for row in sin_acceso:
+                listbox_sin_acceso.insert(tk.END, row[0])
+            
+            # Operadores con Active = 2 (con acceso a covers)
+            cur.execute("""
+                SELECT DISTINCT s.ID_user 
+                FROM sesion s
+                INNER JOIN user u ON s.ID_user = u.Nombre_Usuario
+                WHERE s.Active = 2 AND u.Rol = 'Operador'
+                ORDER BY s.ID_user
+            """)
+            con_acceso = cur.fetchall()
+            
+            for row in con_acceso:
+                listbox_con_acceso.insert(tk.END, row[0])
+            
+            cur.close()
+            conn.close()
+            
+            print(f"[DEBUG] Operadores cargados: {len(sin_acceso)} sin acceso, {len(con_acceso)} con acceso")
+            
+        except Exception as e:
+            print(f"[ERROR] cargar_operadores_rol: {e}")
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Error al cargar operadores:\n{e}", parent=top)
+
+    def habilitar_acceso():
+        """Cambia Active de 1 a 2 para los operadores seleccionados (habilitar acceso a covers)"""
+        seleccion = listbox_sin_acceso.curselection()
+        if not seleccion:
+            messagebox.showwarning("Selección", "Selecciona uno o más operadores para habilitar.", parent=top)
+            return
+        
+        operadores = [listbox_sin_acceso.get(i) for i in seleccion]
+        
+        if not messagebox.askyesno("Confirmar", 
+                                   f"¿Habilitar acceso a covers para {len(operadores)} operador(es)?",
+                                   parent=top):
+            return
+        
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            for operador in operadores:
+                cur.execute("""
+                    UPDATE sesion 
+                    SET Active = 2 
+                    WHERE ID_user = %s AND Active = 1
+                """, (operador,))
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+            cargar_operadores_rol()
+            
+        except Exception as e:
+            print(f"[ERROR] habilitar_acceso: {e}")
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Error al habilitar acceso:\n{e}", parent=top)
+
+    def deshabilitar_acceso():
+        """Cambia Active de 2 a 1 para los operadores seleccionados (quitar acceso a covers)"""
+        seleccion = listbox_con_acceso.curselection()
+        if not seleccion:
+            messagebox.showwarning("Selección", "Selecciona uno o más operadores para deshabilitar.", parent=top)
+            return
+        
+        operadores = [listbox_con_acceso.get(i) for i in seleccion]
+        
+        if not messagebox.askyesno("Confirmar", 
+                                   f"¿Quitar acceso a covers para {len(operadores)} operador(es)?",
+                                   parent=top):
+            return
+        
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            for operador in operadores:
+                cur.execute("""
+                    UPDATE sesion 
+                    SET Active = 1 
+                    WHERE ID_user = %s AND Active = 2
+                """, (operador,))
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+            cargar_operadores_rol()
+            
+        except Exception as e:
+            print(f"[ERROR] deshabilitar_acceso: {e}")
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Error al deshabilitar acceso:\n{e}", parent=top)
+
+    def refrescar_lista_operadores():
+        """Wrapper para refrescar la lista"""
+        cargar_operadores_rol()
+
+    # Botones de acción
+    if UI is not None:
+        UI.CTkButton(buttons_frame_rol, 
+                    text="➡️ Habilitar Acceso a Covers",
+                    command=habilitar_acceso,
+                    fg_color="#00c853",
+                    hover_color="#00a043",
+                    width=220,
+                    height=40,
+                    font=("Segoe UI", 13, "bold")).pack(side="left", padx=10, pady=5)
+        
+        UI.CTkButton(buttons_frame_rol, 
+                    text="⬅️ Quitar Acceso a Covers",
+                    command=deshabilitar_acceso,
+                    fg_color="#f04747",
+                    hover_color="#d84040",
+                    width=220,
+                    height=40,
+                    font=("Segoe UI", 13, "bold")).pack(side="left", padx=10, pady=5)
+        
+        UI.CTkButton(buttons_frame_rol, 
+                    text="🔄 Refrescar Lista",
+                    command=refrescar_lista_operadores,
+                    fg_color="#4a90e2",
+                    hover_color="#357ABD",
+                    width=180,
+                    height=40,
+                    font=("Segoe UI", 13, "bold")).pack(side="left", padx=10, pady=5)
+    else:
+        tk.Button(buttons_frame_rol, 
+                 text="➡️ Habilitar Acceso a Covers",
+                 command=habilitar_acceso,
+                 bg="#00c853",
+                 fg="white",
+                 font=("Segoe UI", 13, "bold"),
+                 relief="flat",
+                 width=24).pack(side="left", padx=10, pady=5)
+        
+        tk.Button(buttons_frame_rol, 
+                 text="⬅️ Quitar Acceso a Covers",
+                 command=deshabilitar_acceso,
+                 bg="#f04747",
+                 fg="white",
+                 font=("Segoe UI", 13, "bold"),
+                 relief="flat",
+                 width=24).pack(side="left", padx=10, pady=5)
+        
+        tk.Button(buttons_frame_rol, 
+                 text="🔄 Refrescar Lista",
+                 command=refrescar_lista_operadores,
+                 bg="#4a90e2",
+                 fg="white",
+                 font=("Segoe UI", 13, "bold"),
+                 relief="flat",
+                 width=18).pack(side="left", padx=10, pady=5)
+
     # ==================== COVER TIME CONTAINER ====================
     if UI is not None:
         cover_container = UI.CTkFrame(top, fg_color="#2c2f33")
@@ -2342,6 +3528,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
 
 
 # nueva implementacion: status de supervisores
+# fin de la implementaicon de statuses 
 # modificable y con efecto en operadores
 
 
@@ -2379,9 +3566,316 @@ def refresh_status(label_status, username):
     return new_status
 
 
-    
-
 # fin de la implementacion
+
+# implementacion de modelo de gestion de breaks por supervisores.
+
+#def menu_de_covers_break_ctk(username):
+    try:
+        import customtkinter as ctk
+    except ImportError:
+        messagebox.showerror("Error", "customtkinter no está instalado.\nInstala con: pip install customtkinter")
+        return
+    
+    ctk.set_appearance_mode("dark")
+    ctk.set_default_color_theme("blue")
+   
+    root = ctk.CTk()
+    root.geometry("1100x600")
+    root.title("Menú de Covers de Break")
+
+    # Frame principal
+    main_frame = ctk.CTkFrame(root, fg_color="#1e1e1e")
+    main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+    
+    # Título
+    title_label = ctk.CTkLabel(main_frame, text="📋 Covers de Break", 
+                               font=ctk.CTkFont(size=24, weight="bold"),
+                               text_color="#4aa3ff")
+    title_label.pack(pady=(10, 20))
+
+    # Frame para controles (comboboxes y botones)
+    controls_frame = ctk.CTkFrame(main_frame, fg_color="#2b2b2b")
+    controls_frame.pack(fill="x", padx=10, pady=(0, 10))
+    
+    # Obtener lista de usuarios desde la base de datos
+    user_list = under_super.get_all_users()
+    users_list = [user['Nombre_Usuario'] for user in user_list] if user_list else []
+    
+    
+    # Datos locales de covers (lista que se irá actualizando)
+    # Solo un usuario por celda (hora + covered_by)
+    local_covers_data = []
+    
+    # Variables para comboboxes
+    usuario_a_cubrir_var = tk.StringVar()
+    cubierto_por_var = tk.StringVar()
+    hora_var = tk.StringVar()
+    
+    # Primera fila: Usuario a cubrir
+    row1_frame = ctk.CTkFrame(controls_frame, fg_color="transparent")
+    row1_frame.pack(fill="x", padx=20, pady=(15, 5))
+    
+    ctk.CTkLabel(row1_frame, text="👤 Usuario a Cubrir:", 
+                font=ctk.CTkFont(size=14, weight="bold"),
+                text_color="#ffffff").pack(side="left", padx=(0, 10))
+    
+    usuario_combo = ctk.CTkComboBox(row1_frame, 
+                                    variable=usuario_a_cubrir_var,
+                                    values=users_list,
+                                    width=200,
+                                    font=ctk.CTkFont(size=13),
+                                    state="readonly")
+    usuario_combo.pack(side="left", padx=5)
+    usuario_combo.set("Seleccionar...")
+    
+    # Segunda fila: Cubierto por
+    row2_frame = ctk.CTkFrame(controls_frame, fg_color="transparent")
+    row2_frame.pack(fill="x", padx=20, pady=5)
+    
+    ctk.CTkLabel(row2_frame, text="🔄 Cubierto Por:", 
+                font=ctk.CTkFont(size=14, weight="bold"),
+                text_color="#ffffff").pack(side="left", padx=(0, 10))
+    
+    cover_by_combo = ctk.CTkComboBox(row2_frame, 
+                                     variable=cubierto_por_var,
+                                     values=users_list,
+                                     width=200,
+                                     font=ctk.CTkFont(size=13),
+                                     state="readonly")
+    cover_by_combo.pack(side="left", padx=5)
+    cover_by_combo.set("Seleccionar...")
+    
+    # Tercera fila: Hora
+    row3_frame = ctk.CTkFrame(controls_frame, fg_color="transparent")
+    row3_frame.pack(fill="x", padx=20, pady=5)
+    
+    ctk.CTkLabel(row3_frame, text="🕐 Hora Programada:", 
+                font=ctk.CTkFont(size=14, weight="bold"),
+                text_color="#ffffff").pack(side="left", padx=(0, 10))
+    
+    # Generar lista de horas en formato HH:00:00 (cada hora del día)
+    horas_disponibles = [f"{h:02d}:00:00" for h in range(24)]
+
+    hora_combo = under_super.Fil(row3_frame,
+                                  variable=hora_var,
+                                  values=horas_disponibles,
+                                  width=200,
+                                  font=ctk.CTkFont(size=13),
+                                  state="readonly")
+    hora_combo.pack(side="left", padx=5)
+    hora_combo.set("14:00:00")  # Valor por defecto
+    
+    # Cuarta fila: Botones
+    row4_frame = ctk.CTkFrame(controls_frame, fg_color="transparent")
+    row4_frame.pack(fill="x", padx=20, pady=(5, 15))
+    
+    def cargar_datos_agrupados():
+        """Carga datos agrupados por quien cubre (covered_by como columnas)"""
+        try:
+            # Usar los datos locales
+            rows = [(usuario, covered_by, hora) for usuario, covered_by, hora in local_covers_data]
+            
+            # Obtener lista única de "Cubierto Por" para las columnas
+            covered_by_set = sorted(set(row[1] for row in rows if row[1]))
+            
+            # Headers: hora primero + columnas de personas que cubren
+            headers = ["Hora Programada"]
+            for cb in covered_by_set:
+                headers.append(cb)
+            
+            # Agrupar por hora - solo el PRIMER usuario por covered_by y hora
+            horas_dict = {}
+            for row in rows:
+                usuario = row[0]
+                covered_by = row[1]
+                hora = row[2]  # Ya es string en formato HH:MM:SS
+                
+                if hora not in horas_dict:
+                    horas_dict[hora] = {cb: "" for cb in covered_by_set}
+                
+                # Solo asignar si la celda está vacía (un usuario por celda)
+                if covered_by in horas_dict[hora] and not horas_dict[hora][covered_by]:
+                    horas_dict[hora][covered_by] = usuario
+            
+            # Convertir a lista de filas para el sheet
+            data = []
+            for hora in sorted(horas_dict.keys()):
+                fila = [hora]
+                for covered_by in covered_by_set:
+                    fila.append(horas_dict[hora][covered_by])
+                data.append(fila)
+            
+            return headers, data
+            
+        except Exception as e:
+            print(f"[ERROR] cargar_datos_agrupados: {e}")
+            import traceback
+            traceback.print_exc()
+            return ["Hora Programada"], []
+    
+    #def agregar_cover():
+        usuario = usuario_a_cubrir_var.get()
+        cover = cubierto_por_var.get()
+        hora = hora_var.get()
+        
+        if usuario == "Seleccionar..." or cover == "Seleccionar..." or not hora:
+            print("[WARN] Debe completar todos los campos")
+            return
+        
+        # Validar formato de hora (HH:MM:SS)
+        if not re.match(r'^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$', hora):
+            print("[WARN] Formato de hora inválido. Use HH:MM:SS (ej: 14:00:00)")
+            return
+        
+        # Validar que no exista ya un cover asignado para esa hora y covered_by
+        for u, c, h in local_covers_data:
+            if h == hora and c == cover:
+                print(f"[WARN] ⚠️ Ya existe un cover asignado a {cover} a las {hora}. Solo se permite un usuario por celda.")
+                return
+        
+        # Agregar a la lista local
+        local_covers_data.append((usuario, cover, hora))
+        print(f"[INFO] ✅ Cover agregado: {usuario} cubierto por {cover} a las {hora}")
+        
+        # Limpiar formulario y refrescar tabla
+        limpiar()
+        refrescar_tabla()
+    
+    def limpiar():
+        usuario_combo.set("Seleccionar...")
+        cover_by_combo.set("Seleccionar...")
+        hora_var.set("")
+    
+    btn_agregar = ctk.CTkButton(row4_frame, text="➕ Agregar",
+                                command=lambda: under_super.select_covered_by(username, 
+                                                                              hora=hora_var.get(), 
+                                                                              cover=cubierto_por_var.get(), 
+                                                                              usuario=usuario_a_cubrir_var.get()
+                                                                              ),
+                                fg_color="#28a745", hover_color="#218838",
+                                font=ctk.CTkFont(size=13, weight="bold"),
+                                width=150)
+    btn_agregar.pack(side="left", padx=5)
+    
+    btn_limpiar = ctk.CTkButton(row4_frame, text="🔄 Limpiar",
+                                command=limpiar,
+                                fg_color="#6c757d", hover_color="#5a6268",
+                                font=ctk.CTkFont(size=13),
+                                width=120)
+    btn_limpiar.pack(side="left", padx=5)
+
+    # Frame para tksheet
+    tksheet_frame = ctk.CTkFrame(main_frame, fg_color="#2c2f33")
+    tksheet_frame.pack(fill="both", expand=True, padx=10, pady=10)
+    
+    if USE_SHEET:
+        # Use Sheet functionality
+        headers, data = cargar_datos_agrupados()
+        
+        sheet = Sheet(tksheet_frame,
+                      headers=headers,
+                      theme="dark blue",
+                      width=1050,
+                      height=350)
+        sheet.enable_bindings([
+            "single_select",
+            "drag_select",
+            "row_select",
+            "column_select",
+            "column_width_resize",
+            "double_click_column_resize",
+            "arrowkeys",
+            "copy",
+            "select_all"
+        ])
+        sheet.pack(fill="both", expand=True)
+        
+        sheet.set_sheet_data(data)
+        sheet.change_theme("dark blue")
+        
+        # Ajustar anchos de columnas
+        for i in range(len(headers)):
+            sheet.column_width(column=i, width=200)
+        
+        def eliminar_cover():
+            selected_cols = sheet.get_selected_columns()
+            selected_cells = sheet.get_selected_cells()
+            
+            # Caso 1: Se seleccionó una columna completa
+            if selected_cols:
+                col = list(selected_cols)[0]  # Convertir set a lista
+                if col == 0:
+                    print("[WARN] No se puede eliminar la columna de Hora.")
+                    return
+                
+                covered_by = sheet.headers()[col]
+                
+                # Eliminar todos los covers de esa persona
+                covers_eliminados = []
+                for entrada in local_covers_data[:]:  # Iterar sobre una copia
+                    usuario, c_by, h = entrada
+                    if c_by == covered_by:
+                        covers_eliminados.append(entrada)
+                        local_covers_data.remove(entrada)
+                        print(f"[INFO] ✅ Cover eliminado: {usuario} cubierto por {c_by} a las {h}")
+                
+                if covers_eliminados:
+                    print(f"[INFO] Total de covers eliminados: {len(covers_eliminados)}")
+                    refrescar_tabla()
+                else:
+                    print("[WARN] No se encontraron covers para eliminar en esa columna.")
+                return
+            
+            # Caso 2: Se seleccionó una celda específica
+            if selected_cells:
+                row, col = selected_cells[0]
+                
+                if col == 0:
+                    print("[WARN] No se puede eliminar desde la columna de Hora.")
+                    return
+                
+                hora = sheet.get_cell_data(row, 0)  # Hora en la primera columna
+                covered_by = sheet.headers()[col]    # Nombre del covered_by
+                
+                # Buscar y eliminar de la lista local
+                for entrada in local_covers_data[:]:
+                    usuario, c_by, h = entrada
+                    if h == hora and c_by == covered_by:
+                        local_covers_data.remove(entrada)
+                        print(f"[INFO] ✅ Cover eliminado: {usuario} cubierto por {c_by} a las {h}")
+                        refrescar_tabla()
+                        return
+                
+                print("[WARN] No se encontró el cover para eliminar.")
+                return
+            
+            print("[WARN] Seleccione una celda o columna para eliminar el cover.")
+        
+        btn_eliminar = ctk.CTkButton(controls_frame, text="🗑️ Eliminar Cover Seleccionado",
+                                     command=eliminar_cover,
+                                     fg_color="#dc3545", hover_color="#c82333",
+                                     font=ctk.CTkFont(size=13),
+                                     width=220)
+        btn_eliminar.pack(side="left", padx=5)
+        
+        def refrescar_tabla():
+            headers, data = cargar_datos_agrupados()
+            sheet.headers(headers)
+            sheet.set_sheet_data(data)
+            # Reajustar anchos después de refrescar
+            for i in range(len(headers)):
+                sheet.column_width(column=i, width=200)
+            sheet.redraw()
+        
+    else:
+        no_sheet_label = ctk.CTkLabel(tksheet_frame, 
+                                      text="⚠️ tksheet no instalado", 
+                                      font=ctk.CTkFont(size=16),
+                                      text_color="#ff6b6b")
+        no_sheet_label.pack(pady=20)
+
+# fin de la implemetacion de gestion de breaks
 
 
 def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, root=None):
@@ -2651,11 +4145,6 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             # Mostrar resultado
             if deleted_count > 0:
                 if failed_count > 0:
-                    messagebox.showinfo("Resultado", 
-                                       f"✅ {deleted_count} special(s) movido(s) a papelera\n"
-                                       f"⚠️ {failed_count} no se pudieron eliminar", 
-                                       parent=top)
-                else:
                     messagebox.showinfo("Éxito", 
                                        f"✅ {deleted_count} special(s) movido(s) a papelera correctamente", 
                                        parent=top)
@@ -2678,18 +4167,14 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             is_start = Dinamic_button_Shift(username)
             
             if is_start:
-                on_start_shift(username)
-                messagebox.showinfo("Start Shift", 
-                                   f"✅ Turno iniciado correctamente para {username}",
-                                   parent=top)
+                success = on_start_shift(username, parent_window=top)
+                if success:
+                    update_shift_button()
+                    load_data()
             else:
                 on_end_shift(username)
-                messagebox.showinfo("End of Shift", 
-                                   f"✅ Turno finalizado correctamente para {username}",
-                                   parent=top)
-            
-            update_shift_button()
-            load_data()
+                update_shift_button()
+                load_data()
             
         except Exception as e:
             messagebox.showerror("Error", f"Error al cambiar turno:\n{e}", parent=top)
@@ -2730,6 +4215,60 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
                    font=("Segoe UI", 16, "bold"), 
                    text_color="#e0e0e0").pack(side="left", padx=20, pady=15)
         
+        # ⭐ INDICADOR DE STATUS CON DROPDOWN (a la derecha, antes del botón Shift)
+        status_frame = UI.CTkFrame(header, fg_color="transparent")
+        status_frame.pack(side="right", padx=(5, 10), pady=15)
+        
+        # Obtener status actual del usuario
+        current_status_bd = under_super.get_user_status_bd(username)
+        
+        # Mapear el status a texto legible
+        if current_status_bd == 1:
+            status_text = "🟢 Disponible"
+        elif current_status_bd == 0:
+            status_text = "🟡 Ocupado"
+        elif current_status_bd == -1:
+            status_text = "🔴 No disponible"
+        else:
+            status_text = "⚪ Desconocido"
+        
+        status_label = UI.CTkLabel(status_frame, text=status_text, 
+                                   font=("Segoe UI", 12, "bold"))
+        status_label.pack(side="left", padx=(0, 8))
+        
+        btn_emoji_green = "🟢"
+        btn_emoji_yellow = "🟡"
+        btn_emoji_red = "🔴"
+        
+        def update_status_label(new_value):
+            """Actualiza el label y el status en la BD"""
+            under_super.set_new_status(new_value, username)
+            # Actualizar el texto del label
+            if new_value == 1:
+                status_label.configure(text="🟢 Disponible")
+            elif new_value == 2:
+                status_label.configure(text="🟡 Ocupado")
+            elif new_value == -1:
+                status_label.configure(text="🔴 No disponible")
+        
+        status_btn_green = UI.CTkButton(status_frame, text=btn_emoji_green, command=lambda:(update_status_label(1), username),
+                    fg_color="#00c853", hover_color="#00a043",
+                    width=45, height=38,
+                    font=("Segoe UI", 16, "bold"))
+        status_btn_green.pack(side="left")    
+
+        status_btn_yellow = UI.CTkButton(status_frame, text=btn_emoji_yellow, command=lambda: (update_status_label(2), username),
+                    fg_color="#f5a623", hover_color="#e69515",
+                    width=45, height=38,
+                    font=("Segoe UI", 16, "bold"))
+        status_btn_yellow.pack(side="left")
+
+        status_btn_red = UI.CTkButton(status_frame, text=btn_emoji_red, command=lambda: (update_status_label(-1), username),
+                    fg_color="#d32f2f", hover_color="#b71c1c",
+                    width=45, height=38,
+                    font=("Segoe UI", 16, "bold"))
+        status_btn_red.pack(side="left")
+        
         # ⭐ Botón Start/End Shift a la derecha
         shift_btn = UI.CTkButton(
             header, 
@@ -2742,114 +4281,6 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             hover_color="#00a043"
         )
         shift_btn.pack(side="right", padx=(5, 20), pady=15)
-        
-        # ⭐ INDICADOR DE STATUS CON DROPDOWN (antes del botón Shift)
-        status_frame = UI.CTkFrame(header, fg_color="transparent")
-        status_frame.pack(side="right", padx=(5, 10), pady=15)
-        
-        current_status_value = get_user_status(username)
-        status_label_lead = UI.CTkLabel(status_frame, text=current_status_value, 
-                                        font=("Segoe UI", 12, "bold"))
-        status_label_lead.pack(side="left", padx=(0, 8))
-        
-        def change_status_lead():
-            """Muestra menú para cambiar el status del lead supervisor"""
-            try:
-                status_actual = under_super.get_user_status_bd(username)
-                
-                if UI is not None:
-                    status_win = UI.CTkToplevel(top)
-                    status_win.configure(fg_color="#2c2f33")
-                else:
-                    status_win = tk.Toplevel(top)
-                    status_win.configure(bg="#2c2f33")
-                
-                status_win.title("Cambiar Status")
-                status_win.geometry("350x280")
-                status_win.resizable(False, False)
-                status_win.transient(top)
-                status_win.grab_set()
-                
-                if UI is not None:
-                    UI.CTkLabel(status_win, text=f"Status actual: {get_user_status(username)}",
-                               font=("Segoe UI", 13, "bold"), text_color="#e0e0e0").pack(pady=(20, 10))
-                    UI.CTkLabel(status_win, text="Selecciona nuevo status:",
-                               font=("Segoe UI", 11), text_color="#c9d1d9").pack(pady=(0, 15))
-                else:
-                    tk.Label(status_win, text=f"Status actual: {get_user_status(username)}",
-                            bg="#2c2f33", fg="#e0e0e0",
-                            font=("Segoe UI", 13, "bold")).pack(pady=(20, 10))
-                    tk.Label(status_win, text="Selecciona nuevo status:",
-                            bg="#2c2f33", fg="#c9d1d9",
-                            font=("Segoe UI", 11)).pack(pady=(0, 15))
-                
-                def set_new_status(new_value):
-                    label_status = new_value
-                    try:
-                        conn = under_super.get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("UPDATE sesion SET Active = %s WHERE ID_user = %s ORDER BY ID DESC LIMIT 1",
-                                     (new_value, username))
-                        conn.commit()
-                        cursor.close()
-                        conn.close()
-                        
-                        new_text = get_user_status(username)
-                        status_label_lead.configure(text=new_text)
-                        
-
-                        
-                        refresh_status(label_status, username)
-                        status_win.destroy()
-                    except Exception as e:
-                        messagebox.showerror("Error", f"Error al cambiar status:\n{e}", parent=status_win)
-
-
-                
-                if UI is not None:
-                    UI.CTkButton(status_win, text="🟢 Disponible", 
-                               command=lambda: set_new_status(1),
-                               fg_color="#00c853", hover_color="#00a043",
-                               width=200, height=40,
-                               font=("Segoe UI", 12, "bold")).pack(pady=8)
-                    
-                    UI.CTkButton(status_win, text="🟡 Ocupado", 
-                               command=lambda: set_new_status(0),
-                               fg_color="#f5a623", hover_color="#e69515",
-                               width=200, height=40,
-                               font=("Segoe UI", 12, "bold")).pack(pady=8)
-                    
-                    UI.CTkButton(status_win, text="🔴 No disponible", 
-                               command=lambda: set_new_status(-1),
-                               fg_color="#d32f2f", hover_color="#b71c1c",
-                               width=200, height=40,
-                               font=("Segoe UI", 12, "bold")).pack(pady=8)
-                else:
-                    tk.Button(status_win, text="🟢 Disponible", 
-                             command=lambda: set_new_status(1),
-                             bg="#00c853", fg="white",
-                             font=("Segoe UI", 12, "bold"),
-                             relief="flat", width=18, height=2).pack(pady=8)
-                    
-                    tk.Button(status_win, text="🟡 Ocupado", 
-                             command=lambda: set_new_status(0),
-                             bg="#f5a623", fg="white",
-                             font=("Segoe UI", 12, "bold"),
-                             relief="flat", width=18, height=2).pack(pady=8)
-                    
-                    tk.Button(status_win, text="🔴 No disponible", 
-                             command=lambda: set_new_status(-1),
-                             bg="#d32f2f", fg="white",
-                             font=("Segoe UI", 12, "bold"),
-                             relief="flat", width=18, height=2).pack(pady=8)
-                
-            except Exception as e:
-                messagebox.showerror("Error", f"Error al abrir menú de status:\n{e}", parent=top)
-        
-        UI.CTkButton(status_frame, text="⚙️", command=change_status_lead,
-                    fg_color="#3b4754", hover_color="#4a5560",
-                    width=40, height=32,
-                    font=("Segoe UI", 12, "bold")).pack(side="left")
         
         # Botones de acción
         UI.CTkButton(header, text="🔄 Refrescar", command=load_data,
@@ -2909,7 +4340,7 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
     nav_frame.pack_propagate(False)
 
     def switch_view(new_view):
-        """Cambia entre las 5 vistas disponibles"""
+        """Cambia entre las 7 vistas disponibles"""
         current_view['value'] = new_view
         
         # Ocultar todos los containers
@@ -2918,6 +4349,8 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
         audit_container.pack_forget()
         cover_container.pack_forget()
         admin_container.pack_forget()
+        rol_cover_container.pack_forget()
+        breaks_container.pack_forget()
         
         # Resetear colores de botones
         inactive_color = "#3b4754"
@@ -2974,6 +4407,26 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             # Forzar actualización
             top.update_idletasks()
             # No auto-cargar, el usuario selecciona qué tabla ver
+        elif new_view == 'rol_cover':
+            rol_cover_container.pack(fill="both", expand=True, padx=10, pady=10)
+            if UI is not None:
+                btn_rol_cover.configure(fg_color=active_color, hover_color=active_hover)
+            else:
+                btn_rol_cover.configure(bg=active_color, activebackground=active_hover)
+            # Cargar operadores al mostrar la vista
+            top.update_idletasks()
+            cargar_operadores_rol()
+        elif new_view == 'breaks':
+            breaks_container.pack(fill="both", expand=True, padx=10, pady=10)
+            if UI is not None:
+                btn_breaks.configure(fg_color=active_color, hover_color=active_hover)
+            else:
+                btn_breaks.configure(bg=active_color, activebackground=active_hover)
+            # Forzar actualización y refrescar tabla de breaks
+            top.update_idletasks()
+            if USE_SHEET:
+                breaks_sheet.refresh()
+                refrescar_tabla_breaks()
 
     # Botones de navegación
     if UI is not None:
@@ -3036,6 +4489,30 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             font=("Segoe UI", 12, "bold")
         )
         btn_admin.pack(side="left", padx=5, pady=8)
+        
+        btn_rol_cover = UI.CTkButton(
+            nav_frame, 
+            text="🎭 Rol de Cover", 
+            command=lambda: switch_view('rol_cover'),
+            fg_color="#3b4754",
+            hover_color="#4a5560",
+            width=140,
+            height=35,
+            font=("Segoe UI", 12, "bold")
+        )
+        btn_rol_cover.pack(side="left", padx=5, pady=8)
+        
+        btn_breaks = UI.CTkButton(
+            nav_frame, 
+            text="☕ Breaks", 
+            command=lambda: switch_view('breaks'),
+            fg_color="#3b4754",
+            hover_color="#4a5560",
+            width=120,
+            height=35,
+            font=("Segoe UI", 12, "bold")
+        )
+        btn_breaks.pack(side="left", padx=5, pady=8)
     else:
         btn_all_events = tk.Button(
             nav_frame,
@@ -3101,6 +4578,59 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             width=12
         )
         btn_admin.pack(side="left", padx=5, pady=8)
+        
+        btn_rol_cover = tk.Button(
+            nav_frame,
+            text="🎭 Rol de Cover",
+            command=lambda: switch_view('rol_cover'),
+            bg="#3b4754",
+            fg="white",
+            activebackground="#4a5560",
+            font=("Segoe UI", 12, "bold"),
+            relief="flat",
+            width=15
+        )
+        btn_rol_cover.pack(side="left", padx=5, pady=8)
+        
+        btn_breaks = tk.Button(
+            nav_frame,
+            text="☕ Breaks",
+            command=lambda: switch_view('breaks'),
+            bg="#3b4754",
+            fg="white",
+            activebackground="#4a5560",
+            font=("Segoe UI", 12, "bold"),
+            relief="flat",
+            width=12
+        )
+        btn_breaks.pack(side="left", padx=5, pady=8)
+        btn_cover.pack(side="left", padx=5, pady=8)
+        
+        btn_admin = tk.Button(
+            nav_frame,
+            text="🔧 Admin",
+            command=lambda: switch_view('admin'),
+            bg="#3b4754",
+            fg="white",
+            activebackground="#4a5560",
+            font=("Segoe UI", 12, "bold"),
+            relief="flat",
+            width=12
+        )
+        btn_admin.pack(side="left", padx=5, pady=8)
+        
+        btn_rol_cover = tk.Button(
+            nav_frame,
+            text="🎭 Rol de Cover",
+            command=lambda: switch_view('rol_cover'),
+            bg="#3b4754",
+            fg="white",
+            activebackground="#4a5560",
+            font=("Segoe UI", 12, "bold"),
+            relief="flat",
+            width=15
+        )
+        btn_rol_cover.pack(side="left", padx=5, pady=8)
 
     # Separador después de navegación
     try:
@@ -3979,41 +5509,59 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
     
     # Variables de Cover Time
     cover_user_var = tk.StringVar()
+    cover_station_var = tk.StringVar()
     cover_desde_var = tk.StringVar()
     cover_hasta_var = tk.StringVar()
     
-    # Obtener usuarios para Cover Time
+    # Obtener usuarios y estaciones para Cover Time
     try:
         conn_temp = under_super.get_connection()
         cur_temp = conn_temp.cursor()
+        
+        # Usuarios
         cur_temp.execute("SELECT Nombre_Usuario FROM user ORDER BY Nombre_Usuario")
         cover_users_list = ["Todos"] + [row[0] for row in cur_temp.fetchall()]
+        
+        # Estaciones
+        cur_temp.execute("SELECT DISTINCT Station FROM covers_programados WHERE Station IS NOT NULL ORDER BY Station")
+        cover_stations_list = ["Todos"] + [row[0] for row in cur_temp.fetchall()]
+        
         cur_temp.close()
         conn_temp.close()
     except Exception as e:
-        print(f"[ERROR] Error al cargar usuarios para cover: {e}")
+        print(f"[ERROR] Error al cargar usuarios/estaciones para cover: {e}")
         cover_users_list = ["Todos"]
+        cover_stations_list = ["Todos"]
     
     # Labels y controles de Cover Time
     if UI is not None:
-        UI.CTkLabel(cover_filters, text="⏰ Registro de Covers", 
+        UI.CTkLabel(cover_filters, text="⏰ Covers Programados y Realizados", 
                    font=("Segoe UI", 14, "bold"), text_color="#e0e0e0").pack(side="top", padx=20, pady=(10, 5))
         
-        cover_summary_label = UI.CTkLabel(cover_filters, text="Covers: 0 | Tiempo total: 00:00:00",
+        cover_summary_label = UI.CTkLabel(cover_filters, text="Total: 0 covers cargados",
                                          font=("Segoe UI", 12, "bold"), text_color="#00bfae")
         cover_summary_label.pack(side="top", pady=5)
         
         cover_filter_row1 = UI.CTkFrame(cover_filters, fg_color="transparent")
         cover_filter_row1.pack(fill="x", padx=20, pady=5)
         
-        UI.CTkLabel(cover_filter_row1, text="Operador:", text_color="#e0e0e0").pack(side="left", padx=5)
+        UI.CTkLabel(cover_filter_row1, text="Usuario:", text_color="#e0e0e0").pack(side="left", padx=5)
         cover_user_cb = under_super.FilteredCombobox(
             cover_filter_row1, textvariable=cover_user_var, values=cover_users_list,
-            font=("Segoe UI", 10), width=25,
+            font=("Segoe UI", 10), width=22,
             background='#2b2b2b', foreground='#ffffff',
             bordercolor='#4a90e2', arrowcolor='#ffffff'
         )
         cover_user_cb.pack(side="left", padx=5)
+        
+        UI.CTkLabel(cover_filter_row1, text="Estación:", text_color="#e0e0e0").pack(side="left", padx=(10, 5))
+        cover_station_cb = under_super.FilteredCombobox(
+            cover_filter_row1, textvariable=cover_station_var, values=cover_stations_list,
+            font=("Segoe UI", 10), width=22,
+            background='#2b2b2b', foreground='#ffffff',
+            bordercolor='#4a90e2', arrowcolor='#ffffff'
+        )
+        cover_station_cb.pack(side="left", padx=5)
         
         UI.CTkLabel(cover_filter_row1, text="Desde:", text_color="#e0e0e0").pack(side="left", padx=(15, 5))
         # Frame contenedor para DateEntry (tkcalendar no es compatible directo con CTk)
@@ -4048,26 +5596,37 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
         cover_filter_row2 = UI.CTkFrame(cover_filters, fg_color="transparent")
         cover_filter_row2.pack(fill="x", padx=20, pady=5)
     else:
-        tk.Label(cover_filters, text="⏰ Registro de Covers", 
+        tk.Label(cover_filters, text="⏰ Covers Programados y Realizados", 
                 bg="#23272a", fg="#e0e0e0", font=("Segoe UI", 14, "bold")).pack(side="top", padx=20, pady=(10, 5))
         
-        cover_summary_label = tk.Label(cover_filters, text="Covers: 0 | Tiempo total: 00:00:00",
+        cover_summary_label = tk.Label(cover_filters, text="Total: 0 covers cargados",
                                       bg="#23272a", fg="#00bfae", font=("Segoe UI", 12, "bold"))
         cover_summary_label.pack(side="top", pady=5)
         
         cover_filter_row1 = tk.Frame(cover_filters, bg="#23272a")
         cover_filter_row1.pack(fill="x", padx=20, pady=5)
         
-        tk.Label(cover_filter_row1, text="Operador:", bg="#23272a", fg="#e0e0e0").pack(side="left", padx=5)
+        tk.Label(cover_filter_row1, text="Usuario:", bg="#23272a", fg="#e0e0e0").pack(side="left", padx=5)
         cover_user_cb = under_super.FilteredCombobox(
             cover_filter_row1, textvariable=cover_user_var, values=cover_users_list,
-            font=("Segoe UI", 10), width=25
+            font=("Segoe UI", 10), width=22
         )
         try:
             cover_user_cb.configure(style='Dark.TCombobox')
         except:
             pass
         cover_user_cb.pack(side="left", padx=5)
+        
+        tk.Label(cover_filter_row1, text="Estación:", bg="#23272a", fg="#e0e0e0").pack(side="left", padx=(10, 5))
+        cover_station_cb = under_super.FilteredCombobox(
+            cover_filter_row1, textvariable=cover_station_var, values=cover_stations_list,
+            font=("Segoe UI", 10), width=22
+        )
+        try:
+            cover_station_cb.configure(style='Dark.TCombobox')
+        except:
+            pass
+        cover_station_cb.pack(side="left", padx=5)
         
         tk.Label(cover_filter_row1, text="Desde:", bg="#23272a", fg="#e0e0e0").pack(side="left", padx=(15, 5))
         if tkcalendar:
@@ -4097,63 +5656,88 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
         cover_filter_row2.pack(fill="x", padx=20, pady=5)
     
     def search_covers():
-        """Busca covers según filtros"""
+        """Busca covers según filtros usando load_combined_covers()"""
         try:
-            conn = under_super.get_connection()
-            cursor = conn.cursor()
+            # Obtener filtros
+            usuario = cover_user_var.get().strip()
+            estacion = cover_station_var.get().strip()
+            fecha_desde = cover_desde_var.get().strip()
+            fecha_hasta = cover_hasta_var.get().strip()
             
-            sql = "SELECT Cover_in, Cover_out, Motivo, Covered_by FROM Covers WHERE 1=1"
-            params = []
+            # Validar fechas
+            if fecha_desde and fecha_hasta:
+                try:
+                    from datetime import datetime
+                    d1 = datetime.strptime(fecha_desde, "%Y-%m-%d")
+                    d2 = datetime.strptime(fecha_hasta, "%Y-%m-%d")
+                    if d1 > d2:
+                        messagebox.showwarning("Advertencia", "La fecha 'Desde' no puede ser mayor que 'Hasta'", parent=top)
+                        return
+                except:
+                    messagebox.showerror("Error", "Formato de fecha inválido. Use YYYY-MM-DD", parent=top)
+                    return
             
-            if cover_user_var.get() and cover_user_var.get() != "Todos":
-                sql += " AND Covered_by = %s"
-                params.append(cover_user_var.get())
+            # Cargar todos los covers desde la función combinada
+            col_names, rows = under_super.load_combined_covers()
             
-            if cover_desde_var.get():
-                sql += " AND DATE(Cover_in) >= %s"
-                params.append(cover_desde_var.get())
+            if not rows:
+                cover_sheet.set_sheet_data([["No hay datos disponibles"] + [""] * 11])
+                cover_summary_label.configure(text="Total: 0 covers cargados")
+                return
             
-            if cover_hasta_var.get():
-                sql += " AND DATE(Cover_in) <= %s"
-                params.append(cover_hasta_var.get())
-            
-            sql += " ORDER BY Cover_in DESC"
-            
-            cursor.execute(sql, params)
-            rows = cursor.fetchall()
-            
-            # Calcular duración y formatear
-            data = []
-            total_seconds = 0
+            # Aplicar filtros
+            filtered_rows = []
             for row in rows:
-                cover_in = row[0]
-                cover_out = row[1]
+                # Filtro por usuario (columna 1: Usuario)
+                if usuario and usuario != "Todos":
+                    if row[1] != usuario:
+                        continue
                 
-                duration = ""
-                if cover_in and cover_out:
-                    delta = cover_out - cover_in
-                    total_seconds += delta.total_seconds()
-                    hours, remainder = divmod(int(delta.total_seconds()), 3600)
-                    minutes, seconds = divmod(remainder, 60)
-                    duration = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                # Filtro por estación (columna 3: Estacion)
+                if estacion and estacion != "Todos":
+                    if row[3] != estacion:
+                        continue
                 
-                data.append([
-                    str(cover_in) if cover_in else "",
-                    str(cover_out) if cover_out else "",
-                    duration,
-                    str(row[2]) if row[2] else "",
-                    str(row[3]) if row[3] else ""
-                ])
+                # Filtro por fecha (columna 2: Hora_Programada)
+                if fecha_desde or fecha_hasta:
+                    try:
+                        from datetime import datetime
+                        fecha_cover = row[2]  # Hora_Programada
+                        if fecha_cover:
+                            if isinstance(fecha_cover, str):
+                                fecha_cover_dt = datetime.strptime(fecha_cover.split()[0], "%Y-%m-%d")
+                            else:
+                                fecha_cover_dt = datetime.combine(fecha_cover.date() if hasattr(fecha_cover, 'date') else fecha_cover, datetime.min.time())
+                            
+                            if fecha_desde:
+                                fecha_d = datetime.strptime(fecha_desde, "%Y-%m-%d")
+                                if fecha_cover_dt < fecha_d:
+                                    continue
+                            
+                            if fecha_hasta:
+                                fecha_h = datetime.strptime(fecha_hasta, "%Y-%m-%d")
+                                if fecha_cover_dt > fecha_h:
+                                    continue
+                    except Exception as e:
+                        print(f"[DEBUG] Error al filtrar fecha: {e}")
+                        pass
+                
+                filtered_rows.append(row)
+            
+            # Formatear datos para mostrar
+            data = []
+            for row in filtered_rows:
+                formatted_row = [str(cell) if cell is not None else "" for cell in row]
+                data.append(formatted_row)
+            
+            # Actualizar sheet
+            cover_sheet.set_sheet_data(data if data else [["No hay resultados con esos filtros"] + [""] * 11])
             
             # Actualizar resumen
-            hours_total, remainder = divmod(int(total_seconds), 3600)
-            minutes_total, seconds_total = divmod(remainder, 60)
-            cover_summary_label.configure(text=f"Covers: {len(data)} | Tiempo total: {hours_total:02d}:{minutes_total:02d}:{seconds_total:02d}")
+            summary_text = f"Total: {len(data)} covers cargados"
+            cover_summary_label.configure(text=summary_text)
             
-            cover_sheet.set_sheet_data(data if data else [["No se encontraron covers"] + [""] * 4])
-            
-            cursor.close()
-            conn.close()
+            print(f"[INFO] Cover Time: {len(data)} covers encontrados")
             
         except Exception as e:
             print(f"[ERROR] search_covers: {e}")
@@ -4163,10 +5747,11 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
     def clear_cover_filters():
         """Limpia filtros de cover"""
         cover_user_var.set("")
+        cover_station_var.set("")
         cover_desde_var.set("")
         cover_hasta_var.set("")
-        cover_sheet.set_sheet_data([[""] * 5])
-        cover_summary_label.configure(text="Covers: 0 | Tiempo total: 00:00:00")
+        cover_sheet.set_sheet_data([[""] * 12])
+        cover_summary_label.configure(text="Total: 0 covers cargados")
     
     # Botones de Cover Time
     if UI is not None:
@@ -4191,8 +5776,9 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
         cover_sheet_frame = tk.Frame(cover_container, bg="#2c2f33")
     cover_sheet_frame.pack(fill="both", expand=True, padx=10, pady=10)
     
-    # Crear tksheet de Cover Time
-    cover_columns = ["Cover_in", "Cover_out", "Duración", "Motivo", "Covered_by"]
+    # Crear tksheet de Cover Time con columnas de load_combined_covers
+    cover_columns = ["ID_Cover", "Usuario", "Hora_Programada", "Estacion", "Razon_Solicitud", 
+                     "Aprobado", "Activo", "Cover_Inicio", "Cover_Fin", "Cubierto_Por", "Motivo_Real", "Estado"]
     cover_sheet = SheetClass(
         cover_sheet_frame,
         data=[[""] * len(cover_columns)],
@@ -4230,15 +5816,862 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
     cover_sheet.pack(fill="both", expand=True)
 
     cover_widths = {
-        "Cover_in": 150,
-        "Cover_out": 150,
-        "Duración": 100,
-        "Motivo": 250,
-        "Covered_by": 120
+        "ID_Cover": 70,
+        "Usuario": 110,
+        "Hora_Programada": 150,
+        "Estacion": 100,
+        "Razon_Solicitud": 150,
+        "Aprobado": 80,
+        "Activo": 80,
+        "Cover_Inicio": 150,
+        "Cover_Fin": 150,
+        "Cubierto_Por": 110,
+        "Motivo_Real": 150,
+        "Estado": 150
     }
     for col_idx, col_name in enumerate(cover_columns):
         if col_name in cover_widths:
             cover_sheet.column_width(column=col_idx, width=cover_widths[col_name])
+
+    # ==================== ROL DE COVER CONTAINER ====================
+    if UI is not None:
+        rol_cover_container = UI.CTkFrame(top, fg_color="#2c2f33")
+    else:
+        rol_cover_container = tk.Frame(top, bg="#2c2f33")
+    # NO hacer pack() aquí - se mostrará solo cuando se cambie a modo Rol de Cover
+
+    # Frame de instrucciones
+    if UI is not None:
+        info_frame_rol = UI.CTkFrame(rol_cover_container, fg_color="#23272a", corner_radius=8)
+    else:
+        info_frame_rol = tk.Frame(rol_cover_container, bg="#23272a")
+    info_frame_rol.pack(fill="x", padx=10, pady=10)
+
+    if UI is not None:
+        UI.CTkLabel(info_frame_rol, 
+                   text="🎭 Gestión de Rol de Cover - Habilitar operadores que pueden ver la lista de covers",
+                   text_color="#00bfae", 
+                   font=("Segoe UI", 14, "bold")).pack(pady=15)
+    else:
+        tk.Label(info_frame_rol, 
+                text="🎭 Gestión de Rol de Cover - Habilitar operadores que pueden ver la lista de covers",
+                bg="#23272a", fg="#00bfae", 
+                font=("Segoe UI", 14, "bold")).pack(pady=15)
+
+    # Frame principal con dos columnas
+    if UI is not None:
+        main_frame_rol = UI.CTkFrame(rol_cover_container, fg_color="#2c2f33")
+    else:
+        main_frame_rol = tk.Frame(rol_cover_container, bg="#2c2f33")
+    main_frame_rol.pack(fill="both", expand=True, padx=10, pady=10)
+
+    # Columna izquierda: Operadores disponibles (Active = 1)
+    if UI is not None:
+        left_frame_rol = UI.CTkFrame(main_frame_rol, fg_color="#23272a", corner_radius=8)
+    else:
+        left_frame_rol = tk.Frame(main_frame_rol, bg="#23272a")
+    left_frame_rol.pack(side="left", fill="both", expand=True, padx=(0, 5))
+
+    if UI is not None:
+        UI.CTkLabel(left_frame_rol, 
+                   text="👤 Operadores Activos (Sin acceso a covers)",
+                   text_color="#ffffff", 
+                   font=("Segoe UI", 13, "bold")).pack(pady=10)
+    else:
+        tk.Label(left_frame_rol, 
+                text="👤 Operadores Activos (Sin acceso a covers)",
+                bg="#23272a", fg="#ffffff", 
+                font=("Segoe UI", 13, "bold")).pack(pady=10)
+
+    # Listbox para operadores sin acceso
+    list_frame_sin_acceso = tk.Frame(left_frame_rol, bg="#23272a")
+    list_frame_sin_acceso.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+    scroll_sin_acceso = tk.Scrollbar(list_frame_sin_acceso, orient="vertical")
+    scroll_sin_acceso.pack(side="right", fill="y")
+
+    listbox_sin_acceso = tk.Listbox(list_frame_sin_acceso, 
+                                    selectmode="extended",
+                                    bg="#262a31", 
+                                    fg="#ffffff", 
+                                    font=("Segoe UI", 11),
+                                    yscrollcommand=scroll_sin_acceso.set,
+                                    selectbackground="#4a90e2",
+                                    height=20)
+    listbox_sin_acceso.pack(side="left", fill="both", expand=True)
+    scroll_sin_acceso.config(command=listbox_sin_acceso.yview)
+
+    # Columna derecha: Operadores con acceso (Active = 2)
+    if UI is not None:
+        right_frame_rol = UI.CTkFrame(main_frame_rol, fg_color="#23272a", corner_radius=8)
+    else:
+        right_frame_rol = tk.Frame(main_frame_rol, bg="#23272a")
+    right_frame_rol.pack(side="left", fill="both", expand=True, padx=(5, 0))
+
+    if UI is not None:
+        UI.CTkLabel(right_frame_rol, 
+                   text="✅ Operadores con Acceso a Covers",
+                   text_color="#00c853", 
+                   font=("Segoe UI", 13, "bold")).pack(pady=10)
+    else:
+        tk.Label(right_frame_rol, 
+                text="✅ Operadores con Acceso a Covers",
+                bg="#23272a", fg="#00c853", 
+                font=("Segoe UI", 13, "bold")).pack(pady=10)
+
+    # Listbox para operadores con acceso
+    list_frame_con_acceso = tk.Frame(right_frame_rol, bg="#23272a")
+    list_frame_con_acceso.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+    scroll_con_acceso = tk.Scrollbar(list_frame_con_acceso, orient="vertical")
+    scroll_con_acceso.pack(side="right", fill="y")
+
+    listbox_con_acceso = tk.Listbox(list_frame_con_acceso, 
+                                    selectmode="extended",
+                                    bg="#262a31", 
+                                    fg="#00c853", 
+                                    font=("Segoe UI", 11),
+                                    yscrollcommand=scroll_con_acceso.set,
+                                    selectbackground="#4a90e2",
+                                    height=20)
+    listbox_con_acceso.pack(side="left", fill="both", expand=True)
+    scroll_con_acceso.config(command=listbox_con_acceso.yview)
+
+    # Frame de botones entre las dos columnas
+    if UI is not None:
+        buttons_frame_rol = UI.CTkFrame(rol_cover_container, fg_color="#2c2f33")
+    else:
+        buttons_frame_rol = tk.Frame(rol_cover_container, bg="#2c2f33")
+    buttons_frame_rol.pack(fill="x", padx=10, pady=10)
+
+    def cargar_operadores_rol():
+        """Carga operadores separados por su estado Active en sesion"""
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            # Limpiar listboxes
+            listbox_sin_acceso.delete(0, tk.END)
+            listbox_con_acceso.delete(0, tk.END)
+            
+            # Operadores con Active = 1 (sin acceso a covers)
+            cur.execute("""
+                SELECT DISTINCT s.ID_user 
+                FROM sesion s
+                INNER JOIN user u ON s.ID_user = u.Nombre_Usuario
+                WHERE s.Active = 1 AND u.Rol = 'Operador'
+                ORDER BY s.ID_user
+            """)
+            sin_acceso = cur.fetchall()
+            
+            for row in sin_acceso:
+                listbox_sin_acceso.insert(tk.END, row[0])
+            
+            # Operadores con Active = 2 (con acceso a covers)
+            cur.execute("""
+                SELECT DISTINCT s.ID_user 
+                FROM sesion s
+                INNER JOIN user u ON s.ID_user = u.Nombre_Usuario
+                WHERE s.Active = 2 AND u.Rol = 'Operador'
+                ORDER BY s.ID_user
+            """)
+            con_acceso = cur.fetchall()
+            
+            for row in con_acceso:
+                listbox_con_acceso.insert(tk.END, row[0])
+            
+            cur.close()
+            conn.close()
+            
+            print(f"[DEBUG] Operadores cargados: {len(sin_acceso)} sin acceso, {len(con_acceso)} con acceso")
+            
+        except Exception as e:
+            print(f"[ERROR] cargar_operadores_rol: {e}")
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Error al cargar operadores:\n{e}", parent=top)
+
+    def habilitar_acceso():
+        """Cambia Active de 1 a 2 para los operadores seleccionados (habilitar acceso a covers)"""
+        seleccion = listbox_sin_acceso.curselection()
+        if not seleccion:
+            messagebox.showwarning("Selección", "Selecciona uno o más operadores para habilitar.", parent=top)
+            return
+        
+        operadores = [listbox_sin_acceso.get(i) for i in seleccion]
+        
+        if not messagebox.askyesno("Confirmar", 
+                                   f"¿Habilitar acceso a covers para {len(operadores)} operador(es)?",
+                                   parent=top):
+            return
+        
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            for operador in operadores:
+                cur.execute("""
+                    UPDATE sesion 
+                    SET Active = 2 
+                    WHERE ID_user = %s AND Active = 1
+                """, (operador,))
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+            cargar_operadores_rol()
+            messagebox.showinfo("Éxito", f"✅ {len(operadores)} operador(es) habilitado(s) para ver covers", parent=top)
+            
+        except Exception as e:
+            print(f"[ERROR] habilitar_acceso: {e}")
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Error al habilitar acceso:\n{e}", parent=top)
+
+    def deshabilitar_acceso():
+        """Cambia Active de 2 a 1 para los operadores seleccionados (quitar acceso a covers)"""
+        seleccion = listbox_con_acceso.curselection()
+        if not seleccion:
+            messagebox.showwarning("Selección", "Selecciona uno o más operadores para deshabilitar.", parent=top)
+            return
+        
+        operadores = [listbox_con_acceso.get(i) for i in seleccion]
+        
+        if not messagebox.askyesno("Confirmar", 
+                                   f"¿Quitar acceso a covers para {len(operadores)} operador(es)?",
+                                   parent=top):
+            return
+        
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            
+            for operador in operadores:
+                cur.execute("""
+                    UPDATE sesion 
+                    SET Active = 1 
+                    WHERE ID_user = %s AND Active = 2
+                """, (operador,))
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+            cargar_operadores_rol()
+            messagebox.showinfo("Éxito", f"❌ {len(operadores)} operador(es) deshabilitado(s) para ver covers", parent=top)
+            
+        except Exception as e:
+            print(f"[ERROR] deshabilitar_acceso: {e}")
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Error al deshabilitar acceso:\n{e}", parent=top)
+
+    def refrescar_lista_operadores():
+        """Wrapper para refrescar la lista"""
+        cargar_operadores_rol()
+
+    # Botones de acción
+    if UI is not None:
+        UI.CTkButton(buttons_frame_rol, 
+                    text="➡️ Habilitar Acceso a Covers",
+                    command=habilitar_acceso,
+                    fg_color="#00c853",
+                    hover_color="#00a043",
+                    width=220,
+                    height=40,
+                    font=("Segoe UI", 13, "bold")).pack(side="left", padx=10, pady=5)
+        
+        UI.CTkButton(buttons_frame_rol, 
+                    text="⬅️ Quitar Acceso a Covers",
+                    command=deshabilitar_acceso,
+                    fg_color="#f04747",
+                    hover_color="#d84040",
+                    width=220,
+                    height=40,
+                    font=("Segoe UI", 13, "bold")).pack(side="left", padx=10, pady=5)
+        
+        UI.CTkButton(buttons_frame_rol, 
+                    text="🔄 Refrescar Lista",
+                    command=refrescar_lista_operadores,
+                    fg_color="#4a90e2",
+                    hover_color="#357ABD",
+                    width=180,
+                    height=40,
+                    font=("Segoe UI", 13, "bold")).pack(side="left", padx=10, pady=5)
+    else:
+        tk.Button(buttons_frame_rol, 
+                 text="➡️ Habilitar Acceso a Covers",
+                 command=habilitar_acceso,
+                 bg="#00c853",
+                 fg="white",
+                 font=("Segoe UI", 13, "bold"),
+                 relief="flat",
+                 width=24).pack(side="left", padx=10, pady=5)
+        
+        tk.Button(buttons_frame_rol, 
+                 text="⬅️ Quitar Acceso a Covers",
+                 command=deshabilitar_acceso,
+                 bg="#f04747",
+                 fg="white",
+                 font=("Segoe UI", 13, "bold"),
+                 relief="flat",
+                 width=24).pack(side="left", padx=10, pady=5)
+        
+        tk.Button(buttons_frame_rol, 
+                 text="🔄 Refrescar Lista",
+                 command=refrescar_lista_operadores,
+                 bg="#4a90e2",
+                 fg="white",
+                 font=("Segoe UI", 13, "bold"),
+                 relief="flat",
+                 width=18).pack(side="left", padx=10, pady=5)
+
+    # ==================== BREAKS CONTAINER ====================
+    if UI is not None:
+        breaks_container = UI.CTkFrame(top, fg_color="#2c2f33")
+    else:
+        breaks_container = tk.Frame(top, bg="#2c2f33")
+    # NO hacer pack() aquí - se mostrará solo cuando se cambie a modo Breaks
+
+    # Frame de controles (comboboxes y botones) para Breaks
+    if UI is not None:
+        breaks_controls_frame = UI.CTkFrame(breaks_container, fg_color="#23272a", corner_radius=8)
+    else:
+        breaks_controls_frame = tk.Frame(breaks_container, bg="#23272a")
+    breaks_controls_frame.pack(fill="x", padx=10, pady=10)
+
+    # Función para cargar usuarios desde la BD
+    def load_users_breaks():
+        """Carga lista de usuarios desde la base de datos"""
+        try:
+            users = under_super.load_users()
+            return users if users else []
+        except Exception as e:
+            print(f"[ERROR] load_users_breaks: {e}")
+            traceback.print_exc()
+            return []
+
+    # Función para cargar covers desde la BD
+    def load_covers_from_db():
+        """Carga covers activos desde gestion_breaks_programados con nombres de usuario"""
+        try:
+            conn = under_super.get_connection()
+            cur = conn.cursor()
+            query = """
+                SELECT 
+                    u_covered.Nombre_Usuario as usuario_cubierto,
+                    u_covering.Nombre_Usuario as usuario_cubre,
+                    TIME(gbp.Fecha_hora_cover) as hora
+                FROM gestion_breaks_programados gbp
+                INNER JOIN user u_covered ON gbp.User_covered = u_covered.ID_Usuario
+                INNER JOIN user u_covering ON gbp.User_covering = u_covering.ID_Usuario
+                WHERE gbp.is_Active = 1
+                ORDER BY gbp.Fecha_hora_cover
+            """
+            cur.execute(query)
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            # Debug: Imprimir los datos cargados
+            print(f"[DEBUG] Covers cargados desde BD: {len(rows)} registros")
+            for row in rows:
+                print(f"[DEBUG] Cover: {row[0]} cubierto por {row[1]} a las {row[2]}")
+            
+            return rows
+        except Exception as e:
+            print(f"[ERROR] load_covers_from_db: {e}")
+            traceback.print_exc()
+            return []
+
+    # Variables para comboboxes
+    usuario_a_cubrir_var = tk.StringVar()
+    cubierto_por_var = tk.StringVar()
+    hora_var = tk.StringVar()
+
+    # Cargar usuarios
+    users_list = load_users_breaks()
+
+    # Primera fila: Usuario a cubrir
+    row1_frame_breaks = tk.Frame(breaks_controls_frame, bg="#23272a")
+    row1_frame_breaks.pack(fill="x", padx=20, pady=(15, 5))
+
+    if UI is not None:
+        UI.CTkLabel(row1_frame_breaks, text="👤 Usuario a Cubrir:", 
+                   text_color="#ffffff", font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+    else:
+        tk.Label(row1_frame_breaks, text="👤 Usuario a Cubrir:", bg="#23272a", fg="#ffffff", 
+                font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+
+    if UI is not None:
+        usuario_combo_breaks = under_super.FilteredCombobox(row1_frame_breaks, textvariable=usuario_a_cubrir_var,
+                                                     values=users_list, width=40, state="readonly",
+                                                     font=("Segoe UI", 11))
+        usuario_combo_breaks.set("")  # Establecer vacío inicialmente
+    else:
+        usuario_combo_breaks = ttk.Combobox(row1_frame_breaks, textvariable=usuario_a_cubrir_var,
+                                           values=users_list, width=25, state="readonly")
+    usuario_combo_breaks.pack(side="left", padx=5)
+
+    # Segunda fila: Cubierto por
+    row2_frame_breaks = tk.Frame(breaks_controls_frame, bg="#23272a")
+    row2_frame_breaks.pack(fill="x", padx=20, pady=5)
+
+    if UI is not None:
+        UI.CTkLabel(row2_frame_breaks, text="🔄 Cubierto Por:", 
+                   text_color="#ffffff", font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+    else:
+        tk.Label(row2_frame_breaks, text="🔄 Cubierto Por:", bg="#23272a", fg="#ffffff", 
+                font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+
+    if UI is not None:
+        cover_by_combo_breaks = under_super.FilteredCombobox(row2_frame_breaks, textvariable=cubierto_por_var,
+                                              values=users_list, width=40, state="readonly",
+                                              font=("Segoe UI", 11))
+        cover_by_combo_breaks.set("")  # Establecer vacío inicialmente
+    else:
+        cover_by_combo_breaks = ttk.Combobox(row2_frame_breaks, textvariable=cubierto_por_var,
+                                            values=users_list, width=25, state="readonly")
+    cover_by_combo_breaks.pack(side="left", padx=5)
+
+    # Generar lista de horas en formato HH:00:00 (cada hora del día)
+    horas_disponibles = [f"{h:02d}:00:00" for h in range(24)]
+
+    # Tercera fila: Hora
+    row3_frame_breaks = tk.Frame(breaks_controls_frame, bg="#23272a")
+    row3_frame_breaks.pack(fill="x", padx=20, pady=5)
+
+    if UI is not None:
+        UI.CTkLabel(row3_frame_breaks, text="🕐 Hora Programada:", 
+                   text_color="#ffffff", font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+    else:
+        tk.Label(row3_frame_breaks, text="🕐 Hora Programada:", bg="#23272a", fg="#ffffff", 
+                font=("Segoe UI", 14, "bold")).pack(side="left", padx=(0, 10))
+
+    if UI is not None:
+        hora_combo_breaks = under_super.FilteredCombobox(
+            row3_frame_breaks, 
+            textvariable=hora_var,
+            values=horas_disponibles,
+            width=25,
+            font=("Segoe UI", 13),
+            background='#2b2b2b', 
+            foreground='#ffffff',
+            bordercolor='#4a90e2', 
+            arrowcolor='#ffffff'
+        )
+        hora_combo_breaks.pack(side="left", padx=5)
+    else:
+        hora_entry_breaks = tk.Entry(row3_frame_breaks, textvariable=hora_var, width=27)
+        hora_entry_breaks.pack(side="left", padx=5)
+
+    # Función para cargar datos agrupados (matriz)
+    def cargar_datos_agrupados_breaks():
+        """Carga datos agrupados por quien cubre (covered_by como columnas)"""
+        try:
+            rows = load_covers_from_db()
+            
+            # Obtener lista única de "Cubierto Por" (nombres) para las columnas
+            covered_by_set = sorted(set(row[1] for row in rows if row[1]))
+            
+            # Headers: hora primero + columnas de personas que cubren (nombres)
+            headers = ["Hora Programada"]
+            for cb in covered_by_set:
+                headers.append(cb)  # Ya son nombres de usuario
+            
+            # Agrupar por hora - solo el PRIMER usuario por covered_by y hora
+            horas_dict = {}
+            for row in rows:
+                usuario_cubierto = row[0]  # Nombre del usuario a cubrir
+                usuario_cubre = row[1]     # Nombre del usuario que cubre
+                hora = str(row[2])          # Hora en formato HH:MM:SS
+                
+                if hora not in horas_dict:
+                    horas_dict[hora] = {cb: "" for cb in covered_by_set}
+                
+                # Solo asignar si la celda está vacía (un usuario por celda)
+                if usuario_cubre in horas_dict[hora] and not horas_dict[hora][usuario_cubre]:
+                    horas_dict[hora][usuario_cubre] = usuario_cubierto
+            
+            # Convertir a lista de filas para el sheet
+            data = []
+            for hora in sorted(horas_dict.keys()):
+                fila = [hora]
+                for covered_by in covered_by_set:
+                    fila.append(horas_dict[hora][covered_by])
+                data.append(fila)
+            
+            print(f"[DEBUG] Headers construidos para breaks: {headers}")
+            print(f"[DEBUG] Data construida: {len(data)} filas")
+            
+            return headers, data
+            
+        except Exception as e:
+            print(f"[ERROR] cargar_datos_agrupados_breaks: {e}")
+            traceback.print_exc()
+            return ["Hora Programada"], [[]]
+
+    # Función para limpiar formulario
+    def limpiar_breaks():
+        usuario_combo_breaks.set("")
+        cover_by_combo_breaks.set("")
+        hora_var.set("")
+    
+    # Función wrapper para eliminar cover
+    def eliminar_cover_breaks():
+        """Wrapper que llama a under_super.eliminar_cover_breaks con todos los parámetros necesarios"""
+        if not USE_SHEET:
+            return
+        
+        success, mensaje, rows = under_super.eliminar_cover_breaks(
+            breaks_sheet=breaks_sheet,
+            parent_window=top
+        )
+        
+        # Si fue exitoso, refrescar la tabla
+        if success:
+            refrescar_tabla_breaks()
+
+    # Función para refrescar tabla
+    def refrescar_tabla_breaks():
+        if not USE_SHEET:
+            return
+        headers, data = cargar_datos_agrupados_breaks()
+        breaks_sheet.headers(headers)
+        breaks_sheet.set_sheet_data(data)
+        # Reajustar anchos después de refrescar
+        for i in range(len(headers)):
+            breaks_sheet.column_width(column=i, width=120)
+        breaks_sheet.redraw()
+
+    # Función wrapper para agregar y refrescar
+    def agregar_y_refrescar():
+        """Agrega un cover y luego refresca la tabla"""
+        try:
+            under_super.select_covered_by(
+                username, 
+                hora=hora_var.get(), 
+                usuario=cubierto_por_var.get(),
+                cover=usuario_a_cubrir_var.get()
+            )
+            # Refrescar tabla y limpiar formulario después de agregar
+            limpiar_breaks()
+            refrescar_tabla_breaks()
+        except Exception as e:
+            print(f"[ERROR] agregar_y_refrescar: {e}")
+            traceback.print_exc()
+
+    # Cuarta fila: Botones
+    row4_frame_breaks = tk.Frame(breaks_controls_frame, bg="#23272a")
+    row4_frame_breaks.pack(fill="x", padx=20, pady=(5, 15))
+
+    if UI is not None:
+        UI.CTkButton(row4_frame_breaks, text="➕ Agregar",
+                    command=agregar_y_refrescar,
+                    fg_color="#28a745", hover_color="#218838",
+                    font=("Segoe UI", 13, "bold"),
+                    width=150).pack(side="left", padx=5)
+        
+        UI.CTkButton(row4_frame_breaks, text="🔄 Limpiar",
+                    command=limpiar_breaks,
+                    fg_color="#6c757d", hover_color="#5a6268",
+                    font=("Segoe UI", 13),
+                    width=120).pack(side="left", padx=5)
+        
+        UI.CTkButton(row4_frame_breaks, text="🗑️ Eliminar Cover Seleccionado",
+                    command=eliminar_cover_breaks,
+                    fg_color="#dc3545", hover_color="#c82333",
+                    font=("Segoe UI", 13),
+                    width=220).pack(side="left", padx=5)
+    else:
+        tk.Button(row4_frame_breaks, text="➕ Agregar",
+                 command=agregar_y_refrescar,
+                 bg="#28a745", fg="white",
+                 font=("Segoe UI", 13, "bold"),
+                 relief="flat", width=12).pack(side="left", padx=5)
+        
+        tk.Button(row4_frame_breaks, text="🔄 Limpiar",
+                 command=limpiar_breaks,
+                 bg="#6c757d", fg="white",
+                 font=("Segoe UI", 13),
+                 relief="flat", width=10).pack(side="left", padx=5)
+        
+        tk.Button(row4_frame_breaks, text="🗑️ Eliminar Cover Seleccionado",
+                 command=eliminar_cover_breaks,
+                 bg="#dc3545", fg="white",
+                 font=("Segoe UI", 13),
+                 relief="flat", width=24).pack(side="left", padx=5)
+
+    # Frame para tksheet de Breaks
+    if UI is not None:
+        breaks_sheet_frame = UI.CTkFrame(breaks_container, fg_color="#2c2f33")
+    else:
+        breaks_sheet_frame = tk.Frame(breaks_container, bg="#2c2f33")
+    breaks_sheet_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+    if USE_SHEET:
+        headers, data = cargar_datos_agrupados_breaks()
+        
+        breaks_sheet = SheetClass(breaks_sheet_frame,
+                                 headers=headers,
+                                 theme="dark blue",
+                                 width=1280,
+                                 height=450)
+        breaks_sheet.enable_bindings([
+            "single_select",
+            "drag_select",
+            "row_select",
+            "column_select",
+            "column_width_resize",
+            "double_click_column_resize",
+            "arrowkeys",
+            "copy",
+            "select_all"
+        ])
+        breaks_sheet.pack(fill="both", expand=True)
+        
+        breaks_sheet.set_sheet_data(data)
+        breaks_sheet.change_theme("dark blue")
+        
+        # Ajustar anchos de columnas
+        for i in range(len(headers)):
+            breaks_sheet.column_width(column=i, width=120)
+        
+        # Función para editar celda con doble clic
+        def editar_celda_breaks(event):
+            try:
+                # Obtener la celda seleccionada
+                selection = breaks_sheet.get_currently_selected()
+                if not selection:
+                    return
+                
+                row, col = selection.row, selection.column
+                
+                # Ignorar primera columna (hora) y primera fila (headers)
+                if col == 0 or row < 0:
+                    return
+                
+                # Obtener datos de la celda
+                current_data = breaks_sheet.get_sheet_data()
+                if row >= len(current_data):
+                    return
+                
+                hora_actual = current_data[row][0]  # Primera columna es la hora
+                usuario_cubierto_actual = current_data[row][col] if col < len(current_data[row]) else ""  # El que ESTÁ cubierto
+                
+                # ⭐ OBTENER HEADERS DEL BREAKS_SHEET DIRECTAMENTE (no usar variable 'headers' que puede ser de otra tabla)
+                breaks_headers = breaks_sheet.headers()
+                usuario_cubre_actual = breaks_headers[col]  # El header es el usuario que HACE el cover
+                
+                # Si la celda está vacía, no permitir edición
+                if not usuario_cubierto_actual or usuario_cubierto_actual.strip() == "":
+                    messagebox.showinfo("Información", 
+                                      "No hay cover asignado en esta celda.\n\nUsa el botón 'Añadir' para crear un nuevo cover.",
+                                      parent=top)
+                    return
+                
+                # Crear ventana de edición
+                if UI is not None:
+                    edit_win = UI.CTkToplevel(top)
+                    edit_win.title("Editar Cover")
+                    edit_win.geometry("500x400")
+                    edit_win.configure(fg_color="#2c2f33")
+                else:
+                    edit_win = tk.Toplevel(top)
+                    edit_win.title("Editar Cover")
+                    edit_win.geometry("500x400")
+                    edit_win.configure(bg="#2c2f33")
+                
+                edit_win.transient(top)
+                edit_win.grab_set()
+                
+                # Frame principal
+                if UI is not None:
+                    main_frame = UI.CTkFrame(edit_win, fg_color="#23272a", corner_radius=10)
+                else:
+                    main_frame = tk.Frame(edit_win, bg="#23272a")
+                main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+                
+                # Título
+                if UI is not None:
+                    UI.CTkLabel(main_frame, text="✏️ Editar Cover de Break", 
+                               font=("Segoe UI", 20, "bold"),
+                               text_color="#ffffff").pack(pady=(10, 20))
+                else:
+                    tk.Label(main_frame, text="✏️ Editar Cover de Break", 
+                            font=("Segoe UI", 20, "bold"),
+                            bg="#23272a", fg="#ffffff").pack(pady=(10, 20))
+                
+                # Información del cover con mejor formato
+                if UI is not None:
+                    info_frame = UI.CTkFrame(main_frame, fg_color="#2c2f33", corner_radius=8)
+                else:
+                    info_frame = tk.Frame(main_frame, bg="#2c2f33")
+                info_frame.pack(fill="x", padx=10, pady=10)
+                
+                # Fila 1: Hora
+                hora_row = tk.Frame(info_frame, bg="#2c2f33")
+                hora_row.pack(fill="x", padx=15, pady=8)
+                if UI is not None:
+                    UI.CTkLabel(hora_row, text="🕐 Hora:", 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#99aab5", width=150).pack(side="left")
+                    UI.CTkLabel(hora_row, text=hora_actual, 
+                               font=("Segoe UI", 13),
+                               text_color="#ffffff").pack(side="left")
+                else:
+                    tk.Label(hora_row, text="🕐 Hora:", 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#2c2f33", fg="#99aab5", width=15, anchor="w").pack(side="left")
+                    tk.Label(hora_row, text=hora_actual, 
+                            font=("Segoe UI", 13),
+                            bg="#2c2f33", fg="#ffffff").pack(side="left")
+                
+                # Fila 2: Usuario que hace el cover
+                covering_row = tk.Frame(info_frame, bg="#2c2f33")
+                covering_row.pack(fill="x", padx=15, pady=8)
+                if UI is not None:
+                    UI.CTkLabel(covering_row, text="👤 Usuario que cubre:", 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#99aab5", width=150).pack(side="left")
+                    UI.CTkLabel(covering_row, text=usuario_cubre_actual, 
+                               font=("Segoe UI", 13),
+                               text_color="#4aa3ff").pack(side="left")
+                else:
+                    tk.Label(covering_row, text="👤 Usuario que cubre:", 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#2c2f33", fg="#99aab5", width=15, anchor="w").pack(side="left")
+                    tk.Label(covering_row, text=usuario_cubre_actual, 
+                            font=("Segoe UI", 13),
+                            bg="#2c2f33", fg="#4aa3ff").pack(side="left")
+                
+                # Fila 3: Usuario cubierto actual
+                actual_row = tk.Frame(info_frame, bg="#2c2f33")
+                actual_row.pack(fill="x", padx=15, pady=8)
+                if UI is not None:
+                    UI.CTkLabel(actual_row, text="📋 Usuario cubierto:", 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#99aab5", width=150).pack(side="left")
+                    UI.CTkLabel(actual_row, text=usuario_cubierto_actual, 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#7289da").pack(side="left")
+                else:
+                    tk.Label(actual_row, text="📋 Usuario cubierto:", 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#2c2f33", fg="#99aab5", width=15, anchor="w").pack(side="left")
+                    tk.Label(actual_row, text=usuario_cubierto_actual, 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#2c2f33", fg="#7289da").pack(side="left")
+                
+                # Selector de nuevo usuario cubierto
+                if UI is not None:
+                    UI.CTkLabel(main_frame, text="➡️ Cambiar a (nuevo usuario cubierto):", 
+                               font=("Segoe UI", 13, "bold"),
+                               text_color="#ffffff").pack(anchor="w", padx=10, pady=(15, 5))
+                else:
+                    tk.Label(main_frame, text="➡️ Cambiar a (nuevo usuario cubierto):", 
+                            font=("Segoe UI", 13, "bold"),
+                            bg="#23272a", fg="#ffffff").pack(anchor="w", padx=10, pady=(15, 5))
+                
+                # Obtener lista de usuarios
+                usuarios_disponibles = []
+                try:
+                    conn = under_super.get_connection()
+                    cur = conn.cursor()
+                    cur.execute("SELECT Nombre_Usuario FROM user ORDER BY Nombre_Usuario")
+                    usuarios_disponibles = [row[0] for row in cur.fetchall()]
+                    cur.close()
+                    conn.close()
+                except Exception as e:
+                    print(f"[ERROR] No se pudieron cargar usuarios: {e}")
+                
+                nuevo_usuario_cubierto_var = tk.StringVar(value=usuario_cubierto_actual)
+                
+                # Usar FilteredCombobox para mejor búsqueda
+                usuario_combo = under_super.FilteredCombobox(
+                    main_frame,
+                    textvariable=nuevo_usuario_cubierto_var,
+                    values=usuarios_disponibles,
+                    width=35,
+                    font=("Segoe UI", 12),
+                    bordercolor="#5ab4ff",
+                    borderwidth=2,
+                    background="#2b2b2b",
+                    foreground="#ffffff",
+                    fieldbackground="#2b2b2b"
+                )
+                usuario_combo.pack(padx=10, pady=5, fill="x")
+                
+                # Función para guardar cambios
+                def guardar_cambios():
+                    nuevo_usuario_cubierto = nuevo_usuario_cubierto_var.get().strip()
+                    if not nuevo_usuario_cubierto:
+                        messagebox.showwarning("Advertencia", "Debe seleccionar un usuario", parent=edit_win)
+                        return
+                    
+                    # Llamar a la función de under_super para actualizar el cover
+                    # Parámetros: supervisor, hora, quien_cubre, usuario_cubierto_anterior, nuevo_usuario_cubierto
+                    exito = under_super.actualizar_cover_breaks(
+                        username=username,
+                        hora_actual=hora_actual,
+                        covered_by_actual=usuario_cubre_actual,
+                        usuario_actual=usuario_cubierto_actual,
+                        nuevo_usuario=nuevo_usuario_cubierto
+                    )
+                    
+                    if exito:
+                        edit_win.destroy()
+                        refrescar_tabla_breaks()
+                    else:
+                        messagebox.showerror("Error", "No se pudo actualizar el cover", parent=edit_win)
+                
+                # Botones
+                if UI is not None:
+                    buttons_frame = UI.CTkFrame(main_frame, fg_color="transparent")
+                else:
+                    buttons_frame = tk.Frame(main_frame, bg="#23272a")
+                buttons_frame.pack(pady=20)
+                
+                if UI is not None:
+                    UI.CTkButton(buttons_frame, text="💾 Guardar", 
+                                command=guardar_cambios,
+                                fg_color="#43b581",
+                                hover_color="#3ca374",
+                                width=120,
+                                font=("Segoe UI", 12, "bold")).pack(side="left", padx=5)
+                    UI.CTkButton(buttons_frame, text="❌ Cancelar", 
+                                command=edit_win.destroy,
+                                fg_color="#f04747",
+                                hover_color="#d84040",
+                                width=120,
+                                font=("Segoe UI", 12, "bold")).pack(side="left", padx=5)
+                else:
+                    tk.Button(buttons_frame, text="💾 Guardar", 
+                             command=guardar_cambios,
+                             bg="#43b581",
+                             fg="white",
+                             font=("Segoe UI", 12, "bold"),
+                             width=12).pack(side="left", padx=5)
+                    tk.Button(buttons_frame, text="❌ Cancelar", 
+                             command=edit_win.destroy,
+                             bg="#f04747",
+                             fg="white",
+                             font=("Segoe UI", 12, "bold"),
+                             width=12).pack(side="left", padx=5)
+                
+            except Exception as e:
+                print(f"[ERROR] editar_celda_breaks: {e}")
+                traceback.print_exc()
+                messagebox.showerror("Error", f"Error al editar celda: {e}")
+        
+        # Vincular evento de doble clic
+        breaks_sheet.bind("<Double-Button-1>", editar_celda_breaks)
+        
+    else:
+        if UI is not None:
+            UI.CTkLabel(breaks_sheet_frame, text="⚠️ tksheet no instalado", 
+                       text_color="#ff6b6b", font=("Segoe UI", 16)).pack(pady=20)
+        else:
+            tk.Label(breaks_sheet_frame, text="⚠️ tksheet no instalado", 
+                    bg="#2c2f33", fg="#ff6b6b", font=("Segoe UI", 16)).pack(pady=20)
 
     # ==================== ADMIN CONTAINER ====================
     
@@ -4272,7 +6705,7 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
     
     # Variable y selector de tabla
     admin_table_var = tk.StringVar()
-    admin_tables_list = ["Sitios", "user", "Actividades", "Covers", "Sesiones", "Estaciones", "Specials"]
+    admin_tables_list = ["Sitios", "user", "Actividades", "gestion_breaks_programados", "Covers_realizados", "Covers_programados", "Sesiones", "Estaciones", "Specials", "eventos"]
     
     if UI is not None:
         UI.CTkLabel(admin_controls, text="Tabla:", text_color="#e0e0e0").pack(side="left", padx=5)
@@ -4577,7 +7010,6 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
                 
                 load_admin_table()
                 edit_win.destroy()
-                messagebox.showinfo("Éxito", "✅ Registro actualizado correctamente.", parent=top)
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo actualizar:\n{e}", parent=edit_win)
                 traceback.print_exc()
@@ -4708,7 +7140,6 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
                 
                 load_admin_table()
                 create_win.destroy()
-                messagebox.showinfo("Éxito", "✅ Registro creado correctamente.", parent=top)
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo crear:\n{e}", parent=create_win)
                 traceback.print_exc()
@@ -5359,7 +7790,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         top.configure(bg="#1e1e1e")
     
     top.title(f"📊 Eventos - {username}")
-    top.geometry("1190x800")  # Ancho reducido al eliminar columna "Out at"
+    top.geometry("1200x800")  # Ancho reducido al eliminar columna "Out at"
     top.resizable(True, True)
 
     # ⭐ VARIABLE DE MODO: 'daily', 'specials' o 'covers'
@@ -5377,14 +7808,14 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     columns_specials = ["Fecha Hora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripcion", "TZ", "Marca"]
     
     # Columnas para COVERS (sin ID - solo información relevante)
-    columns_covers = ["Nombre_Usuarios", "Cover in", "Cover out", "Motivo", "Covered by", "Activo"]
+    columns_covers = ["Nombre Usuarios", "Time Request", "Cover in", "Cover out", "Motivo", "Covered by", "Activo"]
     
     # Columnas activas (inicia con daily)
     columns = columns_daily
     
     # Anchos personalizados para DAILY
     custom_widths_daily = {
-        " ": 140,
+        "Fecha Hora ": 140,
         "Sitio": 260,
         "Actividad": 170,
         "Cantidad": 80,
@@ -5394,7 +7825,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     
     # Anchos personalizados para SPECIALS (sin ID ni Usuario)
     custom_widths_specials = {
-        " ": 120,
+        "Fecha Hora": 120,
         "Sitio": 277,
         "Actividad": 150,
         "Cantidad": 60,
@@ -5406,7 +7837,8 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     
     # Anchos personalizados para COVERS (sin ID_Covers)
     custom_widths_covers = {
-        "Nombre_Usuarios": 150,
+        "Nombre Usuarios": 150,
+        "Time Request": 150,
         "Cover in": 150,
         "Cover out": 150,
         "Motivo": 200,
@@ -5433,22 +7865,19 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             
             if is_start:
                 # Iniciar turno
-                on_start_shift(username)
-                messagebox.showinfo("Start Shift", 
-                                   f"✅ Turno iniciado correctamente para {username}",
-                                   parent=top)
+                success = on_start_shift(username, parent_window=top)
+                if success:
+                    # Actualizar el botón
+                    update_shift_button()
+                    # Recargar datos (el nuevo evento START/END debe aparecer)
+                    load_data()
             else:
                 # Finalizar turno
                 on_end_shift(username)
-                messagebox.showinfo("End of Shift", 
-                                   f"✅ Turno finalizado correctamente para {username}",
-                                   parent=top)
-            
-            # Actualizar el botón
-            update_shift_button()
-            
-            # Recargar datos (el nuevo evento START/END debe aparecer)
-            load_data()
+                # Actualizar el botón
+                update_shift_button()
+                # Recargar datos (el nuevo evento START/END debe aparecer)
+                load_data()
             
         except Exception as e:
             messagebox.showerror("Error", f"Error al cambiar turno:\n{e}", parent=top)
@@ -5504,6 +7933,195 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     width=120, height=40,
                     font=("Segoe UI", 12, "bold"))
         delete_btn_header.pack(side="left", padx=5, pady=15)
+
+        # ⭐ Función para obtener próximo cover programado
+        def get_next_cover_info():
+            """Obtiene el próximo cover programado del usuario desde gestion_breaks_programados"""
+            try:
+                conn = under_super.get_connection()
+                cur = conn.cursor()
+                
+                # Obtener ID_Usuario del username
+                cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
+                user_row = cur.fetchone()
+                if not user_row:
+                    print(f"[DEBUG] Usuario '{username}' no encontrado en tabla user")
+                    cur.close()
+                    conn.close()
+                    return None
+                
+                id_usuario = user_row[0]
+                print(f"[DEBUG] ID_Usuario obtenido: {id_usuario} para username: {username}")
+                
+                # Buscar último cover activo donde user_covered = username
+                query = """
+                    SELECT 
+                        gbp.Fecha_hora_cover,
+                        u_covering.Nombre_Usuario as covering_name,
+                        gbp.User_covered,
+                        gbp.User_covering,
+                        gbp.is_Active
+                    FROM gestion_breaks_programados gbp
+                    INNER JOIN user u_covering ON gbp.User_covering = u_covering.ID_Usuario
+                    WHERE gbp.User_covered = %s 
+                    AND gbp.is_Active = 1
+                    ORDER BY gbp.Fecha_hora_cover DESC
+                    LIMIT 1
+                """
+                
+                print(f"[DEBUG] Ejecutando query con id_usuario={id_usuario}")
+                cur.execute(query, (id_usuario,))
+                result = cur.fetchone()
+                
+                print(f"[DEBUG] Resultado de query: {result}")
+                
+                # Debug: Mostrar todos los covers activos sin filtro de usuario
+                cur.execute("""
+                    SELECT User_covered, User_covering, Fecha_hora_cover, is_Active 
+                    FROM gestion_breaks_programados 
+                    WHERE is_Active = 1
+                """)
+                all_active = cur.fetchall()
+                print(f"[DEBUG] Todos los covers activos en BD: {all_active}")
+                
+                cur.close()
+                conn.close()
+                
+                if result:
+                    fecha_hora_cover, covering_name, user_covered_id, user_covering_id, is_active = result
+                    print(f"[DEBUG] Cover encontrado: hora={fecha_hora_cover}, covering={covering_name}, user_covered={user_covered_id}, user_covering={user_covering_id}, active={is_active}")
+                    # Formatear hora como HH:MM
+                    hora_str = fecha_hora_cover.strftime("%H:%M") if fecha_hora_cover else ""
+                    return {
+                        'hora': hora_str,
+                        'covering': covering_name,
+                        'covered': username
+                    }
+                
+                print(f"[DEBUG] No se encontró cover para id_usuario={id_usuario}")
+                return None
+                
+            except Exception as e:
+                print(f"[ERROR] get_next_cover_info: {e}")
+                traceback.print_exc()
+                return None
+        
+        def update_cover_label():
+            """Actualiza el texto del label con la información del próximo cover"""
+            try:
+                cover_info = get_next_cover_info()
+                if cover_info:
+                    texto = f"☕ Break: {cover_info['hora']} | Cubierto por: {cover_info['covering']}"
+                    cover_label.configure(text=texto)
+                else:
+                    cover_label.configure(text="☕ No hay covers programados")
+            except Exception as e:
+                print(f"[ERROR] update_cover_label: {e}")
+                cover_label.configure(text="☕ Error al cargar cover")
+        
+        # ⭐ Función para obtener si el usuario debe cubrir a alguien
+        def get_covering_assignment():
+            """Obtiene si el usuario debe cubrir a alguien desde gestion_breaks_programados"""
+            try:
+                conn = under_super.get_connection()
+                cur = conn.cursor()
+                
+                # Obtener ID_Usuario del username
+                cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
+                user_row = cur.fetchone()
+                if not user_row:
+                    print(f"[DEBUG] Usuario '{username}' no encontrado en tabla user para covering")
+                    cur.close()
+                    conn.close()
+                    return None
+                
+                id_usuario = user_row[0]
+                print(f"[DEBUG] Buscando asignaciones de cover para ID_Usuario: {id_usuario} (covering)")
+                
+                # Buscar próximo cover donde user_covering = username (este usuario debe cubrir a alguien)
+                # Busca el más reciente activo sin filtro de fecha para mostrar el último programado
+                query = """
+                    SELECT 
+                        gbp.Fecha_hora_cover,
+                        u_covered.Nombre_Usuario as covered_name,
+                        gbp.User_covered,
+                        gbp.User_covering,
+                        gbp.is_Active
+                    FROM gestion_breaks_programados gbp
+                    INNER JOIN user u_covered ON gbp.User_covered = u_covered.ID_Usuario
+                    WHERE gbp.User_covering = %s 
+                    AND gbp.is_Active = 1
+                    ORDER BY gbp.Fecha_hora_cover DESC
+                    LIMIT 1
+                """
+                
+                print(f"[DEBUG] Ejecutando query covering con id_usuario={id_usuario}")
+                cur.execute(query, (id_usuario,))
+                result = cur.fetchone()
+                
+                print(f"[DEBUG] Resultado de query covering: {result}")
+                
+                cur.close()
+                conn.close()
+                
+                if result:
+                    fecha_hora_cover, covered_name, user_covered_id, user_covering_id, is_active = result
+                    print(f"[DEBUG] Cover assignment encontrado: hora={fecha_hora_cover}, cubriendo a={covered_name}")
+                    # Formatear hora como HH:MM
+                    hora_str = fecha_hora_cover.strftime("%H:%M") if fecha_hora_cover else ""
+                    return {
+                        'hora': hora_str,
+                        'covered': covered_name,
+                        'covering': username
+                    }
+                
+                print(f"[DEBUG] No se encontró asignación de cover para id_usuario={id_usuario} como covering")
+                return None
+                
+            except Exception as e:
+                print(f"[ERROR] get_covering_assignment: {e}")
+                traceback.print_exc()
+                return None
+        
+        def update_covering_label():
+            """Actualiza el texto del label con la información de a quién debe cubrir el usuario"""
+            try:
+                covering_info = get_covering_assignment()
+                if covering_info:
+                    texto = f"👤 Cubres a: {covering_info['covered']} | Hora: {covering_info['hora']}"
+                    covering_label.configure(text=texto)
+                    covering_label.pack(side="left", padx=(0, 20), pady=15)  # Mostrar el label
+                else:
+                    covering_label.pack_forget()  # Ocultar el label si no hay asignación
+            except Exception as e:
+                print(f"[ERROR] update_covering_label: {e}")
+                covering_label.pack_forget()
+        
+        # ⭐ Frame contenedor para los dos labels (uno arriba del otro)
+        cover_labels_frame = UI.CTkFrame(header, fg_color="transparent")
+        cover_labels_frame.pack(side="left", padx=20, pady=15)
+        
+        # ⭐ Label de información de cover recibido (arriba)
+        cover_label = UI.CTkLabel(
+            cover_labels_frame,
+            text="☕ Cargando...",
+            text_color="#00bfae",
+            font=("Segoe UI", 13, "bold")
+        )
+        cover_label.pack(anchor="w")
+        
+        # ⭐ Label de asignación de cover (abajo - solo se muestra si debe cubrir a alguien)
+        covering_label = UI.CTkLabel(
+            cover_labels_frame,
+            text="",
+            text_color="#ffa500",
+            font=("Segoe UI", 13, "bold")
+        )
+        # NO hacer pack() aquí - se mostrará solo si hay asignación
+        
+        # Actualizar labels al iniciar
+        update_cover_label()
+        update_covering_label()
         
         # ⭐ Botón Start/End Shift a la derecha
         shift_btn = UI.CTkButton(
@@ -7011,7 +9629,8 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 traceback.print_exc()
     
     def load_covers():
-        """Carga covers desde el último START SHIFT filtrados por username (MODO COVERS)"""
+        """Carga covers desde el último START SHIFT filtrados por username (MODO COVERS)
+        Incluye covers normales (con programación) y covers de emergencia (sin programación)"""
         nonlocal row_data_cache, row_ids, pending_changes
         
         try:
@@ -7028,19 +9647,22 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             cur = conn.cursor()
             
             # Query: Covers del usuario desde START SHIFT hasta AHORA, ordenados de más antiguo a más reciente
+            # ⭐ LEFT JOIN con covers_programados para incluir covers de emergencia (ID_programacion_covers NULL)
             query = """
                 SELECT 
-                    ID_Covers,
-                    Nombre_Usuarios,
-                    Cover_in,
-                    Cover_out,
-                    Motivo,
-                    Covered_by,
-                    Activo
-                FROM Covers
-                WHERE Nombre_Usuarios = %s
-                    AND Cover_in >= %s
-                ORDER BY Cover_in ASC
+                    cr.ID_Covers,
+                    cr.Nombre_usuarios,
+                    cr.Cover_in,
+                    cr.Cover_out,
+                    cr.Covered_by,
+                    cr.Motivo,
+                    cp.Time_request,
+                    cr.ID_programacion_covers
+                FROM Covers_realizados cr
+                LEFT JOIN covers_programados cp ON cr.ID_programacion_covers = cp.ID_Cover
+                WHERE cr.Nombre_Usuarios = %s
+                    AND cr.Cover_in >= %s
+                ORDER BY cr.Cover_in ASC
             """
             
             cur.execute(query, (username, last_shift_time))
@@ -7055,20 +9677,31 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 nombre_usuario = r[1] if r[1] else ""
                 cover_in = r[2]
                 cover_out = r[3]
-                motivo = r[4] if r[4] else ""
-                covered_by = r[5] if r[5] else ""
-                activo = r[6]
+                covered_by = r[4] if r[4] else ""
+                motivo = r[5] if r[5] else ""
+                time_request = r[6]  # Time_request de covers_programados (puede ser NULL en emergencias)
+                id_programacion = r[7]  # ID_programacion_covers para detectar emergencias
+                
+                # ⭐ Detectar cover de emergencia (sin programación)
+                is_emergency = (id_programacion is None)
                 
                 # Formatear fechas
+                if is_emergency:
+                    time_request_str = "⚠️ EMERGENCIA"  # Marcador visual para covers de emergencia
+                else:
+                    time_request_str = time_request.strftime("%Y-%m-%d %H:%M:%S") if time_request else ""
+                
                 cover_in_str = cover_in.strftime("%Y-%m-%d %H:%M:%S") if cover_in else ""
                 cover_out_str = cover_out.strftime("%Y-%m-%d %H:%M:%S") if cover_out else ""
                 
-                # Formatear Activo (-1 = Activo, 0 = Inactivo)
-                activo_str = "Activo" if activo == -1 else "Cerrado"
+                # Covers realizados siempre están cerrados (no tienen campo Activo en la tabla)
+                activo_str = "Cerrado"
                 
                 # Construir fila SIN ID_Covers (no se muestra al usuario)
+                # Ahora incluye Time_request al inicio (o "EMERGENCIA" si es cover de emergencia)
                 display_row = [
                     nombre_usuario,
+                    time_request_str,
                     cover_in_str,
                     cover_out_str,
                     motivo,
@@ -7078,15 +9711,14 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 
                 display_rows.append(display_row)
                 
-                # Guardar en cache
+                # Guardar en cache con indicador de emergencia
                 row_data_cache.append({
                     'id_cover': id_cover,
-                    'nombre_usuario': nombre_usuario,
                     'cover_in': cover_in,
                     'cover_out': cover_out,
                     'motivo': motivo,
                     'covered_by': covered_by,
-                    'activo': activo,
+                    'is_emergency': is_emergency,
                     'status': 'saved'
                 })
                 row_ids.append(id_cover)
@@ -7101,13 +9733,13 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             else:
                 sheet.set_sheet_data(display_rows)
             
-            # Limpiar colores (Covers no tiene colores)
+            # Limpiar colores (no se aplica highlight a covers de emergencia)
             sheet.dehighlight_all()
             
             apply_sheet_widths()
             pending_changes.clear()
             
-            print(f"[DEBUG] Loaded {len(row_ids)} covers for {username}")
+            print(f"[DEBUG] Loaded {len(row_ids)} covers for {username} (includes emergency covers)")
             
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo cargar covers:\n{e}", parent=top)
@@ -7367,7 +9999,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 SELECT 1 
                 FROM sesion s 
                 WHERE s.ID_user = u.Nombre_Usuario 
-                AND s.Active = 1
+                AND s.Active IN (1, 2)
                 ORDER BY s.ID DESC 
                 LIMIT 1
             )
@@ -7377,7 +10009,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 WHERE s2.ID_user = u.Nombre_Usuario
                 ORDER BY s2.ID DESC
                 LIMIT 1
-            ) <> 2
+            ) <> 0
         """, ("Supervisor", "Lead Supervisor"))
             supervisores = [row[0] for row in cur.fetchall()]
             cur.close()
@@ -7547,6 +10179,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                                         marked_by = NULL,
                                         Supervisor = %s
                                     WHERE ID_Special = %s
+                                    AND Supervisor is NULL
                                     """,
                                     (fecha_hora, id_sitio, nombre_actividad, cantidad_normalizada, 
                                      camera_normalizada, descripcion_normalizada, 
@@ -8274,219 +10907,6 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     # Vincular eventos
     sheet.bind("<Double-Button-1>", on_cell_double_click, add=True)
 
-    def show_time_picker_for_description_edit(row_idx):
-        """Time picker para agregar hora a la descripción de una fila existente"""
-        try:
-            # Verificar que sea una fila válida
-            if row_idx >= len(row_data_cache):
-                return
-            
-            # Obtener descripción actual
-            current_desc = sheet.get_cell_data(row_idx, 5) or ""
-            now = datetime.now()
-            
-            # Crear ventana con CustomTkinter
-            if UI is not None:
-                picker_win = UI.CTkToplevel(top)
-                picker_win.title("Agregar Hora a Descripción")
-                picker_win.geometry("450x480")
-                picker_win.resizable(False, False)
-                picker_win.transient(top)
-                # picker_win.grab_set()  # Comentado para permitir interacción con otras ventanas
-                
-                # Header con icono
-                header = UI.CTkFrame(picker_win, fg_color="#1a1a1a", corner_radius=0, height=60)
-                header.pack(fill="x", padx=0, pady=0)
-                header.pack_propagate(False)
-                
-                UI.CTkLabel(header, text="🕐 Agregar Hora a Descripción", 
-                           font=("Segoe UI", 20, "bold"),
-                           text_color="#4a90e2").pack(pady=15)
-                
-                # Contenido principal
-                content = UI.CTkFrame(picker_win, fg_color="transparent")
-                content.pack(fill="both", expand=True, padx=20, pady=20)
-                
-                # Sección de Hora
-                time_section = UI.CTkFrame(content, fg_color="#2b2b2b", corner_radius=10)
-                time_section.pack(fill="x", pady=(0, 15))
-                
-                UI.CTkLabel(time_section, text="⏰ Seleccionar Hora:", 
-                           font=("Segoe UI", 14, "bold"),
-                           text_color="#e0e0e0").pack(anchor="w", padx=15, pady=(15, 10))
-                
-                # Variables para hora
-                hour_var = tk.IntVar(value=now.hour)
-                minute_var = tk.IntVar(value=now.minute)
-                second_var = tk.IntVar(value=now.second)
-                
-                # Frame para spinboxes
-                spinbox_container = tk.Frame(time_section, bg="#2b2b2b")
-                spinbox_container.pack(padx=15, pady=(0, 10))
-                
-                # Hora
-                tk.Label(spinbox_container, text="Hora:", bg="#2b2b2b", fg="#a3c9f9",
-                        font=("Segoe UI", 12)).grid(row=0, column=0, padx=5, pady=5)
-                hour_spin = tk.Spinbox(spinbox_container, from_=0, to=23, textvariable=hour_var,
-                                      width=10, font=("Segoe UI", 14), justify="center",
-                                      format="%02.0f")
-                hour_spin.grid(row=0, column=1, padx=5, pady=5)
-                
-                # Minuto
-                tk.Label(spinbox_container, text="Min:", bg="#2b2b2b", fg="#a3c9f9",
-                        font=("Segoe UI", 12)).grid(row=0, column=2, padx=5, pady=5)
-                minute_spin = tk.Spinbox(spinbox_container, from_=0, to=59, textvariable=minute_var,
-                                        width=10, font=("Segoe UI", 14), justify="center",
-                                        format="%02.0f")
-                minute_spin.grid(row=0, column=3, padx=5, pady=5)
-                
-                # Segundo
-                tk.Label(spinbox_container, text="Seg:", bg="#2b2b2b", fg="#a3c9f9",
-                        font=("Segoe UI", 12)).grid(row=0, column=4, padx=5, pady=5)
-                second_spin = tk.Spinbox(spinbox_container, from_=0, to=59, textvariable=second_var,
-                                        width=10, font=("Segoe UI", 14), justify="center",
-                                        format="%02.0f")
-                second_spin.grid(row=0, column=5, padx=5, pady=5)
-                
-                # Preview del formato
-                preview_label = UI.CTkLabel(time_section, text="", 
-                                           font=("Segoe UI", 11, "italic"),
-                                           text_color="#888888")
-                preview_label.pack(pady=(5, 10))
-                
-                def update_preview(*args):
-                    """Actualiza el preview del formato [HH:MM:SS]"""
-                    try:
-                        # Convertir a int explícitamente para evitar errores con formato octal
-                        h = int(hour_var.get())
-                        m = int(minute_var.get())
-                        s = int(second_var.get())
-                        time_str = f"[{h:02d}:{m:02d}:{s:02d}]"
-                        preview_label.configure(text=f"Se insertará: {time_str}")
-                    except (ValueError, tk.TclError):
-                        preview_label.configure(text="Se insertará: [HH:MM:SS]")
-                
-                # Vincular cambios en spinboxes
-                hour_var.trace('w', update_preview)
-                minute_var.trace('w', update_preview)
-                second_var.trace('w', update_preview)
-                update_preview()  # Mostrar valor inicial
-                
-                # Botón "Ahora"
-                def set_now():
-                    current = datetime.now()
-                    hour_var.set(current.hour)
-                    minute_var.set(current.minute)
-                    second_var.set(current.second)
-                
-                UI.CTkButton(time_section, text="⏰ Hora Actual", command=set_now,
-                            fg_color="#4a90e2", hover_color="#3a7bc2",
-                            font=("Segoe UI", 11),
-                            width=150, height=35).pack(pady=(5, 15))
-                
-                # Nota informativa
-                UI.CTkLabel(content, text="💡 La hora se agregará al final de la descripción en formato [HH:MM:SS]",
-                           font=("Segoe UI", 9, "italic"),
-                           text_color="#888888",
-                           wraplength=350).pack(pady=(0, 10))
-                
-                # Botones Aceptar/Cancelar
-                btn_frame = UI.CTkFrame(content, fg_color="transparent")
-                btn_frame.pack(pady=10)
-                
-                def accept():
-                    try:
-                        # Formatear tiempo como [HH:MM:SS]
-                        h = int(hour_var.get())
-                        m = int(minute_var.get())
-                        s = int(second_var.get())
-                        time_str = f"[{h:02d}:{m:02d}:{s:02d}]"
-                        
-                        # Agregar al final de la descripción actual
-                        if current_desc.strip():
-                            new_desc = f"{current_desc.strip()} {time_str}"
-                        else:
-                            new_desc = time_str
-                        
-                        # Actualizar celda
-                        sheet.set_cell_data(row_idx, 5, new_desc)
-                        
-                        # Agregar a pending_changes para auto-guardado
-                        if row_idx not in pending_changes:
-                            pending_changes.append(row_idx)
-                        
-                        # Guardar automáticamente
-                        top.after(500, auto_save_pending)
-                        
-                        picker_win.destroy()
-                    except Exception as e:
-                        messagebox.showerror("Error", f"Error al agregar hora:\n{e}", parent=picker_win)
-                
-                UI.CTkButton(btn_frame, text="✅ Agregar", command=accept,
-                            fg_color="#00c853", hover_color="#00a043",
-                            font=("Segoe UI", 12, "bold"),
-                            width=120, height=40).pack(side="left", padx=10)
-                
-                UI.CTkButton(btn_frame, text="❌ Cancelar", command=picker_win.destroy,
-                            fg_color="#666666", hover_color="#555555",
-                            font=("Segoe UI", 12),
-                            width=120, height=40).pack(side="left", padx=10)
-            else:
-                # Fallback sin CustomTkinter
-                picker_win = tk.Toplevel(top)
-                picker_win.title("Agregar Hora")
-                picker_win.geometry("350x250")
-                picker_win.transient(top)
-                picker_win.grab_set()
-                content = tk.Frame(picker_win, bg="#2b2b2b")
-                content.pack(fill="both", expand=True, padx=20, pady=20)
-                
-                tk.Label(content, text="⏰ Seleccionar Hora:", bg="#2b2b2b", fg="#e0e0e0",
-                        font=("Segoe UI", 12, "bold")).pack(anchor="w", pady=(10,10))
-                
-                time_frame = tk.Frame(content, bg="#2b2b2b")
-                time_frame.pack(pady=10)
-                
-                hour_var = tk.IntVar(value=now.hour)
-                minute_var = tk.IntVar(value=now.minute)
-                second_var = tk.IntVar(value=now.second)
-                
-                tk.Label(time_frame, text="H:", bg="#2b2b2b", fg="#a3c9f9").grid(row=0, column=0, padx=3)
-                hour_spin = tk.Spinbox(time_frame, from_=0, to=23, textvariable=hour_var, width=5, format="%02.0f")
-                hour_spin.grid(row=0, column=1, padx=3)
-                
-                tk.Label(time_frame, text="M:", bg="#2b2b2b", fg="#a3c9f9").grid(row=0, column=2, padx=3)
-                minute_spin = tk.Spinbox(time_frame, from_=0, to=59, textvariable=minute_var, width=5, format="%02.0f")
-                minute_spin.grid(row=0, column=3, padx=3)
-                
-                tk.Label(time_frame, text="S:", bg="#2b2b2b", fg="#a3c9f9").grid(row=0, column=4, padx=3)
-                second_spin = tk.Spinbox(time_frame, from_=0, to=59, textvariable=second_var, width=5, format="%02.0f")
-                second_spin.grid(row=0, column=5, padx=3)
-                
-                def accept():
-                    time_str = f"[{hour_var.get():02d}:{minute_var.get():02d}:{second_var.get():02d}]"
-                    if current_desc.strip():
-                        new_desc = f"{current_desc.strip()} {time_str}"
-                    else:
-                        new_desc = time_str
-                    
-                    sheet.set_cell_data(row_idx, 5, new_desc)
-                    
-                    if row_idx not in pending_changes:
-                        pending_changes.append(row_idx)
-                    
-                    top.after(500, auto_save_pending)
-                    picker_win.destroy()
-                
-                btn_frame = tk.Frame(content, bg="#2b2b2b")
-                btn_frame.pack(pady=20)
-                tk.Button(btn_frame, text="Agregar", command=accept, bg="#00c853", fg="white", width=10).pack(side="left", padx=5)
-                tk.Button(btn_frame, text="Cancelar", command=picker_win.destroy, bg="#666666", fg="white", width=10).pack(side="left", padx=5)
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo abrir time picker:\n{e}", parent=top)
-            import traceback
-            traceback.print_exc()
 
     def show_datetime_picker():
         """Muestra selector moderno de fecha/hora usando CustomTkinter"""
@@ -9886,7 +12306,8 @@ def open_specials_window(username):
                 conn.close()
                 
                 load_specials()
-                messagebox.showinfo("Marcar", f"✅ {len(sel)} registro(s) marcado(s) como Registrado", parent=top_win)
+                
+
                 
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo marcar:\n{e}", parent=top_win)
@@ -9917,7 +12338,7 @@ def open_specials_window(username):
                 conn.close()
                 
                 load_specials()
-                messagebox.showinfo("Marcar", f"🔄 {len(sel)} registro(s) marcado(s) como En Progreso", parent=top_win)
+
                 
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo marcar:\n{e}", parent=top_win)
@@ -9972,7 +12393,7 @@ def open_specials_window(username):
                 conn.close()
                 
                 load_specials()
-                messagebox.showinfo("Limpiar marcas", "✅ Todas las marcas han sido eliminadas", parent=top_win)
+
                 
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo limpiar marcas:\n{e}", parent=top_win)
@@ -9982,7 +12403,7 @@ def open_specials_window(username):
             try:
                 if USE_SHEET and sheet:
                     sheet.copy()  # tksheet tiene copy integrado
-                    messagebox.showinfo("Copiar", "✅ Datos copiados al portapapeles", parent=top_win)
+
                 elif tree:
                     items = tree.selection() if tree.selection() else tree.get_children()
                     if not items:
