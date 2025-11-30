@@ -213,10 +213,12 @@ def insertar_cover(username, Covered_by, Motivo, session_id, station):
     Cover_Out= None
     tiene_cover_programado = False
     
-    # ⭐ VERIFICAR SI TIENE COVER PROGRAMADO Y APROBADO
+    # ⭐ VERIFICAR SI TIENE COVER PROGRAMADO (covers_programados O gestion_breaks_programados)
     try:
         conn = get_connection()
         cursor = conn.cursor()
+        
+        # 1. Buscar en covers_programados (sistema antiguo)
         cursor.execute(
             """
             SELECT cp.ID_Cover
@@ -230,12 +232,43 @@ def insertar_cover(username, Covered_by, Motivo, session_id, station):
             (username,)
         )
         result = cursor.fetchone()
+        
         if result is not None:
             ID_cover = result[0]
             tiene_cover_programado = True
-            print(f"[DEBUG] Cover programado encontrado - ID_cover: {ID_cover}")
+            print(f"[DEBUG] Cover programado encontrado en covers_programados - ID_cover: {ID_cover}")
         else:
-            print("[DEBUG] No se encontró cover programado. Registrando como cover de emergencia...")
+            # 2. Buscar en gestion_breaks_programados (breaks programados por supervisor)
+            # Necesitamos ID_Usuario para buscar
+            cursor.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
+            user_row = cursor.fetchone()
+            
+            if user_row:
+                id_usuario = user_row[0]
+                
+                # Buscar break programado activo en una ventana de +/- 5 minutos de la hora actual
+                cursor.execute(
+                    """
+                    SELECT gbp.ID_cover
+                    FROM gestion_breaks_programados gbp
+                    WHERE gbp.User_covered = %s
+                    AND gbp.is_Active = 1
+                    AND ABS(TIMESTAMPDIFF(MINUTE, gbp.Fecha_hora_cover, NOW())) <= 5
+                    ORDER BY ABS(TIMESTAMPDIFF(MINUTE, gbp.Fecha_hora_cover, NOW())) ASC
+                    LIMIT 1
+                    """,
+                    (id_usuario,)
+                )
+                break_result = cursor.fetchone()
+                
+                if break_result is not None:
+                    ID_cover = break_result[0]
+                    tiene_cover_programado = True
+                    print(f"[DEBUG] Break programado encontrado en gestion_breaks_programados - ID_cover: {ID_cover}")
+        
+        # Si no se encontró ningún cover programado, preguntar si es emergencia
+        if not tiene_cover_programado:
+            print("[DEBUG] No se encontró cover/break programado. Registrando como cover de emergencia...")
             # Preguntar al usuario si desea registrar cover de emergencia
             confirmacion = messagebox.askyesno(
                 "Cover de Emergencia",
