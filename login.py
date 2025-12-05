@@ -7,6 +7,7 @@ import backend_super
 import main_super  # módulo principal
 from datetime import datetime
 import under_super
+import resources  # Recursos embebidos (imágenes en base64)
 now = datetime.now()
 
 # ---- Función de cierre de ventana ----
@@ -24,13 +25,12 @@ def on_login_window_close():
         except Exception:
             pass
 
-# ---- Cache global para recursos de Login (evita recargar imagen desde red en cada logout) ----
+# ---- Cache global para recursos de Login (imágenes embebidas, sin dependencia de red) ----
 _LOGIN_BG_CACHE = {
     "image": None,  # PIL.Image
     "photo": None,  # ImageTk.PhotoImage
 }
 _LOGIN_BG_SIZE = (500, 350)
-_LOGIN_BG_PATH = Path(r"\\192.168.7.12\Data SIG\Central Station SLC-COLOMBIA\1. Daily Logs - Operators\DataBase\icons\fondo.jpg")
 
 # --- Botón de Logout ---
 def do_logout(session_id, station, root):
@@ -53,8 +53,9 @@ def do_logout(session_id, station, root):
         cursor.execute(
             """
             UPDATE sesion
-            SET Log_Out = %s, Active = "0"
-            WHERE ID = %s AND Active = "1" or Active = "-1" or Active = "2"
+            SET Log_Out = %s, Active = "0" AND Statuses = "0"
+            WHERE ID = %s AND Active = "1" or Active = "-1"
+            
             """,
             (log_out_time, session_id)
         )
@@ -151,16 +152,14 @@ def show_login():
     win.geometry("500x350")
     win.resizable(False, False)
 
-    # --- Fondo con imagen (cacheado) ---
-    # Cargar desde cache si ya lo hicimos antes; evita esperas por red + resize en cada logout
+    # --- Fondo con imagen embebida (cacheado) ---
+    # Cargar desde recursos embebidos (base64) si no está en cache
     try:
         if _LOGIN_BG_CACHE["image"] is None:
-            if _LOGIN_BG_PATH.exists():
-                img = Image.open(_LOGIN_BG_PATH).resize(_LOGIN_BG_SIZE, Image.Resampling.LANCZOS)
-                _LOGIN_BG_CACHE["image"] = img
-            else:
-                _LOGIN_BG_CACHE["image"] = None
-    except Exception:
+            img = resources.get_login_background_resized(_LOGIN_BG_SIZE)
+            _LOGIN_BG_CACHE["image"] = img
+    except Exception as e:
+        print(f"[ERROR] No se pudo cargar fondo embebido: {e}")
         _LOGIN_BG_CACHE["image"] = None
 
     # Dibujar fondo: CTkLabel con CTkImage si está disponible; si no, usar Canvas clásico
@@ -354,11 +353,33 @@ def show_login():
                 conn.close()
                 return
 
+            # Determinar Statuses inicial: buscar última sesión cerrada si es Operador
+            initial_statuses = 0  # Por defecto 0
+            
+            if role == "Operador":
+                print(f"[DEBUG] do_login - Es Operador: {username}, buscando última sesión cerrada")
+                cursor.execute(
+                    """
+                    SELECT Statuses
+                    FROM sesion
+                    WHERE ID_user = %s AND Active = 0
+                    ORDER BY ID DESC
+                    LIMIT 1
+                    """,
+                    (username,)
+                )
+                last_status = cursor.fetchone()
+                print(f"[DEBUG] do_login - Última sesión cerrada encontrada: {last_status}")
+                if last_status and last_status[0] == 2:
+                    initial_statuses = 2
+                    print(f"[DEBUG] do_login - Restaurando Statuses=2 para {username} (desde BD)")
+
             # Insertar nueva sesión
+            print(f"[DEBUG] do_login - Insertando sesión con Active=1, Statuses={initial_statuses}")
             cursor.execute("""
-                INSERT INTO sesion (ID_user, Log_in, ID_estacion, Active)
-                VALUES (%s, %s, %s, %s)
-            """, (username, datetime.now(), station, "1"))
+                INSERT INTO sesion (ID_user, Log_in, ID_estacion, Active, Statuses)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (username, datetime.now(), station, "1", initial_statuses))
             print("[DEBUG] INSERT Sesiones ejecutado")
 
             # 🔹 Obtener último ID insertado
@@ -449,17 +470,62 @@ if __name__ == "__main__":
 
 
 # === Programmatic helpers for cover flow ===
+# Variable global para preservar Statuses state entre logout_silent y auto_login
+_preserved_statuses_state = {}
+
 def logout_silent(session_id, station):
-    """Logout without showing login UI; updates Sesiones and frees Estaciones."""
+    """Logout without showing login UI; updates Sesiones and frees Estaciones.
+    Preserva el estado Statuses si es Operador con Statuses=2."""
+    global _preserved_statuses_state
     try:
         conn = under_super.get_connection()
         cursor = conn.cursor()
+        
+        # Obtener username de la sesión actual
+        cursor.execute(
+            """
+            SELECT s.ID_user
+            FROM sesion s
+            WHERE s.ID = %s
+            """,
+            (int(session_id),)
+        )
+        sesion_data = cursor.fetchone()
+        
+        if sesion_data:
+            username = sesion_data[0]
+            
+            # Buscar la última sesión de este usuario para verificar Statuses
+            cursor.execute(
+                """
+                SELECT s.Statuses, u.Rol
+                FROM sesion s
+                INNER JOIN user u ON s.ID_user = u.Nombre_Usuario
+                WHERE s.ID_user = %s
+                ORDER BY s.ID DESC
+                LIMIT 1
+                """,
+                (username,)
+            )
+            last_session = cursor.fetchone()
+            
+            if last_session:
+                statuses_state, rol = last_session
+                # Preservar Statuses=2 solo para Operadores
+                # Nota: Statuses puede ser NULL(normal) o 2(operador con acceso covers)
+                if rol == "Operador" and statuses_state == 2:
+                    _preserved_statuses_state[username] = 2
+                    print(f"[DEBUG] logout_silent - Preservando Statuses=2 para {username}")
+                elif username in _preserved_statuses_state:
+                    # Limpiar si ya no es Statuses=2
+                    del _preserved_statuses_state[username]
+        
         log_out_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
             """
-            UPDATE Sesion 
-            SET Log_Out = %s, Active = '1' or Active = '-1' or Active = '2'
-            WHERE ID = %s AND Active = '0'
+            UPDATE sesion 
+            SET Log_Out = %s, Active = '0'
+            WHERE ID = %s
             """,
             (log_out_time, int(session_id))
         )
@@ -506,13 +572,48 @@ def auto_login(username, station, password="1234", parent=None, silent=True):
         if db_password != password:
             raise ValueError("Contraseña incorrecta")
 
-        # Start session
+        # Start session - Verificar si el usuario tenía Statuses=2 en su última sesión
+        global _preserved_statuses_state
+        initial_active = "1"  # Siempre 1 para sesión activa
+        initial_statuses = None  # Por defecto NULL
+        
+        # Si es Operador, buscar Statuses=2 en su última sesión O en el diccionario preservado
+        if role == "Operador":
+            print(f"[DEBUG] auto_login - Es Operador: {username}")
+            print(f"[DEBUG] auto_login - Diccionario preservado: {_preserved_statuses_state}")
+            
+            # Primero verificar diccionario (más reciente)
+            if username in _preserved_statuses_state:
+                if _preserved_statuses_state[username] == 2:
+                    initial_statuses = 2
+                    print(f"[DEBUG] auto_login - Restaurando Statuses=2 para {username} (desde diccionario)")
+                del _preserved_statuses_state[username]
+            else:
+                # Si no está en diccionario, buscar en BD la última sesión CERRADA
+                print(f"[DEBUG] auto_login - Buscando última sesión cerrada en BD para {username}")
+                cursor.execute(
+                    """
+                    SELECT Statuses
+                    FROM sesion
+                    WHERE ID_user = %s AND Active = 0
+                    ORDER BY ID DESC
+                    LIMIT 1
+                    """,
+                    (username,)
+                )
+                last_status = cursor.fetchone()
+                print(f"[DEBUG] auto_login - Última sesión cerrada encontrada: {last_status}")
+                if last_status and last_status[0] == 2:
+                    initial_statuses = 2
+                    print(f"[DEBUG] auto_login - Restaurando Statuses=2 para {username} (desde BD)")
+        
+        print(f"[DEBUG] auto_login - Insertando sesión con Active={initial_active}, Statuses={initial_statuses}")
         cursor.execute(
             """
-            INSERT INTO Sesiones (Nombre_Usuario, Stations_ID, Login_Time, Is_Active)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO sesion (ID_user, Log_in, ID_estacion, Log_out, Active, Statuses)
+            VALUES (%s, %s, %s, %s, %s, %s)
             """,
-            (username, station, datetime.now(), "-1")
+            (username, datetime.now(), station, None, initial_active, initial_statuses)
         )
         cursor.execute("SELECT LAST_INSERT_ID()")
         session_id = cursor.fetchone()[0]

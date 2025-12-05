@@ -19,7 +19,6 @@ now = datetime.now()
 ICON_PATH = r"\\192.168.7.12\Data SIG\Central Station SLC-COLOMBIA\1. Daily Logs - Operators\DataBase\icons"
 import pyodbc
 
-ACCESS_DB_PATH = r"\\192.168.7.12\Data SIG\Central Station SLC-COLOMBIA\1. Daily Logs - Operators\DataBase\Base de Datos\Daily_log1.accdb"
 # 📂 Ruta compartida para el archivo de configuración
 CONFIG_PATH = Path=r"\\192.168.7.12\Data SIG\Central Station SLC-COLOMBIA\1. Daily Logs - Operators\DataBase\Base de Datos\roles_config.json"
 
@@ -816,7 +815,7 @@ def load_combined_covers():
 def set_new_status(new_value, username):
             conn = get_connection()
             cursor = conn.cursor()
-            cursor.execute("UPDATE sesion SET Active = %s WHERE ID_user = %s ORDER BY ID DESC LIMIT 1",
+            cursor.execute("UPDATE sesion SET Statuses = %s WHERE ID_user = %s ORDER BY ID DESC LIMIT 1",
                             (new_value, username))
             conn.commit()
             cursor.close()
@@ -832,7 +831,7 @@ def get_user_status_bd(username):
         cursor = conn.cursor()
         # Ejecutar query
         cursor.execute("""
-            SELECT Active FROM sesion 
+            SELECT Statuses FROM sesion 
             WHERE ID_user = %s 
             ORDER BY ID DESC 
             LIMIT 1

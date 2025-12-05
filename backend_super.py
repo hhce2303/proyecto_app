@@ -935,6 +935,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
         
         # ⭐ Botón Start/End Shift a la derecha
         shift_btn = UI.CTkButton(
+            
             header, 
             text="🚀 Start Shift",
             command=handle_shift_button,
@@ -2264,12 +2265,12 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
 
     if UI is not None:
         usuario_combo_breaks = under_super.FilteredCombobox(row1_frame_breaks, textvariable=usuario_a_cubrir_var,
-                                                     values=users_list, width=40, state="readonly",
+                                                     values=users_list, width=40,
                                                      font=("Segoe UI", 11))
         usuario_combo_breaks.set("")  # Establecer vacío inicialmente
     else:
         usuario_combo_breaks = ttk.Combobox(row1_frame_breaks, textvariable=usuario_a_cubrir_var,
-                                           values=users_list, width=25, state="readonly")
+                                           values=users_list, width=25)
     usuario_combo_breaks.pack(side="left", padx=5)
 
     # Segunda fila: Cubierto por
@@ -2285,12 +2286,12 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
 
     if UI is not None:
         cover_by_combo_breaks = under_super.FilteredCombobox(row2_frame_breaks, textvariable=cubierto_por_var,
-                                              values=users_list, width=40, state="readonly",
+                                              values=users_list, width=40,
                                               font=("Segoe UI", 11))
         cover_by_combo_breaks.set("")  # Establecer vacío inicialmente
     else:
         cover_by_combo_breaks = ttk.Combobox(row2_frame_breaks, textvariable=cubierto_por_var,
-                                            values=users_list, width=25, state="readonly")
+                                            values=users_list, width=25)
     cover_by_combo_breaks.pack(side="left", padx=5)
 
     # Generar lista de horas en formato HH:00:00 (cada hora del día)
@@ -2856,12 +2857,14 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             listbox_sin_acceso.delete(0, tk.END)
             listbox_con_acceso.delete(0, tk.END)
             
-            # Operadores con Active = 1 (sin acceso a covers)
+            # Operadores con Active = 1 y Statuses IS NULL o != 2 (sin acceso a covers)
             cur.execute("""
                 SELECT DISTINCT s.ID_user 
                 FROM sesion s
                 INNER JOIN user u ON s.ID_user = u.Nombre_Usuario
-                WHERE s.Active = 1 AND u.Rol = 'Operador'
+                WHERE s.Active = 1 
+                  AND (s.Statuses IS NULL OR s.Statuses != 2) 
+                  AND u.Rol = 'Operador'
                 ORDER BY s.ID_user
             """)
             sin_acceso = cur.fetchall()
@@ -2869,12 +2872,14 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             for row in sin_acceso:
                 listbox_sin_acceso.insert(tk.END, row[0])
             
-            # Operadores con Active = 2 (con acceso a covers)
+            # Operadores con Active = 1 y Statuses = 2 (con acceso a covers)
             cur.execute("""
                 SELECT DISTINCT s.ID_user 
                 FROM sesion s
                 INNER JOIN user u ON s.ID_user = u.Nombre_Usuario
-                WHERE s.Active = 2 AND u.Rol = 'Operador'
+                WHERE s.Active = 1 
+                  AND s.Statuses = 2 
+                  AND u.Rol = 'Operador'
                 ORDER BY s.ID_user
             """)
             con_acceso = cur.fetchall()
@@ -2893,7 +2898,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             messagebox.showerror("Error", f"Error al cargar operadores:\n{e}", parent=top)
 
     def habilitar_acceso():
-        """Cambia Active de 1 a 2 para los operadores seleccionados (habilitar acceso a covers)"""
+        """Cambia Statuses a 2 para los operadores seleccionados (habilitar acceso a covers)"""
         seleccion = listbox_sin_acceso.curselection()
         if not seleccion:
             messagebox.showwarning("Selección", "Selecciona uno o más operadores para habilitar.", parent=top)
@@ -2913,7 +2918,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             for operador in operadores:
                 cur.execute("""
                     UPDATE sesion 
-                    SET Active = 2 
+                    SET Statuses = 2 
                     WHERE ID_user = %s AND Active = 1
                 """, (operador,))
             
@@ -2949,8 +2954,8 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             for operador in operadores:
                 cur.execute("""
                     UPDATE sesion 
-                    SET Active = 1 
-                    WHERE ID_user = %s AND Active = 2
+                    SET Statuses = NULL 
+                    WHERE ID_user = %s AND Active = 1 AND Statuses = 2
                 """, (operador,))
             
             conn.commit()
@@ -5344,11 +5349,19 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             conn = under_super.get_connection()
             cursor = conn.cursor()
             
-            sql = "SELECT ID_Eventos, FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, ID_Usuario FROM Eventos WHERE 1=1"
+            # ⭐ Usar INNER JOIN para obtener nombres en lugar de IDs
+            sql = """
+                SELECT e.ID_Eventos, e.FechaHora, s.Nombre_Sitio, e.Nombre_Actividad, 
+                       e.Cantidad, e.Camera, e.Descripcion, u.Nombre_Usuario
+                FROM Eventos e
+                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
+                LEFT JOIN Sitios s ON e.ID_Sitio = s.ID_Sitio
+                WHERE 1=1
+            """
             params = []
             
             if audit_user_var.get() and audit_user_var.get() != "Todos":
-                sql += " AND ID_Usuario = (SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s)"
+                sql += " AND u.Nombre_Usuario = %s"
                 params.append(audit_user_var.get())
             
             # ⭐ USAR HELPER para deconstruir formato "Nombre (ID)"
@@ -5358,53 +5371,38 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
                 
                 if site_name and site_id:
                     # Buscar por nombre (más preciso cuando tenemos ambos)
-                    sql += " AND ID_Sitio = (SELECT ID_Sitio FROM Sitios WHERE Nombre_Sitio = %s)"
+                    sql += " AND s.Nombre_Sitio = %s"
                     params.append(site_name)
                 elif site_id:
                     # Buscar solo por ID
-                    sql += " AND ID_Sitio = %s"
+                    sql += " AND e.ID_Sitio = %s"
                     params.append(site_id)
                 elif site_name:
                     # Buscar solo por nombre
-                    sql += " AND ID_Sitio = (SELECT ID_Sitio FROM Sitios WHERE Nombre_Sitio = %s)"
+                    sql += " AND s.Nombre_Sitio = %s"
                     params.append(site_name)
             
             if audit_fecha_var.get():
-                sql += " AND DATE(FechaHora) = %s"
+                sql += " AND DATE(e.FechaHora) = %s"
                 params.append(audit_fecha_var.get())
             
-            sql += " ORDER BY FechaHora DESC LIMIT 500"
+            sql += " ORDER BY e.FechaHora DESC LIMIT 500"
             
             cursor.execute(sql, params)
             rows = cursor.fetchall()
             
-            # Formatear datos
+            # Formatear datos - ahora los nombres ya vienen directamente del JOIN
             data = []
             for row in rows:
-                # Resolver nombres
-                sitio_nombre = ""
-                if row[2]:
-                    cursor.execute("SELECT Nombre_Sitio FROM Sitios WHERE ID_Sitio = %s", (row[2],))
-                    sitio_row = cursor.fetchone()
-                    if sitio_row:
-                        sitio_nombre = sitio_row[0]
-                
-                usuario_nombre = ""
-                if row[7]:
-                    cursor.execute("SELECT Nombre_Usuario FROM user WHERE ID_Usuario = %s", (row[7],))
-                    user_row = cursor.fetchone()
-                    if user_row:
-                        usuario_nombre = user_row[0]
-                
                 data.append([
-                    str(row[0]),  # ID
-                    str(row[1]) if row[1] else "",  #  
-                    sitio_nombre,  # Sitio
-                    str(row[3]) if row[3] else "",  # Actividad
+                    str(row[0]),  # ID_Eventos
+                    str(row[1]) if row[1] else "",  # FechaHora
+                    str(row[2]) if row[2] else "",  # Nombre_Sitio
+                    str(row[3]) if row[3] else "",  # Nombre_Actividad
                     str(row[4]) if row[4] else "",  # Cantidad
                     str(row[5]) if row[5] else "",  # Camera
                     str(row[6]) if row[6] else "",  # Descripcion
-                    usuario_nombre  # Usuario
+                    str(row[7]) if row[7] else ""   # Nombre_Usuario
                 ])
             
             audit_sheet.set_sheet_data(data if data else [["No se encontraron resultados"] + [""] * 7])
@@ -5945,7 +5943,7 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
     buttons_frame_rol.pack(fill="x", padx=10, pady=10)
 
     def cargar_operadores_rol():
-        """Carga operadores separados por su estado Active en sesion"""
+        """Carga operadores separados por su estado Statuses en sesiones activas"""
         try:
             conn = under_super.get_connection()
             cur = conn.cursor()
@@ -5954,12 +5952,14 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             listbox_sin_acceso.delete(0, tk.END)
             listbox_con_acceso.delete(0, tk.END)
             
-            # Operadores con Active = 1 (sin acceso a covers)
+            # Operadores con Active = 1 y Statuses IS NULL o != 2 (sin acceso a covers)
             cur.execute("""
                 SELECT DISTINCT s.ID_user 
                 FROM sesion s
                 INNER JOIN user u ON s.ID_user = u.Nombre_Usuario
-                WHERE s.Active = 1 AND u.Rol = 'Operador'
+                WHERE s.Active = 1 
+                  AND (s.Statuses IS NULL OR s.Statuses != 2) 
+                  AND u.Rol = 'Operador'
                 ORDER BY s.ID_user
             """)
             sin_acceso = cur.fetchall()
@@ -5967,12 +5967,14 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             for row in sin_acceso:
                 listbox_sin_acceso.insert(tk.END, row[0])
             
-            # Operadores con Active = 2 (con acceso a covers)
+            # Operadores con Active = 1 y Statuses = 2 (con acceso a covers)
             cur.execute("""
                 SELECT DISTINCT s.ID_user 
                 FROM sesion s
                 INNER JOIN user u ON s.ID_user = u.Nombre_Usuario
-                WHERE s.Active = 2 AND u.Rol = 'Operador'
+                WHERE s.Active = 1 
+                  AND s.Statuses = 2 
+                  AND u.Rol = 'Operador'
                 ORDER BY s.ID_user
             """)
             con_acceso = cur.fetchall()
@@ -5991,7 +5993,7 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             messagebox.showerror("Error", f"Error al cargar operadores:\n{e}", parent=top)
 
     def habilitar_acceso():
-        """Cambia Active de 1 a 2 para los operadores seleccionados (habilitar acceso a covers)"""
+        """Cambia Statuses a 2 para los operadores seleccionados (habilitar acceso a covers)"""
         seleccion = listbox_sin_acceso.curselection()
         if not seleccion:
             messagebox.showwarning("Selección", "Selecciona uno o más operadores para habilitar.", parent=top)
@@ -6011,7 +6013,7 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             for operador in operadores:
                 cur.execute("""
                     UPDATE sesion 
-                    SET Active = 2 
+                    SET Statuses = 2 
                     WHERE ID_user = %s AND Active = 1
                 """, (operador,))
             
@@ -6048,8 +6050,8 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             for operador in operadores:
                 cur.execute("""
                     UPDATE sesion 
-                    SET Active = 1 
-                    WHERE ID_user = %s AND Active = 2
+                    SET Statuses = NULL 
+                    WHERE ID_user = %s AND Active = 1 AND Statuses = 2
                 """, (operador,))
             
             conn.commit()
@@ -6203,12 +6205,12 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
 
     if UI is not None:
         usuario_combo_breaks = under_super.FilteredCombobox(row1_frame_breaks, textvariable=usuario_a_cubrir_var,
-                                                     values=users_list, width=40, state="readonly",
+                                                     values=users_list, width=40,
                                                      font=("Segoe UI", 11))
         usuario_combo_breaks.set("")  # Establecer vacío inicialmente
     else:
         usuario_combo_breaks = ttk.Combobox(row1_frame_breaks, textvariable=usuario_a_cubrir_var,
-                                           values=users_list, width=25, state="readonly")
+                                           values=users_list, width=25)
     usuario_combo_breaks.pack(side="left", padx=5)
 
     # Segunda fila: Cubierto por
@@ -6224,12 +6226,12 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
 
     if UI is not None:
         cover_by_combo_breaks = under_super.FilteredCombobox(row2_frame_breaks, textvariable=cubierto_por_var,
-                                              values=users_list, width=40, state="readonly",
+                                              values=users_list, width=40,
                                               font=("Segoe UI", 11))
         cover_by_combo_breaks.set("")  # Establecer vacío inicialmente
     else:
         cover_by_combo_breaks = ttk.Combobox(row2_frame_breaks, textvariable=cubierto_por_var,
-                                            values=users_list, width=25, state="readonly")
+                                            values=users_list, width=25)
     cover_by_combo_breaks.pack(side="left", padx=5)
 
     # Generar lista de horas en formato HH:00:00 (cada hora del día)
@@ -6705,7 +6707,13 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
     
     # Variable y selector de tabla
     admin_table_var = tk.StringVar()
-    admin_tables_list = ["Sitios", "user", "Actividades", "gestion_breaks_programados", "Covers_realizados", "Covers_programados", "Sesiones", "Estaciones", "Specials", "eventos"]
+    admin_tables_list = ["Sitios", "user", "Actividades", "gestion_breaks_programados", "Covers_realizados", "Covers_programados", "sesion", "Estaciones", "Specials", "eventos"]
+    
+    # Variables de filtro de fechas
+    admin_fecha_desde_var = tk.StringVar()
+    admin_fecha_hasta_var = tk.StringVar()
+    admin_columna_fecha_var = tk.StringVar()
+    admin_tipo_evento_var = tk.StringVar()  # Nuevo: filtro de tipo de evento
     
     if UI is not None:
         UI.CTkLabel(admin_controls, text="Tabla:", text_color="#e0e0e0").pack(side="left", padx=5)
@@ -6714,6 +6722,46 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             font=("Segoe UI", 10), width=200
         )
         admin_table_cb.pack(side="left", padx=5)
+        
+        # Combobox para tipo de evento (solo visible para tabla 'eventos')
+        admin_tipo_evento_label = UI.CTkLabel(admin_controls, text="Tipo Evento:", text_color="#e0e0e0")
+        admin_tipo_evento_cb = UI.CTkComboBox(
+            admin_controls, variable=admin_tipo_evento_var,
+            values=["Todos", "Start Shift", "End of Shift"],
+            font=("Segoe UI", 10), width=150
+        )
+        admin_tipo_evento_var.set("Todos")
+        
+        UI.CTkLabel(admin_controls, text="Columna Fecha:", text_color="#e0e0e0").pack(side="left", padx=(15, 5))
+        admin_columna_fecha_cb = UI.CTkComboBox(
+            admin_controls, variable=admin_columna_fecha_var, values=["Auto"],
+            font=("Segoe UI", 10), width=150
+        )
+        admin_columna_fecha_cb.pack(side="left", padx=5)
+        
+        UI.CTkLabel(admin_controls, text="Desde:", text_color="#e0e0e0").pack(side="left", padx=(15, 5))
+        admin_fecha_desde_frame = tk.Frame(admin_controls, bg="#23272a")
+        admin_fecha_desde_frame.pack(side="left", padx=5)
+        if tkcalendar:
+            admin_fecha_desde_entry = tkcalendar.DateEntry(
+                admin_fecha_desde_frame, textvariable=admin_fecha_desde_var,
+                date_pattern='yyyy-mm-dd', width=12
+            )
+            admin_fecha_desde_entry.pack()
+        else:
+            tk.Entry(admin_fecha_desde_frame, textvariable=admin_fecha_desde_var, width=12).pack()
+        
+        UI.CTkLabel(admin_controls, text="Hasta:", text_color="#e0e0e0").pack(side="left", padx=(15, 5))
+        admin_fecha_hasta_frame = tk.Frame(admin_controls, bg="#23272a")
+        admin_fecha_hasta_frame.pack(side="left", padx=5)
+        if tkcalendar:
+            admin_fecha_hasta_entry = tkcalendar.DateEntry(
+                admin_fecha_hasta_frame, textvariable=admin_fecha_hasta_var,
+                date_pattern='yyyy-mm-dd', width=12
+            )
+            admin_fecha_hasta_entry.pack()
+        else:
+            tk.Entry(admin_fecha_hasta_frame, textvariable=admin_fecha_hasta_var, width=12).pack()
     else:
         tk.Label(admin_controls, text="Tabla:", bg="#23272a", fg="#e0e0e0").pack(side="left", padx=5)
         admin_table_cb = under_super.FilteredCombobox(
@@ -6723,6 +6771,46 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             bordercolor='#4a90e2', arrowcolor='#ffffff'
         )
         admin_table_cb.pack(side="left", padx=5)
+        
+        # Combobox para tipo de evento (solo visible para tabla 'eventos')
+        admin_tipo_evento_label = tk.Label(admin_controls, text="Tipo Evento:", bg="#23272a", fg="#e0e0e0")
+        admin_tipo_evento_cb = under_super.FilteredCombobox(
+            admin_controls, textvariable=admin_tipo_evento_var,
+            values=["Todos", "Start Shift", "End of Shift"],
+            font=("Segoe UI", 10), width=20,
+            background='#2b2b2b', foreground='#ffffff',
+            bordercolor='#4a90e2', arrowcolor='#ffffff'
+        )
+        admin_tipo_evento_var.set("Todos")
+        
+        tk.Label(admin_controls, text="Columna Fecha:", bg="#23272a", fg="#e0e0e0").pack(side="left", padx=(15, 5))
+        admin_columna_fecha_cb = under_super.FilteredCombobox(
+            admin_controls, textvariable=admin_columna_fecha_var, values=["Auto"],
+            font=("Segoe UI", 10), width=20,
+            background='#2b2b2b', foreground='#ffffff',
+            bordercolor='#4a90e2', arrowcolor='#ffffff'
+        )
+        admin_columna_fecha_cb.pack(side="left", padx=5)
+        
+        tk.Label(admin_controls, text="Desde:", bg="#23272a", fg="#e0e0e0").pack(side="left", padx=(15, 5))
+        if tkcalendar:
+            admin_fecha_desde_entry = tkcalendar.DateEntry(
+                admin_controls, textvariable=admin_fecha_desde_var,
+                date_pattern='yyyy-mm-dd', width=12
+            )
+            admin_fecha_desde_entry.pack(side="left", padx=5)
+        else:
+            tk.Entry(admin_controls, textvariable=admin_fecha_desde_var, width=12).pack(side="left", padx=5)
+        
+        tk.Label(admin_controls, text="Hasta:", bg="#23272a", fg="#e0e0e0").pack(side="left", padx=(15, 5))
+        if tkcalendar:
+            admin_fecha_hasta_entry = tkcalendar.DateEntry(
+                admin_controls, textvariable=admin_fecha_hasta_var,
+                date_pattern='yyyy-mm-dd', width=12
+            )
+            admin_fecha_hasta_entry.pack(side="left", padx=5)
+        else:
+            tk.Entry(admin_controls, textvariable=admin_fecha_hasta_var, width=12).pack(side="left", padx=5)
     
     # Metadata de tablas cargadas
     admin_metadata = {
@@ -6755,21 +6843,250 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
         return col_names[0] if col_names else None
     
     def load_admin_table():
-        """Carga la tabla seleccionada en el tksheet de admin"""
+        """Carga la tabla seleccionada en el tksheet de admin con filtros de fecha"""
         tabla = admin_table_var.get()
         if not tabla:
             messagebox.showwarning("Atención", "Seleccione una tabla para cargar.", parent=top)
             return
         
+        # Mostrar/ocultar combobox de tipo de evento según la tabla
+        if tabla == "eventos":
+            admin_tipo_evento_label.pack(side="left", padx=(15, 5))
+            admin_tipo_evento_cb.pack(side="left", padx=5)
+        else:
+            admin_tipo_evento_label.pack_forget()
+            admin_tipo_evento_cb.pack_forget()
+        
         try:
             conn = under_super.get_connection()
             cursor = conn.cursor()
             
-            query = f"SELECT * FROM {tabla}"
-            cursor.execute(query)
-            rows = cursor.fetchall()
+            # ⭐ Para tabla eventos, usar JOIN para mostrar nombres de usuario
+            if tabla == "eventos":
+                # Primero obtener columnas ORIGINALES de la tabla (sin JOIN) para edición
+                cursor.execute(f"SELECT * FROM `{tabla}` LIMIT 0")
+                col_names_original = [desc[0] for desc in cursor.description]
+                
+                # Obtener columnas con JOIN para MOSTRAR
+                cursor.execute("""
+                    SELECT e.ID_Eventos, e.FechaHora, e.ID_Sitio, e.Nombre_Actividad, 
+                           e.Cantidad, e.Camera, e.Descripcion, e.ID_Usuario, u.Nombre_Usuario
+                    FROM Eventos e
+                    INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
+                    LIMIT 0
+                """)
+                col_names = [desc[0] for desc in cursor.description]
+                
+                # Detectar columnas de fecha
+                fecha_cols = [col for col in col_names if any(keyword in col.lower() for keyword in 
+                             ['fecha', 'date', 'log_in', 'log_out', 'hora', 'time', 'timestamp', 'created', 'updated'])]
+                
+                # Actualizar combobox de columnas de fecha
+                if fecha_cols:
+                    fecha_options = ["Auto"] + fecha_cols
+                    if UI is not None:
+                        admin_columna_fecha_cb.configure(values=fecha_options)
+                    else:
+                        admin_columna_fecha_cb['values'] = fecha_options
+                
+                # Construir query con JOIN (incluir ID_Usuario para edición)
+                query = """
+                    SELECT e.ID_Eventos, e.FechaHora, e.ID_Sitio, e.Nombre_Actividad, 
+                           e.Cantidad, e.Camera, e.Descripcion, e.ID_Usuario, u.Nombre_Usuario
+                    FROM Eventos e
+                    INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
+                """
+                where_clauses = []
+                params = []
+                
+                fecha_desde = admin_fecha_desde_var.get()
+                fecha_hasta = admin_fecha_hasta_var.get()
+                columna_fecha = admin_columna_fecha_var.get()
+                
+                if (fecha_desde or fecha_hasta) and fecha_cols:
+                    if not columna_fecha or columna_fecha == "Auto":
+                        columna_fecha = fecha_cols[0]
+                    
+                    if columna_fecha in col_names:
+                        if fecha_desde:
+                            where_clauses.append(f"DATE(e.{columna_fecha}) >= %s")
+                            params.append(fecha_desde)
+                        if fecha_hasta:
+                            where_clauses.append(f"DATE(e.{columna_fecha}) <= %s")
+                            params.append(fecha_hasta)
+                
+                # Filtro de tipo de evento
+                tipo_evento = admin_tipo_evento_var.get()
+                if tipo_evento and tipo_evento != "Todos":
+                    where_clauses.append("e.Nombre_Actividad = %s")
+                    params.append(tipo_evento)
+                
+                if where_clauses:
+                    query += " WHERE " + " AND ".join(where_clauses)
+                
+                query += " ORDER BY e.ID_Eventos DESC LIMIT 1000"
+                
+            elif tabla == "gestion_breaks_programados":
+                # Para gestion_breaks_programados, obtener columnas originales
+                cursor.execute(f"SELECT * FROM `{tabla}` LIMIT 0")
+                col_names_original = [desc[0] for desc in cursor.description]
+                
+                # Obtener columnas con JOINs para MOSTRAR nombres de usuario (sin IDs)
+                cursor.execute("""
+                    SELECT gbp.ID_cover, 
+                           uc.Nombre_Usuario as User_covering, 
+                           uv.Nombre_Usuario as User_covered,
+                           gbp.Fecha_hora_cover, gbp.is_Active,
+                           us.Nombre_Usuario as Supervisor,
+                           gbp.Fecha_creacion
+                    FROM gestion_breaks_programados gbp
+                    LEFT JOIN user uc ON gbp.User_covering = uc.ID_Usuario
+                    LEFT JOIN user uv ON gbp.User_covered = uv.ID_Usuario
+                    LEFT JOIN user us ON gbp.Supervisor = us.ID_Usuario
+                    LIMIT 0
+                """)
+                col_names = [desc[0] for desc in cursor.description]
+                
+                # Detectar columnas de fecha
+                fecha_cols = [col for col in col_names if any(keyword in col.lower() for keyword in 
+                             ['fecha', 'date', 'hora', 'time', 'timestamp', 'created', 'updated'])]
+                
+                # Actualizar combobox de columnas de fecha
+                if fecha_cols:
+                    fecha_options = ["Auto"] + fecha_cols
+                    if UI is not None:
+                        admin_columna_fecha_cb.configure(values=fecha_options)
+                    else:
+                        admin_columna_fecha_cb['values'] = fecha_options
+                
+                # Query con JOINs para mostrar nombres (sin columnas de IDs)
+                query = """
+                    SELECT gbp.ID_cover, 
+                           uc.Nombre_Usuario as User_covering, 
+                           uv.Nombre_Usuario as User_covered,
+                           gbp.Fecha_hora_cover, gbp.is_Active,
+                           us.Nombre_Usuario as Supervisor,
+                           gbp.Fecha_creacion
+                    FROM gestion_breaks_programados gbp
+                    LEFT JOIN user uc ON gbp.User_covering = uc.ID_Usuario
+                    LEFT JOIN user uv ON gbp.User_covered = uv.ID_Usuario
+                    LEFT JOIN user us ON gbp.Supervisor = us.ID_Usuario
+                """
+                where_clauses = []
+                params = []
+                
+                fecha_desde = admin_fecha_desde_var.get()
+                fecha_hasta = admin_fecha_hasta_var.get()
+                columna_fecha = admin_columna_fecha_var.get()
+                
+                if (fecha_desde or fecha_hasta) and fecha_cols:
+                    if not columna_fecha or columna_fecha == "Auto":
+                        columna_fecha = fecha_cols[0]
+                    
+                    if columna_fecha in col_names:
+                        if fecha_desde:
+                            where_clauses.append(f"DATE(gbp.{columna_fecha}) >= %s")
+                            params.append(fecha_desde)
+                        if fecha_hasta:
+                            where_clauses.append(f"DATE(gbp.{columna_fecha}) <= %s")
+                            params.append(fecha_hasta)
+                
+                if where_clauses:
+                    query += " WHERE " + " AND ".join(where_clauses)
+                
+                query += " ORDER BY gbp.ID_cover DESC LIMIT 1000"
+                
+            elif tabla == "Covers_realizados":
+                # Para Covers_realizados, obtener columnas originales
+                cursor.execute(f"SELECT * FROM `{tabla}` LIMIT 0")
+                col_names_original = [desc[0] for desc in cursor.description]
+                col_names = col_names_original  # Por ahora sin JOIN, solo columnas originales
+                
+                # Detectar columnas de fecha
+                fecha_cols = [col for col in col_names if any(keyword in col.lower() for keyword in 
+                             ['fecha', 'date', 'log_in', 'log_out', 'hora', 'time', 'timestamp', 'created', 'updated', 'cover_in', 'cover_out'])]
+                
+                # Actualizar combobox de columnas de fecha
+                if fecha_cols:
+                    fecha_options = ["Auto"] + fecha_cols
+                    if UI is not None:
+                        admin_columna_fecha_cb.configure(values=fecha_options)
+                    else:
+                        admin_columna_fecha_cb['values'] = fecha_options
+                
+                # Query normal para Covers_realizados
+                query = f"SELECT * FROM `{tabla}`"
+                where_clauses = []
+                params = []
+                
+                fecha_desde = admin_fecha_desde_var.get()
+                fecha_hasta = admin_fecha_hasta_var.get()
+                columna_fecha = admin_columna_fecha_var.get()
+                
+                if (fecha_desde or fecha_hasta) and fecha_cols:
+                    if not columna_fecha or columna_fecha == "Auto":
+                        columna_fecha = fecha_cols[0]
+                    
+                    if columna_fecha in col_names:
+                        if fecha_desde:
+                            where_clauses.append(f"DATE({columna_fecha}) >= %s")
+                            params.append(fecha_desde)
+                        if fecha_hasta:
+                            where_clauses.append(f"DATE({columna_fecha}) <= %s")
+                            params.append(fecha_hasta)
+                
+                if where_clauses:
+                    query += " WHERE " + " AND ".join(where_clauses)
+                
+                query += f" ORDER BY {col_names[0]} DESC LIMIT 1000"
+                
+            else:
+                # Para otras tablas, query normal
+                cursor.execute(f"SELECT * FROM {tabla} LIMIT 0")
+                col_names = [desc[0] for desc in cursor.description]
+                col_names_original = col_names  # Para otras tablas son las mismas
+                
+                # Detectar columnas de fecha automáticamente
+                fecha_cols = [col for col in col_names if any(keyword in col.lower() for keyword in 
+                             ['fecha', 'date', 'log_in', 'log_out', 'hora', 'time', 'timestamp', 'created', 'updated'])]
+                
+                # Actualizar combobox de columnas de fecha
+                if fecha_cols:
+                    fecha_options = ["Auto"] + fecha_cols
+                    if UI is not None:
+                        admin_columna_fecha_cb.configure(values=fecha_options)
+                    else:
+                        admin_columna_fecha_cb['values'] = fecha_options
+                
+                # Construir query con filtros de fecha
+                query = f"SELECT * FROM {tabla}"
+                where_clauses = []
+                params = []
+                
+                fecha_desde = admin_fecha_desde_var.get()
+                fecha_hasta = admin_fecha_hasta_var.get()
+                columna_fecha = admin_columna_fecha_var.get()
+                
+                if (fecha_desde or fecha_hasta) and fecha_cols:
+                    # Si columna_fecha es "Auto" o vacío, usar la primera columna de fecha detectada
+                    if not columna_fecha or columna_fecha == "Auto":
+                        columna_fecha = fecha_cols[0]
+                    
+                    if columna_fecha in col_names:
+                        if fecha_desde:
+                            where_clauses.append(f"DATE({columna_fecha}) >= %s")
+                            params.append(fecha_desde)
+                        if fecha_hasta:
+                            where_clauses.append(f"DATE({columna_fecha}) <= %s")
+                            params.append(fecha_hasta)
+                
+                if where_clauses:
+                    query += " WHERE " + " AND ".join(where_clauses)
+                
+                query += f" ORDER BY {col_names[0]} DESC LIMIT 1000"  # Limitar a 1000 registros
             
-            col_names = [desc[0] for desc in cursor.description]
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
             
             # Formatear datos para tksheet
             data = []
@@ -6791,8 +7108,10 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             # Actualizar metadata
             admin_metadata['current_table'] = tabla
             admin_metadata['col_names'] = col_names
-            admin_metadata['pk'] = guess_pk(col_names)
+            admin_metadata['col_names_original'] = col_names_original  # Columnas para edición
+            admin_metadata['pk'] = guess_pk(col_names_original)  # PK de tabla original
             admin_metadata['rows'] = rows
+            admin_metadata['fecha_cols'] = fecha_cols
             
             # Configurar tksheet
             admin_sheet.set_sheet_data(data if data else [["No hay datos"] + [""] * (len(col_names)-1)])
@@ -6807,7 +7126,10 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             cursor.close()
             conn.close()
             
-            print(f"[INFO] Tabla {tabla} cargada: {len(data)} registros")
+            filtro_msg = ""
+            if where_clauses:
+                filtro_msg = f" (filtrado: {len(data)} registros)"
+            print(f"[INFO] Tabla {tabla} cargada: {len(data)} registros{filtro_msg}")
             
         except Exception as e:
             print(f"[ERROR] load_admin_table: {e}")
@@ -6887,13 +7209,16 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
         if isinstance(selected, set):
             selected = list(selected)
         
+        # Usar columnas ORIGINALES para editar (sin JOIN)
+        col_names_display = admin_metadata.get('col_names', [])
+        col_names_original = admin_metadata.get('col_names_original', col_names_display)
         pk_name = admin_metadata.get('pk')
-        col_names = admin_metadata.get('col_names', [])
-        if not pk_name or pk_name not in col_names:
+        
+        if not pk_name or pk_name not in col_names_original:
             messagebox.showwarning("No PK", "No se pudo determinar la columna primaria.", parent=top)
             return
         
-        pk_idx = col_names.index(pk_name)
+        pk_idx = col_names_display.index(pk_name)
         row_idx = selected[0]
         row_data = admin_sheet.get_row_data(row_idx)
         
@@ -6906,6 +7231,25 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             return
         pk_value = row_data[pk_idx]
         
+        # Para eventos, Covers_realizados y gestion_breaks_programados, necesitamos recargar el registro con las columnas originales
+        if tabla in ["eventos", "Covers_realizados", "gestion_breaks_programados"]:
+            try:
+                conn = under_super.get_connection()
+                cur = conn.cursor()
+                cur.execute(f"SELECT * FROM `{tabla}` WHERE `{pk_name}` = %s", (pk_value,))
+                original_row = cur.fetchone()
+                cur.close()
+                conn.close()
+                if original_row:
+                    row_data = [str(v) if v is not None else "" for v in original_row]
+                else:
+                    messagebox.showerror("Error", "No se pudo cargar el registro.", parent=top)
+                    return
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al cargar registro:\n{e}", parent=top)
+                traceback.print_exc()
+                return
+        
         # Ventana de edición con CustomTkinter
         if UI is not None:
             edit_win = UI.CTkToplevel(top)
@@ -6915,7 +7259,7 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             edit_win.configure(bg="#2c2f33")
         
         edit_win.title(f"Editar registro de {tabla}")
-        win_height = min(130 + 60 * len(col_names), 850)
+        win_height = min(130 + 60 * len(col_names_original), 850)
         edit_win.geometry(f"550x{win_height}")
         edit_win.resizable(False, False)
         
@@ -6950,40 +7294,78 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             canvas.create_window((0, 0), window=fields_frame, anchor="nw")
             fields_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         
+        # Para gestion_breaks_programados, cargar lista de usuarios y crear mapeo ID->Nombre
+        users_list = []
+        id_to_name = {}
+        if tabla == "gestion_breaks_programados":
+            try:
+                conn_users = under_super.get_connection()
+                cur_users = conn_users.cursor()
+                cur_users.execute("SELECT ID_Usuario, Nombre_Usuario FROM user ORDER BY Nombre_Usuario")
+                for id_user, nombre in cur_users.fetchall():
+                    users_list.append(nombre)
+                    id_to_name[str(id_user)] = nombre  # Mapeo ID -> Nombre
+                cur_users.close()
+                conn_users.close()
+            except Exception as e:
+                print(f"[WARN] No se pudieron cargar usuarios: {e}")
+        
         entries = {}
-        for i, cname in enumerate(col_names):
+        for i, cname in enumerate(col_names_original):
             if UI is not None:
                 UI.CTkLabel(fields_frame, text=f"{cname}:", text_color="#a3c9f9", 
-                           font=("Segoe UI", 10, "bold")).grid(row=i, column=0, sticky="w", padx=10, pady=8)
-                e = UI.CTkEntry(fields_frame, width=280, font=("Segoe UI", 10))
-                e.grid(row=i, column=1, padx=10, pady=8)
+                           font=("Segoe UI", 12, "bold")).grid(row=i, column=0, sticky="w", padx=10, pady=8)
             else:
                 tk.Label(fields_frame, text=f"{cname}:", bg="#2c2f33", fg="#a3c9f9", 
-                        font=("Segoe UI", 10, "bold")).grid(row=i, column=0, sticky="w", padx=10, pady=8)
-                e = tk.Entry(fields_frame, width=38, font=("Segoe UI", 10))
-                e.grid(row=i, column=1, padx=10, pady=8)
+                        font=("Segoe UI", 12, "bold")).grid(row=i, column=0, sticky="w", padx=10, pady=8)
             
-            if i < len(row_data):
-                e.insert(0, row_data[i])
-            
-            # PK de solo lectura
-            if cname == pk_name:
+            # Para gestion_breaks_programados, usar comboboxes para campos de usuario
+            if tabla == "gestion_breaks_programados" and cname in ["User_covering", "User_covered", "Supervisor"]:
+                var = tk.StringVar()
+                cb = ttk.Combobox(fields_frame, textvariable=var, values=users_list, 
+                                 width=35, font=("Segoe UI", 11), state="readonly")
+                cb.grid(row=i, column=1, padx=10, pady=8, sticky="ew")
+                # Convertir ID a Nombre para mostrar en el combobox
+                if i < len(row_data):
+                    id_value = str(row_data[i])
+                    nombre_usuario = id_to_name.get(id_value, id_value)  # Si no existe, mostrar el ID
+                    var.set(nombre_usuario)
+                entries[cname] = var  # Guardar la variable, no el combobox
+            else:
+                # Campo normal (Entry)
                 if UI is not None:
-                    e.configure(state="disabled")
+                    e = UI.CTkEntry(fields_frame, width=280, font=("Segoe UI", 12))
+                    e.grid(row=i, column=1, padx=10, pady=8)
                 else:
-                    e.config(state="readonly")
-            
-            entries[cname] = e
+                    e = tk.Entry(fields_frame, width=38, font=("Segoe UI", 12))
+                    e.grid(row=i, column=1, padx=10, pady=8)
+                
+                if i < len(row_data):
+                    e.insert(0, row_data[i])
+                
+                # PK de solo lectura
+                if cname == pk_name:
+                    if UI is not None:
+                        e.configure(state="disabled")
+                    else:
+                        e.config(state="readonly")
+                
+                entries[cname] = e
         
         def save_changes():
             new_values = {}
-            for c in col_names:
+            for c in col_names_original:
                 try:
                     # Para campos deshabilitados, usar el valor original
                     if c == pk_name:
                         new_values[c] = pk_value
                     else:
-                        new_values[c] = entries[c].get()
+                        # Obtener valor del Entry o StringVar (combobox)
+                        widget = entries[c]
+                        if isinstance(widget, tk.StringVar):
+                            new_values[c] = widget.get()
+                        else:
+                            new_values[c] = widget.get()
                 except:
                     new_values[c] = ""
             
@@ -6991,15 +7373,42 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
                 conn = under_super.get_connection()
                 cur = conn.cursor()
                 
-                set_clause = ", ".join(f"`{c}` = %s" for c in col_names if c != pk_name)
+                # Para gestion_breaks_programados, convertir nombres de usuario a IDs
+                if tabla == "gestion_breaks_programados":
+                    for field in ["User_covering", "User_covered", "Supervisor"]:
+                        if field in new_values and new_values[field]:
+                            username = new_values[field]
+                            cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
+                            result = cur.fetchone()
+                            if result:
+                                new_values[field] = result[0]  # Convertir a ID
+                            else:
+                                messagebox.showerror("Error", 
+                                    f"Usuario '{username}' no encontrado en la base de datos.", 
+                                    parent=edit_win)
+                                cur.close()
+                                conn.close()
+                                return
+                
+                set_clause = ", ".join(f"`{c}` = %s" for c in col_names_original if c != pk_name)
                 sql = f"UPDATE `{tabla}` SET {set_clause} WHERE `{pk_name}` = %s"
                 
                 params = []
-                for c in col_names:
+                for c in col_names_original:
                     if c != pk_name:
                         value = new_values[c]
-                        if c == "User_Logged" and (value is None or value == ""):
-                            value = None
+                        # Convertir cadenas vacías a NULL para campos específicos
+                        if value is None or value == "":
+                            # Campos que deben ser NULL cuando están vacíos:
+                            # - IDs foráneos: id_, _id
+                            # - Fechas/tiempos: fecha, date, time, hora, timestamp, _at, created, updated, modified, deleted
+                            # - Campos de entrada/salida: _in, _out, cover_in, cover_out, log_
+                            # - Campos especiales: user_logged
+                            null_keywords = ['id_', '_id', 'user_logged', 'fecha', 'date', 'time', 
+                                           'hora', 'timestamp', '_in', '_out', 'cover_', '_at',
+                                           'created', 'updated', 'modified', 'deleted', 'log_']
+                            if any(keyword in c.lower() for keyword in null_keywords):
+                                value = None
                         params.append(value)
                 params.append(pk_value)
                 
@@ -7011,7 +7420,33 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
                 load_admin_table()
                 edit_win.destroy()
             except Exception as e:
-                messagebox.showerror("Error", f"No se pudo actualizar:\n{e}", parent=edit_win)
+                error_msg = str(e)
+                # Mensajes de error más claros para el usuario
+                if "foreign key constraint fails" in error_msg.lower():
+                    if "Covered_by" in error_msg or "covered" in error_msg:
+                        messagebox.showerror("Error de Validación", 
+                            "El usuario ingresado en 'Covered_by' no existe en la tabla de usuarios.\n\n"
+                            "Verifica que el nombre de usuario sea correcto y exista en el sistema.", 
+                            parent=edit_win)
+                    elif "ID_Usuario" in error_msg or "user" in error_msg:
+                        messagebox.showerror("Error de Validación",
+                            "El ID de usuario ingresado no existe en la tabla de usuarios.\n\n"
+                            "Verifica que el ID sea correcto.",
+                            parent=edit_win)
+                    else:
+                        messagebox.showerror("Error de Validación",
+                            "El valor ingresado no cumple con las restricciones de la base de datos.\n\n"
+                            "Verifica que todos los valores de referencia (IDs, nombres) existan en sus tablas correspondientes.",
+                            parent=edit_win)
+                elif "Incorrect datetime value" in error_msg:
+                    messagebox.showerror("Error de Formato",
+                        "Formato de fecha/hora incorrecto.\n\n"
+                        "Use el formato: YYYY-MM-DD HH:MM:SS\n"
+                        "Ejemplo: 2025-12-04 14:30:00\n\n"
+                        "O deje el campo vacío si no tiene valor.",
+                        parent=edit_win)
+                else:
+                    messagebox.showerror("Error", f"No se pudo actualizar:\n{error_msg}", parent=edit_win)
                 traceback.print_exc()
         
         # Botón guardar (agregar al frame que ya fue creado)
@@ -7098,13 +7533,13 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
         for i, cname in enumerate(visible_cols):
             if UI is not None:
                 UI.CTkLabel(fields_frame, text=f"{cname}:", text_color="#a3c9f9", 
-                           font=("Segoe UI", 10, "bold")).grid(row=i, column=0, sticky="w", padx=10, pady=8)
-                e = UI.CTkEntry(fields_frame, width=280, font=("Segoe UI", 10))
+                           font=("Segoe UI", 12, "bold")).grid(row=i, column=0, sticky="w", padx=10, pady=8)
+                e = UI.CTkEntry(fields_frame, width=280, font=("Segoe UI", 12))
                 e.grid(row=i, column=1, padx=10, pady=8)
             else:
                 tk.Label(fields_frame, text=f"{cname}:", bg="#2c2f33", fg="#a3c9f9", 
-                        font=("Segoe UI", 10, "bold")).grid(row=i, column=0, sticky="w", padx=10, pady=8)
-                e = tk.Entry(fields_frame, width=38, font=("Segoe UI", 10))
+                        font=("Segoe UI", 12, "bold")).grid(row=i, column=0, sticky="w", padx=10, pady=8)
+                e = tk.Entry(fields_frame, width=38, font=("Segoe UI", 12))
                 e.grid(row=i, column=1, padx=10, pady=8)
             
             entries[cname] = e
@@ -7790,7 +8225,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         top.configure(bg="#1e1e1e")
     
     top.title(f"📊 Eventos - {username}")
-    top.geometry("1200x800")  # Ancho reducido al eliminar columna "Out at"
+    top.geometry("1300x800")  # Ancho reducido al eliminar columna "Out at"
     top.resizable(True, True)
 
     # ⭐ VARIABLE DE MODO: 'daily', 'specials' o 'covers'
@@ -7953,7 +8388,8 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 id_usuario = user_row[0]
                 print(f"[DEBUG] ID_Usuario obtenido: {id_usuario} para username: {username}")
                 
-                # Buscar último cover activo donde user_covered = username
+                # Buscar cover más próximo (futuro o más reciente pasado)
+                # Prioridad: covers futuros ordenados por cercanía, luego el más reciente pasado
                 query = """
                     SELECT 
                         gbp.Fecha_hora_cover,
@@ -7965,7 +8401,12 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     INNER JOIN user u_covering ON gbp.User_covering = u_covering.ID_Usuario
                     WHERE gbp.User_covered = %s 
                     AND gbp.is_Active = 1
-                    ORDER BY gbp.Fecha_hora_cover DESC
+                    ORDER BY 
+                        CASE 
+                            WHEN gbp.Fecha_hora_cover >= NOW() THEN 0
+                            ELSE 1
+                        END,
+                        ABS(TIMESTAMPDIFF(MINUTE, gbp.Fecha_hora_cover, NOW())) ASC
                     LIMIT 1
                 """
                 
@@ -8021,7 +8462,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         
         # ⭐ Función para obtener si el usuario debe cubrir a alguien
         def get_covering_assignment():
-            """Obtiene si el usuario debe cubrir a alguien desde gestion_breaks_programados"""
+            """Obtiene TODOS los covers que el usuario debe realizar (activos y futuros)"""
             try:
                 conn = under_super.get_connection()
                 cur = conn.cursor()
@@ -8036,10 +8477,10 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     return None
                 
                 id_usuario = user_row[0]
-                print(f"[DEBUG] Buscando asignaciones de cover para ID_Usuario: {id_usuario} (covering)")
+                print(f"[DEBUG] Buscando TODOS los covers asignados para ID_Usuario: {id_usuario} (covering)")
                 
-                # Buscar próximo cover donde user_covering = username (este usuario debe cubrir a alguien)
-                # Busca el más reciente activo sin filtro de fecha para mostrar el último programado
+                # Buscar TODOS los covers activos donde user_covering = username
+                # Ordenados por hora (los más próximos primero)
                 query = """
                     SELECT 
                         gbp.Fecha_hora_cover,
@@ -8051,31 +8492,34 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     INNER JOIN user u_covered ON gbp.User_covered = u_covered.ID_Usuario
                     WHERE gbp.User_covering = %s 
                     AND gbp.is_Active = 1
-                    ORDER BY gbp.Fecha_hora_cover DESC
-                    LIMIT 1
+                    ORDER BY gbp.Fecha_hora_cover ASC
                 """
                 
                 print(f"[DEBUG] Ejecutando query covering con id_usuario={id_usuario}")
                 cur.execute(query, (id_usuario,))
-                result = cur.fetchone()
+                results = cur.fetchall()
                 
-                print(f"[DEBUG] Resultado de query covering: {result}")
+                print(f"[DEBUG] Resultados de query covering: {len(results)} covers encontrados")
                 
                 cur.close()
                 conn.close()
                 
-                if result:
-                    fecha_hora_cover, covered_name, user_covered_id, user_covering_id, is_active = result
-                    print(f"[DEBUG] Cover assignment encontrado: hora={fecha_hora_cover}, cubriendo a={covered_name}")
-                    # Formatear hora como HH:MM
-                    hora_str = fecha_hora_cover.strftime("%H:%M") if fecha_hora_cover else ""
-                    return {
-                        'hora': hora_str,
-                        'covered': covered_name,
-                        'covering': username
-                    }
+                if results:
+                    # Formatear todos los covers encontrados
+                    covers_list = []
+                    for row in results:
+                        fecha_hora_cover, covered_name, user_covered_id, user_covering_id, is_active = row
+                        hora_str = fecha_hora_cover.strftime("%H:%M") if fecha_hora_cover else ""
+                        covers_list.append({
+                            'hora': hora_str,
+                            'covered': covered_name,
+                            'covering': username
+                        })
+                        print(f"[DEBUG] Cover #{len(covers_list)}: hora={hora_str}, cubriendo a={covered_name}")
+                    
+                    return covers_list if len(covers_list) > 0 else None
                 
-                print(f"[DEBUG] No se encontró asignación de cover para id_usuario={id_usuario} como covering")
+                print(f"[DEBUG] No se encontraron asignaciones de cover para id_usuario={id_usuario} como covering")
                 return None
                 
             except Exception as e:
@@ -8084,18 +8528,50 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 return None
         
         def update_covering_label():
-            """Actualiza el texto del label con la información de a quién debe cubrir el usuario"""
+            """Actualiza el texto del label con TODOS los covers que el usuario debe realizar (formato multi-línea)"""
             try:
-                covering_info = get_covering_assignment()
-                if covering_info:
-                    texto = f"👤 Cubres a: {covering_info['covered']} | Hora: {covering_info['hora']}"
+                covering_list = get_covering_assignment()
+                print(f"[DEBUG] update_covering_label - covering_list: {covering_list}")
+                
+                if covering_list and len(covering_list) > 0:
+                    # Construir texto con formato de 2 columnas por línea
+                    if len(covering_list) == 1:
+                        # Un solo cover
+                        cover = covering_list[0]
+                        texto = f"👤 Cubres a: {cover['covered']} ({cover['hora']})"
+                    else:
+                        # Múltiples covers - 2 por línea, saltos de línea para el resto
+                        lines = []
+                        for i in range(0, len(covering_list), 2):
+                            # Tomar 2 covers por línea
+                            pair = covering_list[i:i+2]
+                            if len(pair) == 2:
+                                line_text = f"{pair[0]['covered']} ({pair[0]['hora']})  •  {pair[1]['covered']} ({pair[1]['hora']})"
+                            else:
+                                line_text = f"{pair[0]['covered']} ({pair[0]['hora']})"
+                            lines.append(line_text)
+                        
+                        # Primera línea con el encabezado
+                        texto = f"👤 Cubres a: {lines[0]}"
+                        # Agregar líneas adicionales con indentación
+                        if len(lines) > 1:
+                            for line in lines[1:]:
+                                texto += f"\n                    {line}"
+                    
                     covering_label.configure(text=texto)
-                    covering_label.pack(side="left", padx=(0, 20), pady=15)  # Mostrar el label
+                    # Asegurar que el label esté visible
+                    if not covering_label.winfo_ismapped():
+                        covering_label.pack(side="left", padx=(0, 20), pady=15)
+                    print(f"[DEBUG] Label actualizado con {len(covering_list)} cover(s) en formato multi-línea")
                 else:
-                    covering_label.pack_forget()  # Ocultar el label si no hay asignación
+                    print(f"[DEBUG] No hay asignaciones de cover, ocultando label")
+                    if covering_label.winfo_ismapped():
+                        covering_label.pack_forget()
             except Exception as e:
                 print(f"[ERROR] update_covering_label: {e}")
-                covering_label.pack_forget()
+                traceback.print_exc()
+                if covering_label.winfo_ismapped():
+                    covering_label.pack_forget()
         
         # ⭐ Frame contenedor para los dos labels (uno arriba del otro)
         cover_labels_frame = UI.CTkFrame(header, fg_color="transparent")
@@ -8122,6 +8598,25 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         # Actualizar labels al iniciar
         update_cover_label()
         update_covering_label()
+        
+        # ⭐ AUTO-REFRESH: Actualizar labels cada 30 segundos (30000 ms) para pruebas
+        def auto_refresh_cover_labels():
+            """Refresca automáticamente los labels de cover cada 30 segundos"""
+            from datetime import datetime as dt_now
+            try:
+                print(f"[DEBUG] ===== Iniciando auto-refresh de cover labels a las {dt_now.now().strftime('%H:%M:%S')} =====")
+                update_cover_label()
+                update_covering_label()
+                print(f"[DEBUG] Cover labels actualizados automáticamente a las {dt_now.now().strftime('%H:%M:%S')}")
+            except Exception as e:
+                print(f"[ERROR] auto_refresh_cover_labels: {e}")
+                traceback.print_exc()
+            
+            # Programar siguiente actualización (30 segundos = 30000 ms)
+            top.after(30000, auto_refresh_cover_labels)
+        
+        # Iniciar auto-refresh
+        auto_refresh_cover_labels()
         
         # ⭐ Botón Start/End Shift a la derecha
         shift_btn = UI.CTkButton(
@@ -9995,7 +10490,6 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 SELECT s2.Active
                 FROM sesion s2
                 WHERE s2.ID_user = u.Nombre_Usuario
-                AND s2.Active IN (1, 2)
                 ORDER BY s2.ID DESC
                 LIMIT 1
             ) <> 0
