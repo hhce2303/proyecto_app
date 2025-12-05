@@ -6,7 +6,12 @@ from pathlib import Path
 import backend_super
 import main_super  # módulo principal
 from datetime import datetime
+#
 import under_super
+
+from models.database import get_connection
+
+#
 import resources  # Recursos embebidos (imágenes en base64)
 now = datetime.now()
 
@@ -40,7 +45,7 @@ def do_logout(session_id, station, root):
     a un root destruido (causa común de errores 'invalid command name' en callbacks).
     """
     try:
-        conn = under_super.get_connection()
+        conn = get_connection()
         cursor = conn.cursor()
 
         # 🔹 Fecha/hora actual para Log_Out
@@ -260,7 +265,7 @@ def show_login():
     # Cargar lista de usuarios desde la base de datos
     users_list = []
     try:
-        conn = under_super.get_connection()
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT Nombre_Usuario FROM user ORDER BY Nombre_Usuario")
         users_list = [row[0] for row in cursor.fetchall()]
@@ -331,7 +336,7 @@ def show_login():
         print(f"[DEBUG] station: {station} ({type(station)})")
 
         try:
-            conn = under_super.get_connection()
+            conn = get_connection()
             cursor = conn.cursor()
 
             # Validar usuario
@@ -414,22 +419,9 @@ def show_login():
             except Exception:
                 pass
             
-            # ⭐ VERIFICAR ROL: Si es Operador, ir directamente a open_hybrid_events
-            if role == "Operador":
-                print(f"[DEBUG] Rol Operador detectado, abriendo open_hybrid_events directamente")
-                backend_super.open_hybrid_events(username, session_id, station, win)
-            elif role == "Supervisor":
-                # Para Supervisor, abrir ventana de hybrid events supervisor
-                print(f"[DEBUG] Rol Supervisor detectado, abriendo hybrid events supervisor")
-                backend_super.open_hybrid_events_supervisor(username, session_id, station, win)
-            elif role == "Lead Supervisor":
-                # Para Lead Supervisor, abrir ventana específica con permisos de eliminación
-                print(f"[DEBUG] Rol Lead Supervisor detectado, abriendo hybrid events lead supervisor")
-                backend_super.open_hybrid_events_lead_supervisor(username, session_id, station, win)
-            else:
-                # Para otros roles, abrir menú principal
-                print(f"[DEBUG] Rol {role} detectado, abriendo menú principal")
-                main_super.open_main_window(username, station, role, session_id)
+            # 🎯 Redirigir SIEMPRE a través del router main_super (patrón MVC)
+            print(f"[DEBUG] Redirigiendo a main_super.open_main_window | Usuario: {username} | Rol: {role}")
+            main_super.open_main_window(username, station, role, session_id)
 
         except Exception as e:
             messagebox.showerror("Error", f"Fallo en la conexión a la base de datos:\n{e}")
@@ -478,7 +470,7 @@ def logout_silent(session_id, station):
     Preserva el estado Statuses si es Operador con Statuses=2."""
     global _preserved_statuses_state
     try:
-        conn = under_super.get_connection()
+        conn = get_connection()
         cursor = conn.cursor()
         
         # Obtener username de la sesión actual
@@ -545,6 +537,8 @@ def logout_silent(session_id, station):
         return False
 
 
+
+
 def auto_login(username, station, password="1234", parent=None, silent=True):
     """Perform login programmatically and open main window, without showing login UI.
 
@@ -557,7 +551,7 @@ def auto_login(username, station, password="1234", parent=None, silent=True):
                 raise ValueError("Station must be numeric")
             station = int(station)
 
-        conn = under_super.get_connection()
+        conn = get_connection()
         cursor = conn.cursor()
 
         # Validate user
@@ -655,22 +649,9 @@ def auto_login(username, station, password="1234", parent=None, silent=True):
         except Exception:
             pass
 
-        # ⭐ VERIFICAR ROL: Si es Operador, ir directamente a open_hybrid_events
-        if role == "Operador":
-            print(f"[DEBUG] auto_login - Rol Operador detectado, abriendo open_hybrid_events directamente")
-            backend_super.open_hybrid_events(username, session_id, station, None)
-        elif role == "Supervisor":
-            # Para Supervisor, abrir ventana de hybrid events supervisor
-            print(f"[DEBUG] auto_login - Rol Supervisor detectado, abriendo hybrid events supervisor")
-            backend_super.open_hybrid_events_supervisor(username=username, root=None)
-        elif role == "Lead Supervisor":
-            # Para Lead Supervisor, abrir ventana específica con permisos de eliminación
-            print(f"[DEBUG] auto_login - Rol Lead Supervisor detectado, abriendo hybrid events lead supervisor")
-            backend_super.open_hybrid_events_lead_supervisor(username=username, root=None)
-        else:
-            # Para otros roles, abrir menú principal
-            print(f"[DEBUG] auto_login - Rol {role} detectado, abriendo menú principal")
-            main_super.open_main_window(username, station, role, session_id)
+        # 🎯 Redirigir SIEMPRE a través del router main_super (patrón MVC)
+        print(f"[DEBUG] auto_login - Redirigiendo a main_super.open_main_window | Usuario: {username} | Rol: {role}")
+        main_super.open_main_window(username, station, role, session_id)
         
         return True, session_id, role
     except Exception as e:

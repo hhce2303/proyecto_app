@@ -1,77 +1,66 @@
-"""
-📅 EVENT MODEL
 
-Modelo para la gestión de eventos (tabla Eventos).
 
-Tabla: Eventos
-Campos:
-- ID_Eventos
-- FechaHora
-- ID_Sitio
-- Nombre_Actividad
-- Cantidad
-- Camera
-- Descripcion
-- ID_Usuario
-- etc.
 
-TODO: Migrar funciones desde backend_super.py y main.py
-"""
 
-from typing import Optional, List, Dict
+
+
 from datetime import datetime
-from .database import DatabaseManager
+from models.database import get_connection
 
 
-class EventModel:
-    """Modelo para gestión de eventos"""
-    
-    @staticmethod
-    def create_event(user_id: int, fecha_hora: datetime, sitio_id: int, 
-                    actividad: str, cantidad: int, camera: str, 
-                    descripcion: str) -> int:
-        """
-        Crea un nuevo evento
-        
-        Returns:
-            ID del evento creado
-        """
-        # TODO: Implementar
-        pass
-    
-    @staticmethod
-    def get_events_by_user_shift(user_id: int, shift_start: datetime) -> List[Dict]:
-        """
-        Obtiene eventos de un usuario desde el inicio de su turno
-        
-        Args:
-            user_id: ID del usuario
-            shift_start: Fecha/hora de inicio del turno
-            
-        Returns:
-            Lista de eventos
-        """
-        # TODO: Implementar
-        pass
-    
-    @staticmethod
-    def update_event(event_id: int, **kwargs) -> bool:
-        """
-        Actualiza un evento existente
-        
-        Returns:
-            True si se actualizó correctamente
-        """
-        # TODO: Implementar
-        pass
-    
-    @staticmethod
-    def delete_event(event_id: int, username: str, reason: str) -> bool:
-        """
-        Mueve un evento a la papelera (soft delete)
-        
-        Returns:
-            True si se eliminó correctamente
-        """
-        # TODO: Implementar usando safe_delete
-        pass
+def add_event(username, site, activity, quantity, camera, desc, hour, minute, second):
+    """
+    Inserta un nuevo evento en la tabla Eventos en MySQL con tipos correctos.
+    """
+    conn = get_connection()
+    if conn is None:
+        print("❌ No se pudo conectar a la base de datos")
+        return
+
+    try:
+        cursor = conn.cursor()
+
+        # 🔹 Obtener ID_Usuario
+        cursor.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario=%s", (username,))
+        row = cursor.fetchone()
+        if not row:
+            raise Exception(f"Usuario '{username}' no encontrado")
+        user_id = int(row[0])
+
+        # 🔹 Obtener ID_Sitio desde el site_value (ej: "NombreSitio 305")
+        try:
+            site_id = int(site.split()[-1])
+        except Exception:
+            raise Exception(f"No se pudo obtener el ID del sitio desde '{site}'")
+
+        # 🔹 Construir datetime editable
+        event_time = datetime.now().replace(hour=hour, minute=minute, second=second, microsecond=0)
+
+        # 🔹 Convertir cantidad a número
+        try:
+            quantity_val = float(quantity)  # o int(quantity) si siempre es entero
+        except Exception:
+            quantity_val = 0  # fallback
+
+        # 🔹 Insertar en tabla Eventos
+        cursor.execute("""
+            INSERT INTO Eventos (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, ID_Usuario)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (event_time, site_id, str(activity), quantity_val, str(camera), str(desc), user_id))
+
+        conn.commit()
+        print(f"[DEBUG] Evento registrado correctamente por {username}")
+
+    except Exception as e:
+        print(f"[ERROR] add_event: {e}")
+
+    finally:
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
+
+
+
+

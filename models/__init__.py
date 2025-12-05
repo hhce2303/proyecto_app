@@ -14,20 +14,66 @@ Archivos:
 - database.py: Gestión de conexiones a la base de datos
 - user_model.py: Gestión de usuarios, roles y autenticación
 - event_model.py: Gestión de eventos (tabla Eventos)
-- special_model.py: Gestión de specials (tabla specials)
-- site_model.py: Gestión de sitios
-- activity_model.py: Gestión de actividades
-- cover_model.py: Gestión de covers
-- shift_model.py: Gestión de turnos (START/END SHIFT)
-- audit_model.py: Gestión de auditoría y papelera
-- backup_model.py: Gestión de backups
+- site_model.py: Gestión de sitios y actividades
+- cover_model.py: Gestión de covers (programados y realizados)
+- session_model.py: Gestión de sesiones (login, logout)
 """
 
-# Importaciones de modelos cuando estén disponibles
-# from .database import DatabaseManager
-# from .user_model import UserModel
-# from .event_model import EventModel
-# from .special_model import SpecialModel
+# ==================== DATABASE ====================
+from .database import get_connection
+
+# ==================== USER ====================
+from .user_model import (
+    load_users,
+    get_user_status_bd,
+    users_list
+)
+
+# ==================== EVENT ====================
+from .event_model import add_event
+
+# ==================== SITE & ACTIVITIES ====================
+from .site_model import (
+    get_sites,
+    get_activities
+)
+
+# ==================== COVER ====================
+from .cover_model import (
+    request_covers,
+    insertar_cover
+)
+
+# ==================== SESSION ====================
+from .session_model import (
+    auto_login,
+    logout_silent
+)
+
+__all__ = [
+    # Database
+    'get_connection',
+    
+    # User
+    'load_users',
+    'get_user_status_bd',
+    'users_list',
+    
+    # Event
+    'add_event',
+    
+    # Site & Activities
+    'get_sites',
+    'get_activities',
+    
+    # Cover
+    'request_covers',
+    'insertar_cover',
+    
+    # Session
+    'auto_login',
+    'logout_silent',
+]
 # from .site_model import SiteModel
 # from .activity_model import ActivityModel
 # from .cover_model import CoverModel

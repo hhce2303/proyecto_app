@@ -27,9 +27,10 @@ def open_main_window(username, station, role, session_id):
     # 🎯 Router: Redirigir según rol
     print(f"🚀 Iniciando sesión para: {username} | Rol: {role} | Estación: {station} | Session ID: {session_id}")
     
-    if role == "Operator":
+    if role == "Operador":
         # Operador: Ventana híbrida con registro de eventos y covers
-        backend_super.open_hybrid_events(
+        import operator_window
+        operator_window.open_hybrid_events(
             username=username,
             session_id=session_id,
             station=station,
@@ -38,7 +39,8 @@ def open_main_window(username, station, role, session_id):
     
     elif role == "Supervisor":
         # Supervisor: Ventana de specials con gestión de marcas y breaks
-        backend_super.open_hybrid_events_supervisor(
+        import supervisor_window
+        supervisor_window.open_hybrid_events_supervisor(
             username=username,
             session_id=session_id,
             station=station,
@@ -47,7 +49,8 @@ def open_main_window(username, station, role, session_id):
     
     elif role == "Lead Supervisor":
         # Lead Supervisor: Ventana completa con permisos administrativos
-        backend_super.open_hybrid_events_lead_supervisor(
+        import lead_supervisor_window
+        lead_supervisor_window.open_hybrid_events_lead_supervisor(
             username=username,
             session_id=session_id,
             station=station,

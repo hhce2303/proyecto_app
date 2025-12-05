@@ -16,34 +16,9 @@ import login
 
 now = datetime.now()
 
-ICON_PATH = r"\\192.168.7.12\Data SIG\Central Station SLC-COLOMBIA\1. Daily Logs - Operators\DataBase\icons"
-import pyodbc
-
-# 📂 Ruta compartida para el archivo de configuración
-CONFIG_PATH = Path=r"\\192.168.7.12\Data SIG\Central Station SLC-COLOMBIA\1. Daily Logs - Operators\DataBase\Base de Datos\roles_config.json"
-
-
-
-
-def get_connection():
-    """
-    Establece una conexión segura con la base de datos MySQL.
-    Lanza errores claros en caso de fallo (credenciales, servidor, etc.).
-    """
-    try:
-        conn = pymysql.connect(
-            host="192.168.101.135",
-            user="app_user",
-            password="1234",
-            database="daily",
-            port=3306
-        )
-        print("✅ Conexión exitosa")
-    except pymysql.Error as e:
-        print("❌ Error de conexión:", e)
-        return None
-    return conn
-    
+from models.database import get_connection
+# Obtener estación asignada al usuario desde la base de datos
+#     
 def get_station(username):
     conn = get_connection()
     station = None
@@ -68,311 +43,11 @@ def get_station(username):
         conn.close()
     return station
 
-# Cargar usuarios desde la base de datos
-def load_users():
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT Nombre_Usuario FROM user ORDER BY Nombre_Usuario")
-        users = [row[0] for row in cursor.fetchall()]
-        cursor.close()
-        conn.close()
-        return users
-    except Exception as e:
-        print(f"[ERROR] load_users: {e}")
-        return ["Ana", "Carlos", "Diego", "Elena", "Juan", "Luis", "Maria", "Miguel", "Pedro", "Sofia"]
 
-users_list = load_users()
 
 # implementacion de covers...:
 
 # - solicita un cover para el usuario dado. desde la ui principal de operador
-def request_covers(username, time_request, reason, aprvoved):
-
-    confirmed = messagebox.askyesno("Esta seguro", "¿Está seguro de solicitar el cover?")
-    
-    if not confirmed:
-        print("[DEBUG] Solicitud de cover cancelada por el usuario")
-        return None
-#Solicita un cover para el usuario dado.
-    
-    #Args:
-        #username: Nombre de usuario que solicita el cover
-        #cover_type: Tipo de cover (e.g., "break", "lunch")
-        #reason: Razón para la solicitud del cover
-    conn = get_connection()
-    ID_cover = None
-    try:
-        cursor = conn.cursor()
-        
-        # ⭐ VERIFICAR SI YA TIENE UN COVER ACTIVO (is_Active = 1)
-        cursor.execute(
-            """
-            SELECT ID_Cover, Time_request, is_Active
-            FROM covers_programados
-            WHERE ID_user = %s
-            AND is_Active = 1
-            ORDER BY Time_request DESC
-            LIMIT 1
-            """,
-            (username,)
-        )
-        active_cover = cursor.fetchone()
-        
-        if active_cover:
-            # Ya tiene un cover activo pendiente, no puede solicitar otro
-            messagebox.showwarning(
-                "Cover Activo Pendiente", 
-                f"Ya tienes un cover activo solicitado a las {active_cover[1].strftime('%H:%M:%S')}.\n\n"
-                f"No puedes solicitar otro cover hasta que este sea procesado o cancelado.\n\n"
-                f"Estado: Pendiente de aprobación/ejecución"
-            )
-            print(f"[DEBUG] Solicitud rechazada: cover activo existente (ID: {active_cover[0]})")
-            cursor.close()
-            conn.close()
-            return None
-        
-        # ⭐ VERIFICAR LÍMITE DE TIEMPO: 10 minutos entre solicitudes (solo del día actual)
-        hoy_inicio = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        cursor.execute(
-            """
-            SELECT Time_request, is_Active
-            FROM covers_programados
-            WHERE ID_user = %s
-            AND DATE(Time_request) = CURDATE()
-            ORDER BY Time_request DESC
-            LIMIT 1
-            """,
-            (username,)
-        )
-        last_request = cursor.fetchone()
-        
-        if last_request and last_request[0]:
-            now = datetime.now()
-            time_diff = now - last_request[0]
-            minutes_diff = time_diff.total_seconds() / 60
-            
-            print(f"[DEBUG] Última solicitud: {last_request[0]}, Ahora: {now}, Diferencia: {minutes_diff:.1f} min, is_Active: {last_request[1]}")
-            
-            if minutes_diff < 10:
-                remaining_minutes = 10 - minutes_diff
-                messagebox.showwarning(
-                    "Espera requerida", 
-                    f"Debes esperar {remaining_minutes:.1f} minutos más antes de solicitar otro cover.\n\n"
-                    f"Última solicitud: {last_request[0].strftime('%Y-%m-%d %H:%M:%S')}\n"
-                    f"Próxima solicitud disponible: {(last_request[0] + timedelta(minutes=10)).strftime('%H:%M:%S')}"
-                )
-                print(f"[DEBUG] Solicitud rechazada: faltan {remaining_minutes:.1f} minutos")
-                cursor.close()
-                conn.close()
-                return None
-
-        cursor.execute(
-            """
-            SELECT ID_estacion
-            FROM sesion
-            WHERE ID_user = %s
-            ORDER BY ID DESC
-            LIMIT 1
-            """,
-            (username,)
-        )
-        station = cursor.fetchone()
-
-        print(f"[DEBUG] Estación obtenida: {station}")
-        cursor.execute(
-            """
-            INSERT INTO covers_programados (ID_user, Time_request, Station, Reason, Approved, is_Active)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """,
-            (username, time_request, station, reason, aprvoved, 1)
-        )
-        conn.commit()
-        print("[DEBUG] Cover solicitado correctamente ✅")
-        # 🔹 Obtener último ID insertado
-        cursor.execute("SELECT LAST_INSERT_ID()")
-        ID_cover = cursor.fetchone()[0]
-        print(f"[DEBUG] Nuevo ID_cover generado: {ID_cover}")
-        messagebox.showinfo("Solicitud Exitosa", f"Cover solicitado correctamente.")
-
-    except pymysql.Error as e:
-        print(f"[ERROR] al solicitar cover: {e}")
-    finally:
-        cursor.close()
-        conn.close() 
-    return ID_cover
-
-# - inserta un cover realizado para el usuario dado. desde la ui principal de operador, usando el ID del 
-# cover programado.
-def insertar_cover(username, Covered_by, Motivo, session_id, station):
-    ID_cover = None
-    Cover_in = (now + timedelta(minutes=2)).strftime("%Y-%m-%d %H:%M:%S")
-    Activo = False
-    Cover_Out= None
-    tiene_cover_programado = False
-    
-    # ⭐ VERIFICAR SI TIENE COVER PROGRAMADO (covers_programados O gestion_breaks_programados)
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        
-        # 1. Buscar en covers_programados (sistema antiguo)
-        cursor.execute(
-            """
-            SELECT cp.ID_Cover
-            FROM covers_programados cp
-            WHERE cp.ID_user = %s
-            AND cp.Approved = 1
-            AND cp.is_Active = 1
-            ORDER BY cp.ID_Cover DESC
-            LIMIT 1
-            """,
-            (username,)
-        )
-        result = cursor.fetchone()
-        
-        if result is not None:
-            ID_cover = result[0]
-            tiene_cover_programado = True
-            print(f"[DEBUG] Cover programado encontrado en covers_programados - ID_cover: {ID_cover}")
-        else:
-            # 2. Buscar en gestion_breaks_programados (breaks programados por supervisor)
-            # Necesitamos ID_Usuario para buscar
-            cursor.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
-            user_row = cursor.fetchone()
-            
-            if user_row:
-                id_usuario = user_row[0]
-                
-                # Buscar break programado activo en una ventana de +/- 5 minutos de la hora actual
-                cursor.execute(
-                    """
-                    SELECT gbp.ID_cover
-                    FROM gestion_breaks_programados gbp
-                    WHERE gbp.User_covered = %s
-                    AND gbp.is_Active = 1
-                    AND ABS(TIMESTAMPDIFF(MINUTE, gbp.Fecha_hora_cover, NOW())) <= 5
-                    ORDER BY ABS(TIMESTAMPDIFF(MINUTE, gbp.Fecha_hora_cover, NOW())) ASC
-                    LIMIT 1
-                    """,
-                    (id_usuario,)
-                )
-                break_result = cursor.fetchone()
-                
-                if break_result is not None:
-                    ID_cover = break_result[0]
-                    tiene_cover_programado = True
-                    print(f"[DEBUG] Break programado encontrado en gestion_breaks_programados - ID_cover: {ID_cover}")
-        
-        # Si no se encontró ningún cover programado, preguntar si es emergencia
-        if not tiene_cover_programado:
-            print("[DEBUG] No se encontró cover/break programado. Registrando como cover de emergencia...")
-            # Preguntar al usuario si desea registrar cover de emergencia
-            confirmacion = messagebox.askyesno(
-                "Cover de Emergencia",
-                "No tienes un cover programado aprobado.\n\n"
-                "¿Deseas registrar este cover como EMERGENCIA?\n\n"
-                "Nota: Los covers de emergencia quedan registrados sin ID de programación."
-            )
-            if not confirmacion:
-                print("[DEBUG] Usuario canceló el registro de cover de emergencia")
-                cursor.close()
-                conn.close()
-                return None
-            
-            # ID_cover queda como None para covers de emergencia
-            tiene_cover_programado = False
-        
-        cursor.close()
-        conn.close()
-        
-    except pymysql.Error as e:
-        print(f"[ERROR] al verificar cover programado: {e}")
-        messagebox.showerror("Error", f"Error al verificar cover programado: {e}")
-        return None
-    
-    # ⭐ INSERTAR COVER REALIZADO (con o sin ID_programacion_covers)
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            INSERT INTO covers_realizados (Nombre_Usuarios, ID_programacion_covers, Cover_in, Cover_Out, Covered_by, Motivo)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """,
-            (username, ID_cover, Cover_in, Cover_Out, Covered_by, Motivo)
-        )
-        conn.commit()
-        
-        # ⭐ SOLO actualizar covers_programados SI tiene cover programado
-        if tiene_cover_programado and ID_cover is not None:
-            try:
-                cursor.execute(
-                    """UPDATE covers_programados SET is_Active = 0 WHERE ID_Cover = %s""",
-                    (ID_cover,)
-                )
-                conn.commit()
-                print(f"[DEBUG] is_Active actualizado correctamente en covers_programados para ID_Cover: {ID_cover}")
-            except pymysql.Error as e:
-                print(f"[ERROR] al actualizar is_Active en covers_programados: {e}")
-        else:
-            print(f"[DEBUG] Cover de emergencia registrado SIN actualizar covers_programados")
-        
-        # Si el motivo es "Break", también actualizar gestion_breaks_programados
-        if Motivo and Motivo.strip().lower() == "break":
-            try:
-                conn2 = get_connection()
-                cursor2 = conn2.cursor()
-                
-                # Obtener ID_Usuario del username
-                cursor2.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (username,))
-                result = cursor2.fetchone()
-                
-                if result:
-                    id_usuario = result[0]
-                    cursor2.execute(
-                        """UPDATE gestion_breaks_programados SET is_Active = 0 
-                           WHERE User_covered = %s AND is_Active = 1""",
-                        (id_usuario,)
-                    )
-                    rows_affected = cursor2.rowcount
-                    conn2.commit()
-                    print(f"[DEBUG] is_Active actualizado en gestion_breaks_programados ({rows_affected} rows)")
-                else:
-                    print(f"[WARN] Usuario {username} no encontrado para actualizar gestion_breaks_programados")
-                
-                cursor2.close()
-                conn2.close()
-                
-            except pymysql.Error as e:
-                print(f"[ERROR] al actualizar is_Active en gestion_breaks_programados: {e}")
-
-        print("[DEBUG] Cover realizado correctamente ✅")
-        
-        # Obtener último ID insertado
-        cursor.execute("SELECT LAST_INSERT_ID()")
-        ID_cover_realizado = cursor.fetchone()[0]
-        
-        # Mensaje de confirmación diferenciado
-        if tiene_cover_programado:
-            messagebox.showinfo("Cover Registrado", "Cover registrado exitosamente.")
-        else:
-            messagebox.showwarning(
-                "Cover de Emergencia Registrado", 
-                "⚠️ Cover de EMERGENCIA registrado.\n\n"
-                "Este cover no estaba programado previamente.\n"
-                "Será revisado por supervisión."
-            )
-
-    except pymysql.Error as e:
-        print(f"[ERROR] al insertar cover realizado: {e}")
-        messagebox.showerror("Error", f"Error al registrar cover: {e}")
-    finally:
-        cursor.close()
-        conn.close()
-        login.logout_silent(session_id, station)
 
 # - desaprueba el cover activo más reciente para el usuario dado. desde la ui principal de supervisor
 def desaprobar_cover(username, session_id, station):
@@ -615,7 +290,8 @@ def actualizar_cover_breaks(username, hora_actual, covered_by_actual, usuario_ac
 # Función para eliminar cover
 def eliminar_cover_breaks(breaks_sheet, parent_window=None):
     """
-    Elimina covers de breaks programados (soft delete en gestion_breaks_programados).
+    Elimina un cover de breaks desde la tabla breaks_sheet (formato lista).
+    Tabla con columnas: ["#", "Usuario a Cubrir", "Cubierto Por", "Hora Programada"]
     
     Args:
         breaks_sheet: El tksheet widget con los datos de breaks
@@ -626,121 +302,97 @@ def eliminar_cover_breaks(breaks_sheet, parent_window=None):
     """
     if not breaks_sheet:
         return False, "No se proporcionó el sheet de breaks", 0
-        
-    selected_cols = breaks_sheet.get_selected_columns()
+    
+    # Obtener selección (fila completa o celda)
+    selected_rows = breaks_sheet.get_selected_rows()
     selected_cells = breaks_sheet.get_selected_cells()
     
-    # Caso 1: Se seleccionó una columna completa
-    if selected_cols:
-        col = list(selected_cols)[0]
-        if col == 0:
-            messagebox.showwarning("Advertencia", "No se puede eliminar la columna de Hora.", parent=parent_window)
-            return False, "Columna de hora no se puede eliminar", 0
-        
-        covered_by = breaks_sheet.headers()[col]
-        
-        if not messagebox.askyesno("Confirmar", 
-            f"¿Eliminar todos los covers de {covered_by}?", parent=parent_window):
-            return False, "Cancelado por el usuario", 0
-        
-        # Eliminar todos los covers de esa persona (soft delete)
-        try:
-            conn = get_connection()
-            cur = conn.cursor()
-            
-            # Convertir nombre a ID
-            cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (covered_by,))
-            result = cur.fetchone()
-            if not result:
-                messagebox.showerror("Error", f"Usuario '{covered_by}' no encontrado", parent=parent_window)
-                cur.close()
-                conn.close()
-                return False, f"Usuario '{covered_by}' no encontrado", 0
-            id_covering = result[0]
-            
-            update_query = """
-                UPDATE gestion_breaks_programados
-                SET is_Active = 0
-                WHERE User_covering = %s AND is_Active = 1
-            """
-            cur.execute(update_query, (id_covering,))
-            rows_affected = cur.rowcount
-            conn.commit()
-            cur.close()
-            conn.close()
-            
-            print(f"[INFO] ✅ {rows_affected} covers eliminados para {covered_by}")
-            messagebox.showinfo("Éxito", f"{rows_affected} covers eliminados", parent=parent_window)
-            return True, f"{rows_affected} covers eliminados", rows_affected
-            
-        except Exception as e:
-            print(f"[ERROR] eliminar_cover_breaks (columna): {e}")
-            traceback.print_exc()
-            messagebox.showerror("Error", f"Error al eliminar: {e}", parent=parent_window)
-            return False, f"Error: {e}", 0
+    row_to_delete = None
+    
+    # Caso 1: Se seleccionó una fila completa
+    if selected_rows:
+        row_to_delete = list(selected_rows)[0] if isinstance(selected_rows, set) else selected_rows[0]
     
     # Caso 2: Se seleccionó una celda específica
-    if selected_cells:
-        row, col = selected_cells[0]
+    elif selected_cells:
+        # Convertir set a lista si es necesario
+        if isinstance(selected_cells, set):
+            selected_cells = list(selected_cells)
         
-        if col == 0:
-            messagebox.showwarning("Advertencia", "No se puede eliminar desde la columna de Hora.", parent=parent_window)
-            return False, "Columna de hora no se puede eliminar", 0
+        if selected_cells:
+            cell = selected_cells[0]
+            # Extraer el número de fila del objeto de celda
+            if hasattr(cell, 'row'):
+                row_to_delete = cell.row
+            elif isinstance(cell, tuple) and len(cell) >= 1:
+                row_to_delete = cell[0]
+            else:
+                row_to_delete = cell
+    
+    if row_to_delete is None:
+        messagebox.showwarning("Advertencia", "Seleccione una fila para eliminar el cover.", parent=parent_window)
+        return False, "No hay selección válida", 0
+    
+    # Obtener datos de la fila seleccionada
+    # Columnas: ["#", "Usuario a Cubrir", "Cubierto Por", "Hora Programada"]
+    try:
+        usuario_cubierto = breaks_sheet.get_cell_data(row_to_delete, 1)  # Usuario a Cubrir
+        usuario_cubre = breaks_sheet.get_cell_data(row_to_delete, 2)     # Cubierto Por
+        hora = breaks_sheet.get_cell_data(row_to_delete, 3)              # Hora Programada
         
-        hora = breaks_sheet.get_cell_data(row, 0)
-        covered_by = breaks_sheet.headers()[col]
-        usuario = breaks_sheet.get_cell_data(row, col)
+        if not usuario_cubierto or not usuario_cubre or not hora:
+            messagebox.showwarning("Advertencia", "La fila seleccionada no tiene datos completos.", parent=parent_window)
+            return False, "Datos incompletos", 0
         
-        if not usuario:
-            messagebox.showwarning("Advertencia", "La celda seleccionada está vacía.", parent=parent_window)
-            return False, "Celda vacía", 0
-        
+        # Confirmar eliminación
         if not messagebox.askyesno("Confirmar", 
-            f"¿Eliminar cover de {usuario} cubierto por {covered_by} a las {hora}?", parent=parent_window):
+            f"¿Eliminar cover?\n\nUsuario a Cubrir: {usuario_cubierto}\nCubierto Por: {usuario_cubre}\nHora: {hora}", 
+            parent=parent_window):
             return False, "Cancelado por el usuario", 0
         
-        # Eliminar cover específico (soft delete)
-        try:
-            conn = get_connection()
-            cur = conn.cursor()
-            
-            # Convertir nombres a IDs
-            cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (covered_by,))
-            result_covering = cur.fetchone()
-            cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (usuario,))
-            result_covered = cur.fetchone()
-            
-            if not result_covering or not result_covered:
-                messagebox.showerror("Error", "Usuario no encontrado", parent=parent_window)
-                cur.close()
-                conn.close()
-                return False, "Usuario no encontrado", 0
-            
-            id_covering = result_covering[0]
-            id_covered = result_covered[0]
-            
-            update_query = """
-                UPDATE gestion_breaks_programados
-                SET is_Active = 0
-                WHERE User_covering = %s AND User_covered = %s AND TIME(Fecha_hora_cover) = %s AND is_Active = 1
-            """
-            cur.execute(update_query, (id_covering, id_covered, hora))
-            rows_affected = cur.rowcount
-            conn.commit()
+        # Eliminar cover (soft delete)
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Convertir nombres a IDs
+        cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (usuario_cubre,))
+        result_covering = cur.fetchone()
+        cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario = %s", (usuario_cubierto,))
+        result_covered = cur.fetchone()
+        
+        if not result_covering or not result_covered:
+            messagebox.showerror("Error", f"Usuario no encontrado en la base de datos", parent=parent_window)
             cur.close()
             conn.close()
-            
-            print(f"[INFO] ✅ Cover eliminado: {usuario} cubierto por {covered_by} a las {hora}")
+            return False, "Usuario no encontrado", 0
+        
+        id_covering = result_covering[0]
+        id_covered = result_covered[0]
+        
+        # Soft delete en la base de datos
+        update_query = """
+            UPDATE gestion_breaks_programados
+            SET is_Active = 0
+            WHERE User_covering = %s AND User_covered = %s AND TIME(Fecha_hora_cover) = %s AND is_Active = 1
+        """
+        cur.execute(update_query, (id_covering, id_covered, hora))
+        rows_affected = cur.rowcount
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        if rows_affected > 0:
+            print(f"[INFO] ✅ Cover eliminado: {usuario_cubierto} cubierto por {usuario_cubre} a las {hora}")
             messagebox.showinfo("Éxito", "Cover eliminado exitosamente", parent=parent_window)
             return True, "Cover eliminado exitosamente", rows_affected
+        else:
+            messagebox.showwarning("Advertencia", "No se encontró el cover en la base de datos.", parent=parent_window)
+            return False, "Cover no encontrado en BD", 0
             
-        except Exception as e:
-            print(f"[ERROR] eliminar_cover_breaks (celda): {e}")
-            traceback.print_exc()
-            messagebox.showerror("Error", f"Error al eliminar: {e}", parent=parent_window)
-            return False, f"Error: {e}", 0
-    
-    messagebox.showwarning("Advertencia", "Seleccione una celda o columna para eliminar el cover.", parent=parent_window)
+    except Exception as e:
+        print(f"[ERROR] eliminar_cover_breaks: {e}")
+        traceback.print_exc()
+        messagebox.showerror("Error", f"Error al eliminar cover:\n{e}", parent=parent_window)
     return False, "No hay selección válida", 0
 
 # ==================== COVERS REALIZADOS ====================
@@ -822,37 +474,6 @@ def set_new_status(new_value, username):
             conn.close()
             return print("Status updated")
 
-def get_user_status_bd(username):
-    conn = get_connection()
-    if not conn:
-        return "Error de conexión"
-    
-    try:
-        cursor = conn.cursor()
-        # Ejecutar query
-        cursor.execute("""
-            SELECT Statuses FROM sesion 
-            WHERE ID_user = %s 
-            ORDER BY ID DESC 
-            LIMIT 1
-        """, (username,))
-        result = cursor.fetchone()
-        if not result:
-            return "Usuario no encontrado"
-        status_value = result[0]
-    except pymysql.Error as e:
-        print(f"[ERROR] Error al consultar el estado: {e}")
-        
-    finally:
-        cursor.close()
-        conn.close()   
-
-        return status_value
-
-def get_events():
-    print("events")
-
-    return 
 
 def single_window(name, func):
         if name in opened_windows and opened_windows[name].winfo_exists():
@@ -867,118 +488,6 @@ def single_window(name, func):
 _sites_cache = {'data': None, 'last_update': None}
 _activities_cache = {'data': None, 'last_update': None}
 CACHE_DURATION = 120  # 2 minutos en segundos
-
-def get_sites(force_refresh=False):
-    """
-    Obtiene la lista de sitios de la tabla Sitios con cache de 2 minutos
-    
-    Args:
-        force_refresh: Si es True, fuerza actualización ignorando cache
-        
-    Returns:
-        Lista de sitios en formato "Nombre_Sitio (ID)"
-    """
-    global _sites_cache
-    
-    # Verificar si necesita actualización
-    now = datetime.now()
-    needs_update = (
-        force_refresh or 
-        _sites_cache['data'] is None or 
-        _sites_cache['last_update'] is None or
-        (now - _sites_cache['last_update']).total_seconds() > CACHE_DURATION
-    )
-    
-    if not needs_update:
-        print(f"[DEBUG] Usando cache de sitios (edad: {int((now - _sites_cache['last_update']).total_seconds())}s)")
-        return _sites_cache['data']
-    
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        # Formato modernizado: "Nombre_Sitio (ID)" para permitir búsqueda por ID y por nombre
-        cursor.execute("""
-            SELECT CONCAT(Nombre_Sitio, ' (', ID_Sitio, ')') AS Sitio
-            FROM Sitios
-            ORDER BY Nombre_Sitio
-        """)
-
-        sites = [row[0] for row in cursor.fetchall()]
-        
-        # Actualizar cache
-        _sites_cache['data'] = sites
-        _sites_cache['last_update'] = now
-        
-        print(f"[DEBUG] Sitios cargados y cache actualizado ({len(sites)} sitios)")
-        return sites
-
-    except Exception as e:
-        print(f"[ERROR] get_sites: {e}")
-        # Si hay error pero tenemos cache, devolverlo
-        if _sites_cache['data']:
-            print(f"[WARN] Usando cache antiguo de sitios por error de BD")
-            return _sites_cache['data']
-        return []
-    finally:
-        try:
-            cursor.close()
-            conn.close()
-        except:
-            pass
-
-def get_activities(force_refresh=False):
-    """
-    Obtiene la lista de actividades de la tabla Actividades con cache de 2 minutos
-    
-    Args:
-        force_refresh: Si es True, fuerza actualización ignorando cache
-        
-    Returns:
-        Lista de nombres de actividades
-    """
-    global _activities_cache
-    
-    # Verificar si necesita actualización
-    now = datetime.now()
-    needs_update = (
-        force_refresh or
-        _activities_cache['data'] is None or 
-        _activities_cache['last_update'] is None or
-        (now - _activities_cache['last_update']).total_seconds() > CACHE_DURATION
-    )
-    
-    if not needs_update:
-        print(f"[DEBUG] Usando cache de actividades (edad: {int((now - _activities_cache['last_update']).total_seconds())}s)")
-        return _activities_cache['data']
-    
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""SELECT Nombre_Actividad FROM Actividades ORDER BY Nombre_Actividad""")
-        
-        activities = [row[0] for row in cursor.fetchall()]
-        
-        # Actualizar cache
-        _activities_cache['data'] = activities
-        _activities_cache['last_update'] = now
-        
-        print(f"[DEBUG] Actividades cargadas y cache actualizado ({len(activities)} actividades)")
-        return activities
-        
-    except Exception as e:
-        print(f"[ERROR] get_activities: {e}")
-        # Si hay error pero tenemos cache, devolverlo
-        if _activities_cache['data']:
-            print(f"[WARN] Usando cache antiguo de actividades por error de BD")
-            return _activities_cache['data']
-        return []
-    finally:
-        try:
-            cursor.close()
-            conn.close()
-        except:
-            pass
 
 def parse_site_filter(site_display):
     """
@@ -1025,59 +534,6 @@ def parse_site_filter(site_display):
     
     # Si no coincide con el patrón, asumir que es solo el nombre
     return site_display, None
-
-def add_event(username, site, activity, quantity, camera, desc, hour, minute, second):
-    """
-    Inserta un nuevo evento en la tabla Eventos en MySQL con tipos correctos.
-    """
-    conn = get_connection()
-    if conn is None:
-        print("❌ No se pudo conectar a la base de datos")
-        return
-
-    try:
-        cursor = conn.cursor()
-
-        # 🔹 Obtener ID_Usuario
-        cursor.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario=%s", (username,))
-        row = cursor.fetchone()
-        if not row:
-            raise Exception(f"Usuario '{username}' no encontrado")
-        user_id = int(row[0])
-
-        # 🔹 Obtener ID_Sitio desde el site_value (ej: "NombreSitio 305")
-        try:
-            site_id = int(site.split()[-1])
-        except Exception:
-            raise Exception(f"No se pudo obtener el ID del sitio desde '{site}'")
-
-        # 🔹 Construir datetime editable
-        event_time = datetime.now().replace(hour=hour, minute=minute, second=second, microsecond=0)
-
-        # 🔹 Convertir cantidad a número
-        try:
-            quantity_val = float(quantity)  # o int(quantity) si siempre es entero
-        except Exception:
-            quantity_val = 0  # fallback
-
-        # 🔹 Insertar en tabla Eventos
-        cursor.execute("""
-            INSERT INTO Eventos (FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, ID_Usuario)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (event_time, site_id, str(activity), quantity_val, str(camera), str(desc), user_id))
-
-        conn.commit()
-        print(f"[DEBUG] Evento registrado correctamente por {username}")
-
-    except Exception as e:
-        print(f"[ERROR] add_event: {e}")
-
-    finally:
-        try:
-            cursor.close()
-            conn.close()
-        except:
-            pass
 
 def admin_mode():
      print("admin mode")

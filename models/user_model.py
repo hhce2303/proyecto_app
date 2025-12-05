@@ -1,78 +1,49 @@
-"""
-👤 USER MODEL
 
-Modelo para la gestión de usuarios y autenticación.
-
-Tabla: user
-Campos:
-- ID_Usuario
-- Nombre_Usuario
-- Contraseña
-- Rol (Usuario, Supervisor, Lead Supervisor)
-- etc.
-
-TODO: Migrar funciones desde login.py y backend_super.py
-"""
-
-from typing import Optional, List, Dict
-from .database import DatabaseManager
+from models.database import get_connection
+import pymysql
 
 
-class UserModel:
-    """Modelo para gestión de usuarios"""
+
+# Cargar usuarios desde la base de datos
+def load_users():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT Nombre_Usuario FROM user ORDER BY Nombre_Usuario")
+        users = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        return users
+    except Exception as e:
+        print(f"[ERROR] load_users: {e}")
+        return ["Error al cargar usuarios"]
+
+users_list = load_users()
+
+
+def get_user_status_bd(username):
+    conn = get_connection()
+    if not conn:
+        return "Error de conexión"
     
-    @staticmethod
-    def authenticate(username: str, password: str) -> Optional[Dict]:
-        """
-        Autentica un usuario
+    try:
+        cursor = conn.cursor()
+        # Ejecutar query
+        cursor.execute("""
+            SELECT Statuses FROM sesion 
+            WHERE ID_user = %s 
+            ORDER BY ID DESC 
+            LIMIT 1
+        """, (username,))
+        result = cursor.fetchone()
+        if not result:
+            return "Usuario no encontrado"
+        status_value = result[0]
+    except pymysql.Error as e:
+        print(f"[ERROR] Error al consultar el estado: {e}")
         
-        Args:
-            username: Nombre de usuario
-            password: Contraseña
-            
-        Returns:
-            Dict con datos del usuario si es válido, None si no
-        """
-        # TODO: Implementar lógica de autenticación
-        pass
-    
-    @staticmethod
-    def get_by_username(username: str) -> Optional[Dict]:
-        """
-        Obtiene un usuario por su nombre de usuario
-        
-        Args:
-            username: Nombre de usuario
-            
-        Returns:
-            Dict con datos del usuario o None
-        """
-        # TODO: Implementar
-        pass
-    
-    @staticmethod
-    def get_all_users() -> List[str]:
-        """
-        Obtiene lista de todos los nombres de usuario
-        
-        Returns:
-            Lista de nombres de usuario
-        """
-        # TODO: Implementar
-        pass
-    
-    @staticmethod
-    def create_user(username: str, password: str, role: str) -> int:
-        """
-        Crea un nuevo usuario
-        
-        Args:
-            username: Nombre de usuario
-            password: Contraseña
-            role: Rol del usuario
-            
-        Returns:
-            ID del usuario creado
-        """
-        # TODO: Implementar
-        pass
+    finally:
+        cursor.close()
+        conn.close()   
+
+        return status_value
