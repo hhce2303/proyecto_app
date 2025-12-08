@@ -57,6 +57,16 @@ def open_main_window(username, station, role, session_id):
             root=None
         )
     
+    elif role == "Admin":
+        # Admin: Panel administrativo con Dashboard en tiempo real
+        import admin_window
+        admin_window.open_admin_panel(
+            username=username,
+            session_id=session_id,
+            station=station,
+            parent=None
+        )
+    
     else:
         # Rol no reconocido - mostrar error
         print(f"❌ ERROR: Rol '{role}' no reconocido")

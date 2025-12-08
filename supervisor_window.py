@@ -562,33 +562,45 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             return None
 
     def load_data():
-        """Carga specials del supervisor desde el último START SHIFT hasta ahora"""
+        """Carga specials del supervisor desde el ID más antiguo sin marca hasta el más reciente"""
         nonlocal row_data_cache, row_ids, refresh_job
         
         try:
-            shift_start = get_supervisor_shift_start()
-            if not shift_start:
-                data = [["No hay shift activo"] + [""] * (len(columns)-1)]
-                sheet.set_sheet_data(data)
-                apply_sheet_widths()
-                row_data_cache.clear()
-                row_ids.clear()
-                return
-
             conn = get_connection()
             cur = conn.cursor()
             
-            # Query: TODOS los specials del supervisor desde START SHIFT hasta AHORA
-            sql = """
-                SELECT ID_special, FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera,
-                       Descripcion, Usuario, Time_Zone, marked_status, marked_by, marked_at
-                FROM specials
+            # Obtener el ID más antiguo sin marca (done o flagged) del supervisor
+            cur.execute("""
+                SELECT MIN(ID_special) 
+                FROM specials 
                 WHERE Supervisor = %s 
-                AND FechaHora >= %s
-                ORDER BY FechaHora DESC
-            """
+                AND (marked_status IS NULL OR marked_status = '')
+            """, (username,))
+            oldest_unmarked_row = cur.fetchone()
+            oldest_id = oldest_unmarked_row[0] if oldest_unmarked_row and oldest_unmarked_row[0] else None
             
-            cur.execute(sql, (username, shift_start))
+            if oldest_id is None:
+                # No hay specials sin marca, mostrar todos los del supervisor
+                sql = """
+                    SELECT ID_special, FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera,
+                           Descripcion, Usuario, Time_Zone, marked_status, marked_by, marked_at
+                    FROM specials
+                    WHERE Supervisor = %s
+                    ORDER BY FechaHora DESC
+                """
+                cur.execute(sql, (username,))
+            else:
+                # Mostrar desde el ID más antiguo sin marca hasta el más reciente
+                sql = """
+                    SELECT ID_special, FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera,
+                           Descripcion, Usuario, Time_Zone, marked_status, marked_by, marked_at
+                    FROM specials
+                    WHERE Supervisor = %s 
+                    AND ID_special >= %s
+                    ORDER BY FechaHora DESC
+                """
+                cur.execute(sql, (username, oldest_id))
+            
             rows = cur.fetchall()
             
             # Resolver nombres de sitios y zonas horarias

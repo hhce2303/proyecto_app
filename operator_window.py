@@ -76,7 +76,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
         top.configure(bg="#1e1e1e")
     
     top.title(f"📊 Eventos - {username}")
-    top.geometry("1300x800")  # Ancho reducido al eliminar columna "Out at"
+    top.geometry("1410x800")  # Ancho reducido al eliminar columna "Out at"
     top.resizable(True, True)
 
     # ⭐ VARIABLE DE MODO: 'daily', 'specials' o 'covers'
@@ -101,23 +101,23 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     
     # Anchos personalizados para DAILY
     custom_widths_daily = {
-        "Fecha Hora ": 140,
+        "Fecha Hora": 160,
         "Sitio": 260,
         "Actividad": 170,
         "Cantidad": 80,
         "Camera": 90,
-        "Descripción": 340  # Ampliado al eliminar "Out at"
+        "Descripción": 330  # Ampliado al eliminar "Out at"
     }
     
     # Anchos personalizados para SPECIALS (sin ID ni Usuario)
     custom_widths_specials = {
-        "Fecha Hora": 120,
+        "Fecha Hora": 140,
         "Sitio": 277,
         "Actividad": 150,
         "Cantidad": 60,
         "Camera": 60,
         "Descripcion": 210,
-        "TZ": 80,  # Aumentado de 40 a 80 para mejor visibilidad
+        "TZ": 70,  # Aumentado de 40 a 80 para mejor visibilidad
         "Marca": 180
     }
     
@@ -506,7 +506,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 accion_btn.pack_forget()
             
             # ⭐ Mostrar frame de posición en cola
-            cover_queue_frame.pack(fill="x", padx=10, pady=(10, 5), before=sheet_frame)
+            cover_queue_frame.pack(fill="x", padx=10, pady=(10, 5), before=main_content_container)
             
             load_data()
         
@@ -586,7 +586,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                 accion_btn.pack_forget()
             
             # ⭐ Mostrar frame de posición en cola
-            cover_queue_frame.pack(fill="x", padx=10, pady=(10, 5), before=sheet_frame)
+            cover_queue_frame.pack(fill="x", padx=10, pady=(10, 5), before=main_content_container)
             
             load_data()
         
@@ -640,12 +640,19 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     # Ocultar el frame inicialmente (solo se muestra en modo covers)
     cover_queue_frame.pack_forget()
 
-    # Frame para tksheet
+    # Contenedor principal horizontal (sheet + panel de noticias)
     if UI is not None:
-        sheet_frame = UI.CTkFrame(top, fg_color="#2c2f33")
+        main_content_container = UI.CTkFrame(top, fg_color="#2c2f33")
     else:
-        sheet_frame = tk.Frame(top, bg="#2c2f33")
-    sheet_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        main_content_container = tk.Frame(top, bg="#2c2f33")
+    main_content_container.pack(fill="both", expand=True, padx=10, pady=3)
+    
+    # Frame para tksheet (lado izquierdo)
+    if UI is not None:
+        sheet_frame = UI.CTkFrame(main_content_container, fg_color="#2c2f33")
+    else:
+        sheet_frame = tk.Frame(main_content_container, bg="#2c2f33")
+    sheet_frame.pack(side="left", fill="both", expand=True, padx=(0, 5))
 
     # Crear tksheet
     sheet = SheetClass(
@@ -697,6 +704,237 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
     cantidad_var = tk.StringVar(value="0")
     camera_var = tk.StringVar()
     descripcion_var = tk.StringVar()
+    
+    # ==================== PANEL DE NOTICIAS/INFORMACIÓN (Lado Derecho) ====================
+    def create_news_panel():
+        """Crea el panel lateral de noticias e información relevante"""
+        if UI is not None:
+            news_frame = UI.CTkFrame(main_content_container, fg_color="#1e1e1e", 
+                                     corner_radius=10, width=240)
+        else:
+            news_frame = tk.Frame(main_content_container, bg="#1e1e1e", width=240)
+        news_frame.pack(side="right", fill="both", padx=(3, 0))
+        news_frame.pack_propagate(False)  # Mantener ancho fijo
+        
+        # Header del panel
+        if UI is not None:
+            header = UI.CTkFrame(news_frame, fg_color="#2d333b", corner_radius=8, height=50)
+        else:
+            header = tk.Frame(news_frame, bg="#2d333b", height=50)
+        header.pack(fill="x", padx=10, pady=(10, 5))
+        header.pack_propagate(False)
+        
+        if UI is not None:
+            UI.CTkLabel(header, text="📰 SLC - News", 
+                       font=("Segoe UI", 14, "bold"),
+                       text_color="#ffffff").pack(side="left", padx=10, pady=10)
+            
+            refresh_news_btn = UI.CTkButton(header, text="🔄", width=30, height=30,
+                                           font=("Segoe UI", 12),
+                                           fg_color="#4a90e2", hover_color="#357abd",
+                                           corner_radius=5,
+                                           command=lambda: load_news_data())
+            refresh_news_btn.pack(side="right", padx=(1, 10), pady=10)
+        else:
+            tk.Label(header, text="📰 News", bg="#2d333b", fg="#ffffff",
+                    font=("Segoe UI", 12, "bold")).pack(side="left", padx=10, pady=10)
+        
+        # Scrollable container para noticias
+        if UI is not None:
+            news_scroll = UI.CTkScrollableFrame(news_frame, fg_color="transparent",
+                                               scrollbar_button_color="#2d333b",
+                                               scrollbar_button_hover_color="#3d444d")
+        else:
+            news_scroll_canvas = tk.Canvas(news_frame, bg="#1e1e1e", highlightthickness=0)
+            news_scroll_scrollbar = tk.Scrollbar(news_frame, orient="vertical", 
+                                                command=news_scroll_canvas.yview)
+            news_scroll = tk.Frame(news_scroll_canvas, bg="#1e1e1e")
+            news_scroll_canvas.configure(yscrollcommand=news_scroll_scrollbar.set)
+            news_scroll_scrollbar.pack(side="right", fill="y")
+            news_scroll_canvas.pack(side="left", fill="both", expand=True)
+            news_scroll_canvas.create_window((0, 0), window=news_scroll, anchor="nw")
+            news_scroll.bind("<Configure>", lambda e: news_scroll_canvas.configure(
+                scrollregion=news_scroll_canvas.bbox("all")))
+        
+        news_scroll.pack(fill="both", expand=True, padx=10, pady=(5, 10))
+        
+        return news_scroll
+    
+    def load_news_data():
+        """Carga información activa de la tabla 'information'"""
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            
+            # Obtener información activa ordenada por urgencia y fecha
+            query = """
+                SELECT ID_information, info_type, name_info, urgency, 
+                       publish_by, fechahora_in, fechahora_out
+                FROM information
+                WHERE is_Active = 1
+                ORDER BY 
+                    FIELD(urgency, 'HIGH', 'MID', 'LOW'),
+                    fechahora_in DESC
+                LIMIT 50
+            """
+            cur.execute(query)
+            news_items = cur.fetchall()
+            
+            cur.close()
+            conn.close()
+            
+            # Limpiar container anterior
+            for widget in news_container.winfo_children():
+                widget.destroy()
+            
+            if not news_items:
+                if UI is not None:
+                    UI.CTkLabel(news_container, text="📭 No hay información disponible",
+                               font=("Segoe UI", 12),
+                               text_color="#7d8590").pack(pady=20)
+                else:
+                    tk.Label(news_container, text="📭 No hay información disponible",
+                            bg="#1e1e1e", fg="#7d8590",
+                            font=("Segoe UI", 12)).pack(pady=20)
+                return
+            
+            # Crear cards para cada noticia
+            for item in news_items:
+                id_info, tipo, nombre, urgencia, publicado_por, fecha_in, fecha_out = item
+                create_news_card(news_container, id_info, tipo, nombre, urgencia, 
+                               publicado_por, fecha_in, fecha_out)
+            
+            print(f"[INFO] Cargadas {len(news_items)} noticias activas")
+            
+        except Exception as e:
+            print(f"[ERROR] load_news_data: {e}")
+            traceback.print_exc()
+            if UI is not None:
+                UI.CTkLabel(news_container, text=f"❌ Error al cargar noticias:\n{str(e)[:50]}",
+                           font=("Segoe UI", 12),
+                           text_color="#e74c3c").pack(pady=10)
+    
+    def create_news_card(parent, id_info, tipo, nombre, urgencia, publicado_por, fecha_in, fecha_out):
+        """Crea una tarjeta visual para una noticia"""
+        # Colores según urgencia
+        urgency_colors = {
+            'HIGH': '#e74c3c',
+            'MID': '#f39c12',
+            'LOW': '#3498db',
+            None: '#7d8590'
+        }
+        color = urgency_colors.get(urgencia, '#7d8590')
+        
+        # Iconos según tipo
+        type_icons = {
+            'SITE DOWN': '🔴',
+            'MAINTENANCE': '🔧',
+            'UPDATE': '🆕',
+            'ALERT': '⚠️',
+            'INFO': '📌',
+            'REMINDER': '⏰',
+            None: '📝'
+        }
+        icon = type_icons.get(tipo, '📝')
+        
+        # Card container
+        if UI is not None:
+            card = UI.CTkFrame(parent, fg_color="#2b2b2b", corner_radius=8, 
+                               border_width=1, border_color="#444444")
+            card.pack(fill="x", pady=8, padx=5)
+        else:
+            pass
+        
+        # Barra de color izquierda (urgencia)
+        if UI is not None:
+            urgency_bar = UI.CTkFrame(card, fg_color=color, width=5, height=20, corner_radius=0)
+        else:
+            urgency_bar = tk.Frame(card, bg=color, width=5)
+        urgency_bar.pack(side="left", fill="both")
+        
+        # Contenido
+        if UI is not None:
+            content = UI.CTkFrame(card, fg_color="transparent")
+        else:
+            content = tk.Frame(card, bg="#2b2b2b")
+        content.pack(side="left", fill="both", expand=True, padx=10, pady=3)
+        
+        # Header: icono + tipo + urgencia
+        if UI is not None:
+            header_frame = UI.CTkFrame(content, fg_color="transparent")
+        else:
+            header_frame = tk.Frame(content, bg="#2b2b2b")
+        header_frame.pack(fill="x", pady=0)
+        
+        if UI is not None:
+            UI.CTkLabel(header_frame, text=f"{icon} {tipo or 'Info'}", 
+                       font=("Segoe UI", 12, "bold"),
+                       text_color="#ffffff").pack(side="left")
+            
+            if urgencia:
+                UI.CTkLabel(header_frame, text=urgencia,
+                           font=("Segoe UI", 12, "bold"),
+                           text_color=color,
+                           fg_color="#1e1e1e",
+                           corner_radius=5,
+                           padx=8, pady=2).pack(side="right")
+        else:
+            tk.Label(header_frame, text=f"{icon} {tipo or 'Info'}", bg="#2b2b2b", fg="#ffffff",
+                    font=("Segoe UI", 12, "bold")).pack(side="left")
+        
+        # Título/Nombre
+        if UI is not None:
+            UI.CTkLabel(content, text=nombre or "Sin título",
+                       font=("Segoe UI", 12, "bold"),
+                       text_color="#e0e0e0",
+                       wraplength=260,
+                       anchor="w",
+                       justify="left").pack(fill="x", pady=0)
+        else:
+            tk.Label(content, text=nombre or "Sin título", bg="#2b2b2b", fg="#e0e0e0",
+                    font=("Segoe UI", 12, "bold"),
+                    wraplength=260, anchor="w", justify="left").pack(fill="x", pady=(0, 3))
+        
+        # Footer: publicado por y fecha
+        if UI is not None:
+            footer_frame = UI.CTkFrame(content, fg_color="transparent")
+        else:
+            footer_frame = tk.Frame(content, bg="#2b2b2b")
+        footer_frame.pack(fill="x", pady=0)
+        
+        fecha_str = fecha_in.strftime("%d/%m %H:%M") if fecha_in else "N/A"
+        footer_text = f"👤 {publicado_por or 'Sistema'} • 📅 {fecha_str}"
+        
+        if UI is not None:
+            UI.CTkLabel(footer_frame, text=footer_text,
+                       font=("Segoe UI", 12),
+                       text_color="#7d8590").pack(side="left")
+        else:
+            tk.Label(footer_frame, text=footer_text, bg="#2b2b2b", fg="#7d8590",
+                    font=("Segoe UI", 12)).pack(side="left")
+        
+        # Si hay fecha de vencimiento, mostrarla
+        if fecha_out:
+            dias_restantes = (fecha_out - datetime.now()).days
+            if dias_restantes >= 0:
+                expiry_text = f"⏳ Vence en {dias_restantes} días" if dias_restantes > 0 else "⏳ Vence hoy"
+                if UI is not None:
+                    UI.CTkLabel(footer_frame, text=expiry_text,
+                               font=("Segoe UI", 12),
+                               text_color="#f39c12").pack(side="right")
+    
+    # Crear panel de noticias
+    news_container = create_news_panel()
+    
+    # Cargar datos iniciales
+    load_news_data()
+    
+    # Auto-refresh cada 5 minutos
+    def auto_refresh_news():
+        load_news_data()
+        top.after(300000, auto_refresh_news)  # 5 minutos
+    
+    top.after(300000, auto_refresh_news)  # Programar primera actualización
     
     # Obtener listas de valores
     sites_list = get_sites()

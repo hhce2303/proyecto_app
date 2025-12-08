@@ -405,14 +405,13 @@ def eliminar_cover_breaks(breaks_sheet, parent_window=None):
 def load_combined_covers():
     """
     Carga datos combinados de covers_programados y covers_realizados
-    usando LEFT JOIN para mostrar TODOS los covers programados
-    (realizados o pendientes)
+    usando FULL OUTER JOIN para mostrar TODOS los covers (programados y emergencias)
     """
     try:
         conn = get_connection()
         cur = conn.cursor()
         
-        # Query con LEFT JOIN para incluir covers programados sin realizar
+        # Query con UNION para incluir covers programados Y covers de emergencia (sin ID_programacion_covers)
         query = """
             SELECT 
                 cp.ID_Cover,
@@ -443,7 +442,27 @@ def load_combined_covers():
             FROM covers_programados cp
             LEFT JOIN covers_realizados cr 
                 ON cp.ID_Cover = cr.ID_programacion_covers
-            ORDER BY cp.Time_request DESC
+            
+            UNION
+            
+            SELECT 
+                cr.ID_Covers AS ID_Cover,
+                cr.Nombre_usuarios AS Usuario,
+                NULL AS Hora_Programada,
+                NULL AS Estacion,
+                'Emergencia' AS Razon_Solicitud,
+                'N/A' AS Aprobado,
+                'N/A' AS Activo,
+                cr.Cover_in AS Cover_Inicio,
+                cr.Cover_out AS Cover_Fin,
+                cr.Covered_by AS Cubierto_Por,
+                cr.Motivo AS Motivo_Real,
+                'Emergencia' AS Estado
+            FROM covers_realizados cr
+            WHERE cr.ID_programacion_covers IS NULL 
+               OR cr.ID_programacion_covers = 0
+            
+            ORDER BY Cover_Inicio DESC, Hora_Programada DESC
         """
         
         cur.execute(query)
@@ -453,7 +472,7 @@ def load_combined_covers():
         cur.close()
         conn.close()
         
-        print(f"[DEBUG] Covers cargados: {len(rows)} registros")
+        print(f"[DEBUG] Covers cargados (programados + emergencias): {len(rows)} registros")
         return col_names, rows
         
     except Exception as e:
