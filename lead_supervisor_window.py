@@ -96,55 +96,63 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
     # ==================== FUNCIONES DE DATOS ====================
     
     def load_data():
-        """Carga los specials de la tabla specials (filtrados por Lead Supervisor y fecha de START SHIFT)"""
+        """Carga los specials desde el ID más antiguo sin marca hasta el más reciente"""
         try:
             conn = get_connection()
             cursor = conn.cursor()
             
-            # Obtener el último START SHIFT del Lead Supervisor (desde tabla Eventos)
+            # Obtener el ID más antiguo sin marca (done o flagged) del Lead Supervisor
             cursor.execute("""
-                SELECT e.FechaHora 
-                FROM Eventos e
-                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
-                WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = 'START SHIFT'
-                ORDER BY e.FechaHora DESC
-                LIMIT 1
+                SELECT MIN(ID_special) 
+                FROM specials 
+                WHERE Supervisor = %s 
+                AND (marked_status IS NULL OR marked_status = '')
             """, (username,))
-            result = cursor.fetchone()
+            oldest_unmarked_row = cursor.fetchone()
+            oldest_id = oldest_unmarked_row[0] if oldest_unmarked_row and oldest_unmarked_row[0] else None
             
-            if not result:
-                print(f"[INFO] No hay turno activo para {username}")
-                sheet.set_sheet_data([["No hay shift activo"] + [""] * (len(columns)-1)])
-                row_data_cache.clear()
-                row_ids.clear()
-                cursor.close()
-                conn.close()
-                return
+            if oldest_id is None:
+                # No hay specials sin marca, mostrar todos los del Lead Supervisor
+                sql = """
+                    SELECT 
+                        s.ID_special,
+                        s.FechaHora,
+                        s.ID_Sitio,
+                        s.Nombre_Actividad,
+                        s.Cantidad,
+                        s.Camera,
+                        s.Descripcion,
+                        s.Usuario,
+                        s.Time_Zone,
+                        s.marked_status,
+                        s.marked_by
+                    FROM specials s
+                    WHERE s.Supervisor = %s
+                    ORDER BY s.FechaHora DESC
+                """
+                cursor.execute(sql, (username,))
+            else:
+                # Mostrar desde el ID más antiguo sin marca hasta el más reciente
+                sql = """
+                    SELECT 
+                        s.ID_special,
+                        s.FechaHora,
+                        s.ID_Sitio,
+                        s.Nombre_Actividad,
+                        s.Cantidad,
+                        s.Camera,
+                        s.Descripcion,
+                        s.Usuario,
+                        s.Time_Zone,
+                        s.marked_status,
+                        s.marked_by
+                    FROM specials s
+                    WHERE s.Supervisor = %s
+                      AND s.ID_special >= %s
+                    ORDER BY s.FechaHora DESC
+                """
+                cursor.execute(sql, (username, oldest_id))
             
-            fecha_inicio = result[0]
-            
-            # ⭐ Query desde tabla specials filtrada por Lead Supervisor y fecha
-            # Muestra todos los specials asignados a este Lead Supervisor desde su último START SHIFT
-            sql = """
-                SELECT 
-                    s.ID_special,
-                    s.FechaHora,
-                    s.ID_Sitio,
-                    s.Nombre_Actividad,
-                    s.Cantidad,
-                    s.Camera,
-                    s.Descripcion,
-                    s.Usuario,
-                    s.Time_Zone,
-                    s.marked_status,
-                    s.marked_by
-                FROM specials s
-                WHERE s.Supervisor = %s
-                  AND s.FechaHora >= %s
-                ORDER BY s.FechaHora DESC
-            """
-            
-            cursor.execute(sql, (username, fecha_inicio))
             rows = cursor.fetchall()
             
             # Formatear datos
@@ -480,7 +488,7 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
     nav_frame.pack_propagate(False)
 
     def switch_view(new_view):
-        """Cambia entre las 7 vistas disponibles"""
+        """Cambia entre las 8 vistas disponibles"""
         current_view['value'] = new_view
         
         # Ocultar todos los containers
@@ -491,6 +499,7 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
         admin_container.pack_forget()
         rol_cover_container.pack_forget()
         breaks_container.pack_forget()
+        news_container.pack_forget()
         
         # Resetear colores de botones
         inactive_color = "#3b4754"
@@ -567,6 +576,13 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             if USE_SHEET:
                 breaks_sheet.refresh()
                 refrescar_tabla_breaks()
+        elif new_view == 'news':
+            news_container.pack(fill="both", expand=True, padx=10, pady=10)
+            if UI is not None:
+                btn_news.configure(fg_color=active_color, hover_color=active_hover)
+            else:
+                btn_news.configure(bg=active_color, activebackground=active_hover)
+            top.update_idletasks()
 
     # Botones de navegación
     if UI is not None:
@@ -653,6 +669,18 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             font=("Segoe UI", 12, "bold")
         )
         btn_breaks.pack(side="left", padx=5, pady=8)
+        
+        btn_news = UI.CTkButton(
+            nav_frame, 
+            text="📰 News", 
+            command=lambda: switch_view('news'),
+            fg_color="#3b4754",
+            hover_color="#4a5560",
+            width=120,
+            height=35,
+            font=("Segoe UI", 12, "bold")
+        )
+        btn_news.pack(side="left", padx=5, pady=8)
     else:
         btn_all_events = tk.Button(
             nav_frame,
@@ -744,6 +772,19 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             width=12
         )
         btn_breaks.pack(side="left", padx=5, pady=8)
+        
+        btn_news = tk.Button(
+            nav_frame,
+            text="📰 News",
+            command=lambda: switch_view('news'),
+            bg="#3b4754",
+            fg="white",
+            activebackground="#4a5560",
+            font=("Segoe UI", 12, "bold"),
+            relief="flat",
+            width=12
+        )
+        btn_news.pack(side="left", padx=5, pady=8)
         btn_cover.pack(side="left", padx=5, pady=8)
         
         btn_admin = tk.Button(
@@ -2810,6 +2851,20 @@ def open_hybrid_events_lead_supervisor(username, session_id=None, station=None, 
             tk.Label(breaks_sheet_frame, text="⚠️ tksheet no instalado", 
                     bg="#2c2f33", fg="#ff6b6b", font=("Segoe UI", 16)).pack(pady=20)
 
+    # ==================== NEWS CONTAINER ====================
+    from views.news_view import create_news_container
+    from controllers.news_controller import NewsController
+
+    # Crear instancia del controlador
+    news_controller = NewsController(username=username)
+
+    # Pasar controller a la vista
+    news_container = create_news_container(
+        top, 
+        username=username,
+        controller=news_controller,
+        UI=UI
+    )
     # ==================== ADMIN CONTAINER ====================
     
     if UI is not None:

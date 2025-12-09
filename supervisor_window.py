@@ -22,6 +22,13 @@ from backend_super import Dinamic_button_Shift, on_start_shift, on_end_shift, _f
 
 
 def open_hybrid_events_supervisor(username, session_id=None, station=None, root=None):
+    # CREAR VARIABLES PRIMERO (aunque sean None)
+    specials_container = None
+    audit_container = None
+    cover_container = None
+    breaks_container = None
+    cover_rol_container = None
+    news_container = None
     """
     🚀 VENTANA HÍBRIDA PARA SUPERVISORES: Visualización de Specials
     
@@ -284,7 +291,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
     mode_frame.pack_propagate(False)
 
     def switch_mode(new_mode):
-        """Cambia entre modo Specials, Audit, Cover Time, Breaks y Rol de Cover"""
+        """Cambia entre modo Specials, Audit, Cover Time, Breaks, Rol de Cover y News"""
         current_mode['value'] = new_mode
         
         # Ocultar todos los contenedores
@@ -293,6 +300,7 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
         cover_container.pack_forget()
         breaks_container.pack_forget()
         rol_cover_container.pack_forget()
+        news_container.pack_forget()
         
         
         # Resetear colores de todos los botones
@@ -307,12 +315,14 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             btn_cover.configure(fg_color=inactive_color, hover_color=inactive_hover)
             btn_breaks.configure(fg_color=inactive_color, hover_color=inactive_hover)
             btn_rol_cover.configure(fg_color=inactive_color, hover_color=inactive_hover)
+            btn_news.configure(fg_color=inactive_color, hover_color=inactive_hover)
         else:
             btn_specials.configure(bg=inactive_color, activebackground=inactive_hover)
             btn_audit.configure(bg=inactive_color, activebackground=inactive_hover)
             btn_cover.configure(bg=inactive_color, activebackground=inactive_hover)
             btn_breaks.configure(bg=inactive_color, activebackground=inactive_hover)
             btn_rol_cover.configure(bg=inactive_color, activebackground=inactive_hover)
+            btn_news.configure(bg=inactive_color, activebackground=inactive_hover)
         
         # Mostrar contenedor activo y resaltar botón
         if new_mode == 'specials':
@@ -348,6 +358,12 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             else:
                 btn_rol_cover.configure(bg=active_color, activebackground=active_hover)
             refrescar_lista_operadores()
+        elif new_mode == 'news':
+            news_container.pack(fill="both", expand=True, padx=10, pady=10)
+            if UI is not None:
+                btn_news.configure(fg_color=active_color, hover_color=active_hover)
+            else:
+                btn_news.configure(bg=active_color, activebackground=active_hover)
 
     # Botones de modo
     if UI is not None:
@@ -410,6 +426,18 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             font=("Segoe UI", 12, "bold")
         )
         btn_rol_cover.pack(side="left", padx=5, pady=8)
+        
+        btn_news = UI.CTkButton(
+            mode_frame, 
+            text="📰 News", 
+            command=lambda: switch_mode('news'),
+            fg_color="#3b4754",
+            hover_color="#4a5560",
+            width=130,
+            height=35,
+            font=("Segoe UI", 12, "bold")
+        )
+        btn_news.pack(side="left", padx=5, pady=8)
     else:
         btn_specials = tk.Button(
             mode_frame,
@@ -475,6 +503,19 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
             width=14
         )
         btn_rol_cover.pack(side="left", padx=5, pady=8)
+        
+        btn_news = tk.Button(
+            mode_frame,
+            text="📰 News",
+            command=lambda: switch_mode('news'),
+            bg="#3b4754",
+            fg="white",
+            activebackground="#4a5560",
+            font=("Segoe UI", 12, "bold"),
+            relief="flat",
+            width=11
+        )
+        btn_news.pack(side="left", padx=5, pady=8)
 
     # ==================== SPECIALS CONTAINER ====================
     if UI is not None:
@@ -1482,6 +1523,23 @@ def open_hybrid_events_supervisor(username, session_id=None, station=None, root=
     ])
     audit_sheet.pack(fill="both", expand=True)
     audit_sheet.change_theme("dark blue")
+
+    # ==================== NEWS CONTAINER ====================
+
+    # supervisor_window.py
+    from views.news_view import create_news_container
+    from controllers.news_controller import NewsController
+
+    # Crear instancia del controlador
+    news_controller = NewsController(username=username)
+
+    # Pasar controller a la vista
+    news_container = create_news_container(
+        top, 
+        username=username,
+        controller=news_controller,
+        UI=UI
+    )
 
     # ==================== BREAKS CONTAINER ====================
     if UI is not None:
