@@ -79,6 +79,7 @@ def logout_silent(session_id, station):
         return False
 
 def auto_login(username, station, password="1234", parent=None, silent=True):
+
     """Perform login programmatically and open main window, without showing login UI.
 
     Returns (ok, session_id, role) and opens main_super.open_main_window on success.
@@ -200,3 +201,4 @@ def auto_login(username, station, password="1234", parent=None, silent=True):
         except Exception:
             pass
         return False, None, None
+    

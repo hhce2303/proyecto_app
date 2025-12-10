@@ -1,6 +1,7 @@
 from models.news_model import crear_news, deactivate_news_card_model, cargar_news_activas, delete_news_card_model
 import tkinter as tk
 from tkinter import messagebox
+
 class NewsController:
     def __init__(self, username):
         self.username = username

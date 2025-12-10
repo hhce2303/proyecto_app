@@ -483,15 +483,6 @@ def load_combined_covers():
 
 # fin de la implentacion de covers.
 
-def set_new_status(new_value, username):
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("UPDATE sesion SET Statuses = %s WHERE ID_user = %s ORDER BY ID DESC LIMIT 1",
-                            (new_value, username))
-            conn.commit()
-            cursor.close()
-            conn.close()
-            return print("Status updated")
 
 
 def single_window(name, func):
