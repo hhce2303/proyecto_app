@@ -4141,174 +4141,20 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
 
     # ⭐ CONFIGURAR CIERRE DE VENTANA: Ejecutar logout automáticamente
     def on_window_close():
-        """Maneja el cierre de la ventana principal ejecutando logout
-        
-        Si hay eventos pendientes de enviar (marca '⏳ Pendiente por actualizar'),
-        los envía automáticamente al primer supervisor disponible antes de cerrar.
-        """
+        """Maneja el cierre de la ventana principal ejecutando logout y mostrando login"""
         try:
-            # ⭐ VERIFICAR SI HAY EVENTOS PENDIENTES DE ENVIAR (solo en modo specials)
-            if current_mode.get() == 'specials' and row_data_cache:
-                # Buscar eventos con marca pendiente O sin marca (sin enviar)
-                pending_rows = []
-                for idx, item in enumerate(row_data_cache):
-                    valores = item.get('values', [])
-                    # La columna "Marca" es la última (índice -1)
-                    if len(valores) > 0:
-                        marca = valores[-1] if len(valores) > 7 else ""
-                        # Incluir eventos con marca pendiente O sin marca (vacía)
-                        if "⏳ Pendiente por actualizar" in str(marca) or str(marca).strip() == "":
-                            pending_rows.append(idx)
-                
-                # Si hay eventos pendientes, enviarlos automáticamente
-                if pending_rows:
-                    print(f"[DEBUG] {len(pending_rows)} eventos pendientes detectados al cerrar")
-                    
-                    # Obtener primer supervisor disponible (activo en sesión)
-                    try:
-                        conn = get_connection()
-                        cur = conn.cursor()
-                        cur.execute("""
-                            SELECT DISTINCT u.Nombre_Usuario 
-                            FROM user u
-                            INNER JOIN Sesion s ON u.Nombre_Usuario = s.ID_user
-                            WHERE u.Rol = 'Supervisor' 
-                            AND s.Active = '1'
-                            ORDER BY u.Nombre_Usuario ASC 
-                            LIMIT 1
-                        """)
-                        supervisor_row = cur.fetchone()
-                        
-                        if supervisor_row:
-                            supervisor_seleccionado = supervisor_row[0]
-                            print(f"[DEBUG] Enviando automáticamente a: {supervisor_seleccionado}")
-                            
-                            # Enviar solo los eventos pendientes
-                            for idx in pending_rows:
-                                if idx >= len(row_data_cache):
-                                    continue
-                                
-                                item = row_data_cache[idx]
-                                valores = item.get('values', [])
-                                
-                                if len(valores) < 7:
-                                    continue
-                                
-                                # Extraer valores de la fila
-                                fecha_hora = valores[0]
-                                id_sitio_display = valores[1]
-                                nombre_actividad = valores[2]
-                                cantidad = valores[3]
-                                camera = valores[4]
-                                descripcion = valores[5]
-                                tz = valores[6]
-                                
-                                # Extraer ID_Sitio del formato "Nombre (ID)"
-                                id_sitio = None
-                                if '(' in id_sitio_display and ')' in id_sitio_display:
-                                    try:
-                                        id_sitio = int(id_sitio_display.split('(')[-1].split(')')[0])
-                                    except (ValueError, IndexError):
-                                        pass
-                                
-                                # ⭐ VERIFICAR SI YA EXISTE EN SPECIALS (evitar duplicados)
-                                # Normalizar valores antes de guardar (igual que accion_supervisores)
-                                cantidad_normalizada = int(cantidad) if cantidad is not None and str(cantidad).strip() else 0
-                                camera_normalizada = str(camera).strip() if camera else ""
-                                descripcion_normalizada = str(descripcion).strip() if descripcion else ""
-                                
-                                try:
-                                    # Buscar registro existente (MISMO CRITERIO que accion_supervisores)
-                                    cur.execute(
-                                        """
-                                        SELECT ID_special 
-                                        FROM specials
-                                        WHERE FechaHora = %s
-                                        AND Usuario = %s
-                                        AND Nombre_Actividad = %s
-                                        AND IFNULL(ID_Sitio, 0) = IFNULL(%s, 0)
-                                        LIMIT 1
-                                        """,
-                                        (fecha_hora, username, nombre_actividad, id_sitio)
-                                    )
-                                    existing_row = cur.fetchone()
-                                    
-                                    if existing_row:
-                                        # ✅ UPDATE - Registro ya existe
-                                        id_special = existing_row[0]
-                                        cur.execute(
-                                            """
-                                            UPDATE specials
-                                            SET Supervisor = %s,
-                                                Cantidad = %s,
-                                                Camera = %s,
-                                                Descripcion = %s,
-                                                Time_Zone = %s
-                                            WHERE ID_special = %s
-                                            """,
-                                            (supervisor_seleccionado, cantidad_normalizada, camera_normalizada, 
-                                             descripcion_normalizada, tz, id_special)
-                                        )
-                                        print(f"[DEBUG] ✅ UPDATE evento {idx} (ID_special={id_special})")
-                                    else:
-                                        # ✅ INSERT - Registro nuevo
-                                        cur.execute(
-                                            """
-                                            INSERT INTO specials 
-                                            (Supervisor, FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, Camera, Descripcion, Usuario, Time_Zone)
-                                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                                            """,
-                                            (supervisor_seleccionado, fecha_hora, id_sitio, nombre_actividad, 
-                                             cantidad_normalizada, camera_normalizada, descripcion_normalizada, username, tz)
-                                        )
-                                        print(f"[DEBUG] ✅ INSERT evento {idx} (nuevo)")
-                                except Exception as e:
-                                    print(f"[ERROR] Error enviando evento {idx}: {e}")
-                                    traceback.print_exc()
-                            
-                            conn.commit()
-                            print(f"[DEBUG] {len(pending_rows)} eventos enviados automáticamente a {supervisor_seleccionado}")
-                            
-                            # ⭐ ACTUALIZAR CACHE para reflejar el envío (evitar que se vean sin marca)
-                            # Marcar los eventos enviados con "✅ Enviado a [supervisor]"
-                            for idx in pending_rows:
-                                if idx < len(row_data_cache):
-                                    # Actualizar la marca en el cache
-                                    item = row_data_cache[idx]
-                                    valores = item.get('values', [])
-                                    if len(valores) >= 8:
-                                        valores[7] = f"✅ Enviado a {supervisor_seleccionado}"
-                                        item['mark_color'] = 'green'
-                            
-                            print(f"[DEBUG] ✅ Marcas visuales actualizadas en cache")
-                        else:
-                            print(f"[WARN] No hay supervisores disponibles - eventos pendientes no enviados")
-                        
-                        cur.close()
-                        conn.close()
-                        
-                    except Exception as e:
-                        print(f"[ERROR] Error al enviar eventos pendientes: {e}")
-                        traceback.print_exc()
-            
-            # Ejecutar logout para cerrar sesión correctamente
             if session_id and station:
                 login.do_logout(session_id, station, top)
-            else:
-                # Si no hay session_id, simplemente destruir la ventana
+            if not session_id:
                 try:
+                    login.show_login()
                     top.destroy()
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"[ERROR] Error during logout: {e}")
         except Exception as e:
-            print(f"[ERROR] Error en on_window_close: {e}")
-            traceback.print_exc()
-            # En caso de error, destruir la ventana de todos modos
-            try:
-                top.destroy()
-            except Exception:
-                pass
-    
+            print(f"[ERROR] Error destroying window: {e}")
+    # Configurar protocolo de cierre (botón X)
+    top.protocol("WM_DELETE_WINDOW", on_window_close)
     # Configurar protocolo de cierre (botón X)
     top.protocol("WM_DELETE_WINDOW", on_window_close)
 

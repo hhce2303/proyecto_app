@@ -523,23 +523,23 @@ def _get_tz_config_path():
     return base / TZ_CONFIG_FILENAME
 
 def load_tz_config():
-    """Load timezone adjustment mapping from JSON file.
+    """Load timezone adjustment mapping - Fixed rules without external file.
 
     Returns a dict mapping timezone code -> integer offset hours.
-    If the file doesn't exist, returns a sensible default.
+    Reglas fijas:
+    - ET (Eastern Time): 0
+    - CT (Central Time): -1
+    - MT (Mountain Time): -2
+    - MST (Mountain Standard Time): -2
+    - PT (Pacific Time): -3
     """
-    path = _get_tz_config_path()
-    if not path.exists():
-        # sensible defaults
-        return {"ET": 1, "CT": 0, "MT": -1, "MST": -2, "PT": -2}
-    try:
-        with path.open('r', encoding='utf-8') as f:
-            data = json.load(f)
-            # ensure ints
-            return {k: int(v) for k, v in (data or {}).items()}
-    except Exception:
-        # On error, fallback to defaults
-        return {"ET": 1, "CT": 0, "MT": -1, "MST": -2, "PT": -2}
+    return {
+        "ET": 0,
+        "CT": -1,
+        "MT": -2,
+        "MST": -2,
+        "PT": -3
+    }
 
 def save_tz_config(tz_map):
     """Save tz_map (dict) to the JSON config file."""

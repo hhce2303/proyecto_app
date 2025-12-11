@@ -8,7 +8,7 @@ import tkinter as tk
 import under_super
 
 import login
-now = datetime.now()
+
 
 def request_covers(username, time_request, reason, aprvoved):
 
@@ -128,6 +128,7 @@ def request_covers(username, time_request, reason, aprvoved):
 
 # cover programado.
 def insertar_cover(username, Covered_by, Motivo, session_id, station):
+    now = datetime.now()
     ID_cover = None
     Cover_in = (now + timedelta(minutes=2)).strftime("%Y-%m-%d %H:%M:%S")
     Activo = False

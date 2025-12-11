@@ -42,16 +42,18 @@ def open_main_window(username, station, role, session_id):
         import supervisor_window
         supervisor_window.open_hybrid_events_supervisor(
             username=username,
+            role="Supervisor",
             session_id=session_id,
             station=station,
             root=None
         )
     
     elif role == "Lead Supervisor":
-        # Lead Supervisor: Ventana completa con permisos administrativos
-        import lead_supervisor_window
-        lead_supervisor_window.open_hybrid_events_lead_supervisor(
+        # Lead Supervisor: Usa la misma ventana de Supervisor con containers adicionales
+        import supervisor_window
+        supervisor_window.open_hybrid_events_supervisor(
             username=username,
+            role="Lead Supervisor",
             session_id=session_id,
             station=station,
             root=None

@@ -23,13 +23,14 @@ def get_user_id_by_name(username):
         return None
 
 
-def add_break_to_db(user_covered_id, user_covering_id, datetime_cover):
+def add_break_to_db(user_covered_id, user_covering_id, datetime_cover, supervisor_id):
     """Agrega un nuevo break programado a la base de datos
     
     Args:
         user_covered_id (int): ID del usuario a cubrir
         user_covering_id (int): ID del usuario que cubre
         datetime_cover (str): Fecha y hora completa en formato 'YYYY-MM-DD HH:MM:SS'
+        supervisor_id (int): ID del supervisor que aprueba
         
     Returns:
         bool: True si éxito, False si falla
@@ -38,10 +39,10 @@ def add_break_to_db(user_covered_id, user_covering_id, datetime_cover):
         conn = get_connection()
         cur = conn.cursor()
         query = """
-            INSERT INTO gestion_breaks_programados (User_covered, User_covering, Fecha_hora_cover, is_Active)
-            VALUES (%s, %s, %s, 1)
+            INSERT INTO gestion_breaks_programados (User_covered, User_covering, Fecha_hora_cover, is_Active, Supervisor, Fecha_creacion)
+            VALUES (%s, %s, %s, 1, %s, NOW())
         """
-        cur.execute(query, (user_covered_id, user_covering_id, datetime_cover))
+        cur.execute(query, (user_covered_id, user_covering_id, datetime_cover, supervisor_id))
         conn.commit()
         cur.close()
         conn.close()
@@ -65,7 +66,7 @@ def delete_break_from_db(break_id):
         cur = conn.cursor()
         query = """
             DELETE FROM gestion_breaks_programados  
-            WHERE ID_break_programado = %s
+            WHERE ID_cover = %s
         """
         cur.execute(query, (break_id,))
         conn.commit()
@@ -89,23 +90,24 @@ def load_covers_from_db():
         cur = conn.cursor()
         query = """
             SELECT 
-                gestion_breaks_programados.ID_break_programado,
-                u_covered.Nombre_Usuario as usuario_cubierto,
-                u_covering.Nombre_Usuario as usuario_cubre,
-                TIME(gestion_breaks_programados.Fecha_hora_cover) as hora,
+                gbp.ID_cover,
+                TIME(gbp.Fecha_hora_cover) as hora,
+                u_covered.Nombre_Usuario as usuario_covered,
+                u_covering.Nombre_Usuario as usuario_covering,
                 CASE 
-                    WHEN gestion_breaks_programados.is_Active = 1 THEN 'Activo'
+                    WHEN gbp.is_Active = 1 THEN 'Activo'
                     ELSE 'Inactivo'
                 END as estado,
                 CASE
-                    WHEN gestion_breaks_programados.Approved_by IS NOT NULL THEN CONCAT('✓ ', gestion_breaks_programados.Approved_by)
+                    WHEN gbp.Supervisor IS NOT NULL THEN CONCAT('✓ ', u_supervisor.Nombre_Usuario)
                     ELSE 'Pendiente'
                 END as aprobacion
-            FROM gestion_breaks_programados
-            INNER JOIN user u_covered ON gestion_breaks_programados.User_covered = u_covered.ID_Usuario
-            INNER JOIN user u_covering ON gestion_breaks_programados.User_covering = u_covering.ID_Usuario
-            WHERE gestion_breaks_programados.is_Active = 1
-            ORDER BY gestion_breaks_programados.Fecha_hora_cover
+            FROM gestion_breaks_programados gbp
+            INNER JOIN user u_covered ON gbp.User_covered = u_covered.ID_Usuario
+            INNER JOIN user u_covering ON gbp.User_covering = u_covering.ID_Usuario
+            LEFT JOIN user u_supervisor ON gbp.Supervisor = u_supervisor.ID_Usuario
+            WHERE gbp.is_Active = 1
+            ORDER BY gbp.Fecha_hora_cover
         """
         cur.execute(query)
         rows = cur.fetchall()

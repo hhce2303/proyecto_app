@@ -3,11 +3,12 @@ from tkinter import ttk, messagebox
 from controllers.breaks_controller import BreaksController
 
 
-def render_breaks_container(parent, UI=None, SheetClass=None, under_super=None):
+def render_breaks_container(parent, username=None, UI=None, SheetClass=None, under_super=None):
     """Renderiza el container completo de Breaks con controles y tabla
     
     Args:
         parent: Frame padre donde se renderizará
+        username: Nombre del supervisor que aprueba los breaks
         UI: Módulo customtkinter o None para tkinter estándar
         SheetClass: Clase tksheet.Sheet o None
         under_super: Módulo con FilteredCombobox
@@ -43,6 +44,31 @@ def render_breaks_container(parent, UI=None, SheetClass=None, under_super=None):
     
     # Variable para almacenar el sheet
     breaks_sheet = None
+    cell_break_map = {}
+    table_state = {
+        "row_count": 0,
+        "column_count": 0,
+        "headers": [],
+        "column_keys": [],
+    }
+
+    def fetch_table_snapshot():
+        """Obtiene la estructura tabular desde el controlador y actualiza el estado local"""
+        snapshot = controller.get_table_snapshot()
+
+        headers = snapshot.get("headers") or ["Hora Programada"]
+        data = snapshot.get("rows") or []
+        cell_map = snapshot.get("cell_map") or {}
+
+        cell_break_map.clear()
+        cell_break_map.update(cell_map)
+
+        table_state["row_count"] = snapshot.get("row_count", len(data))
+        table_state["column_count"] = snapshot.get("column_count", len(headers))
+        table_state["headers"] = headers
+        table_state["column_keys"] = snapshot.get("column_keys", [])
+
+        return headers, data
     
     # ==================== FUNCIONES INTERNAS ====================
     
@@ -50,15 +76,17 @@ def render_breaks_container(parent, UI=None, SheetClass=None, under_super=None):
         """Refresca los datos de la tabla"""
         if breaks_sheet is None:
             return
-        data = controller.load_covers_data()
+        
+        headers, data = fetch_table_snapshot()
+
+        breaks_sheet.headers(headers)
         breaks_sheet.set_sheet_data(data)
-        # Reajustar anchos
-        breaks_sheet.column_width(column=0, width=50)
-        breaks_sheet.column_width(column=1, width=180)
-        breaks_sheet.column_width(column=2, width=180)
-        breaks_sheet.column_width(column=3, width=130)
-        breaks_sheet.column_width(column=4, width=100)
-        breaks_sheet.column_width(column=5, width=120)
+        
+        # Ajustar anchos
+        breaks_sheet.column_width(column=0, width=130)
+        for i in range(1, len(headers)):
+            breaks_sheet.column_width(column=i, width=150)
+        
         breaks_sheet.redraw()
     
     def limpiar_formulario():
@@ -81,7 +109,7 @@ def render_breaks_container(parent, UI=None, SheetClass=None, under_super=None):
             messagebox.showwarning("Agregar Break", "Un usuario no puede cubrirse a sí mismo", parent=breaks_container)
             return
         
-        success = controller.add_break(user_covered, user_covering, break_time, callback=refrescar_tabla)
+        success = controller.add_break(user_covered, user_covering, break_time, username or 'Sistema', callback=refrescar_tabla)
         
         if success:
             messagebox.showinfo("Agregar Break", "✅ Break agregado exitosamente", parent=breaks_container)
@@ -94,24 +122,86 @@ def render_breaks_container(parent, UI=None, SheetClass=None, under_super=None):
         if breaks_sheet is None:
             return
         
-        selected_rows = breaks_sheet.get_selected_rows()
-        if not selected_rows:
-            messagebox.showwarning("Eliminar Break", "Selecciona un break para eliminar", parent=breaks_container)
-            return
-        
         # Obtener datos actuales
-        data = controller.load_covers_data()
-        if not data or selected_rows[0] >= len(data):
+        selected_ids = set()
+
+        # Selecciones de celdas específicas
+        for row_index, col_index in breaks_sheet.get_selected_cells():
+            if col_index == 0:
+                continue
+            selected_ids.update(cell_break_map.get((row_index, col_index), []))
+
+        # Selecciones de filas completas
+        for row_index in breaks_sheet.get_selected_rows():
+            for col_index in range(1, table_state.get("column_count", 1)):
+                selected_ids.update(cell_break_map.get((row_index, col_index), []))
+
+        # Selecciones de columnas completas
+        for col_index in breaks_sheet.get_selected_columns():
+            if col_index == 0:
+                continue
+            for row_index in range(table_state.get("row_count", 0)):
+                selected_ids.update(cell_break_map.get((row_index, col_index), []))
+
+        # Selección actual (si no se registró en los métodos anteriores)
+        if not selected_ids:
+            current_selection = breaks_sheet.get_currently_selected(return_tuple=True)
+            if current_selection and current_selection[0] == "cell":
+                row_index, col_index = current_selection[1], current_selection[2]
+                if col_index != 0:
+                    selected_ids.update(cell_break_map.get((row_index, col_index), []))
+
+        if not selected_ids:
+            messagebox.showwarning(
+                "Eliminar Break",
+                "Selecciona una celda, fila o columna que contenga breaks válidos",
+                parent=breaks_container
+            )
             return
-        
-        # El ID real está en la primera columna pero es el índice + 1
-        # Necesitamos obtener el ID de la BD original
-        if not messagebox.askyesno("Eliminar Break", "¿Eliminar el break seleccionado?", parent=breaks_container):
+
+        confirm_text = (
+            "¿Eliminar el break seleccionado?"
+            if len(selected_ids) == 1
+            else f"Se eliminarán {len(selected_ids)} breaks. ¿Continuar?"
+        )
+        if not messagebox.askyesno("Eliminar Break", confirm_text, parent=breaks_container):
             return
-        
-        # Por ahora usamos el índice como referencia temporal
-        # TODO: Modificar para usar ID real de la BD
-        messagebox.showinfo("Eliminar", "Funcionalidad en desarrollo: usar ID real de BD", parent=breaks_container)
+
+        eliminados = 0
+        fallidos = []
+
+        for break_id in selected_ids:
+            try:
+                break_id_int = int(break_id)
+            except (TypeError, ValueError):
+                break_id_int = break_id
+
+            if controller.delete_break(break_id_int, callback=None):
+                eliminados += 1
+            else:
+                fallidos.append(break_id)
+
+        if eliminados:
+            refrescar_tabla()
+
+        if eliminados and not fallidos:
+            messagebox.showinfo(
+                "Eliminar Break",
+                "✅ Se eliminó el break seleccionado" if eliminados == 1 else "✅ Se eliminaron los breaks seleccionados",
+                parent=breaks_container
+            )
+        elif eliminados and fallidos:
+            messagebox.showwarning(
+                "Eliminar Break",
+                "Algunos breaks no se pudieron eliminar: " + ", ".join(map(str, fallidos)),
+                parent=breaks_container
+            )
+        else:
+            messagebox.showerror(
+                "Eliminar Break",
+                "❌ No se pudo eliminar el break seleccionado",
+                parent=breaks_container
+            )
     
     # ==================== FORMULARIO ====================
     
@@ -254,9 +344,7 @@ def render_breaks_container(parent, UI=None, SheetClass=None, under_super=None):
     breaks_sheet_frame.pack(fill="both", expand=True, padx=10, pady=10)
     
     if SheetClass:
-        # Headers
-        headers = ["#", "Usuario a Cubrir", "Cubierto Por", "Hora Programada", "Estado", "Aprobación"]
-        data = controller.load_covers_data()
+        headers, data = fetch_table_snapshot()
         
         breaks_sheet = SheetClass(
             breaks_sheet_frame,
@@ -288,13 +376,10 @@ def render_breaks_container(parent, UI=None, SheetClass=None, under_super=None):
         breaks_sheet.set_sheet_data(data)
         breaks_sheet.change_theme("dark blue")
         
-        # Ajustar anchos
-        breaks_sheet.column_width(column=0, width=50)
-        breaks_sheet.column_width(column=1, width=180)
-        breaks_sheet.column_width(column=2, width=180)
-        breaks_sheet.column_width(column=3, width=130)
-        breaks_sheet.column_width(column=4, width=100)
-        breaks_sheet.column_width(column=5, width=120)
+        # Ajustar anchos dinámicamente
+        breaks_sheet.column_width(column=0, width=130)  # Hora Programada
+        for i in range(1, len(headers)):
+            breaks_sheet.column_width(column=i, width=150)
     else:
         if UI is not None:
             UI.CTkLabel(breaks_sheet_frame, text="⚠️ tksheet no instalado", 

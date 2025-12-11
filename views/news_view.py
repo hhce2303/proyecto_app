@@ -4,7 +4,42 @@ from tkinter import ttk
 now = datetime.now()
 from under_super import FilteredCombobox
 
-# ==================== NEWS CONTAINER ====================
+# ==================== NEWS CONTAINER (WRAPPER MVC) ====================
+def render_news_container_mvc(parent, username, UI=None, SheetClass=None):
+    """
+    Wrapper MVC para news container que sigue el patrón estándar.
+    
+    Args:
+        parent: Widget padre
+        username: Nombre del usuario supervisor
+        UI: CustomTkinter module o None
+        SheetClass: tksheet.Sheet class (no usado en news pero mantenido por consistencia)
+    
+    Returns:
+        dict: {
+            'container': Frame principal,
+            'refresh': Función para refrescar datos,
+            'controller': NewsController instance
+        }
+    """
+    from controllers.news_controller import NewsController
+    
+    controller = NewsController(username)
+    container = create_news_container(parent, username, controller, UI)
+    
+    # Función refresh (llamará a load_news_list si existe en el container)
+    def refresh():
+        # Esta función se puede expandir según necesidades
+        pass
+    
+    return {
+        'container': container,
+        'refresh': refresh,
+        'controller': controller
+    }
+
+
+# ==================== NEWS CONTAINER (LEGACY) ====================
 def create_news_container(top, username, controller, UI=None):
 
     
@@ -186,7 +221,7 @@ def crear_news_card_preview(parent, news_data, controller):
         pass
     """Crea una card visual para preview de news"""
     # ✅ Usa controller en vez de importar del modelo
-    command=lambda: controller.delete_news(news_data['id'], create_news_container.refrescar())
+    command=lambda: controller.delete_news(news_data['id'], render_news_container.refrescar())
     
     urgency_colors = {
         'HIGH': '#e74c3c',
