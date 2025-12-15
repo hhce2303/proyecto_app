@@ -18,6 +18,7 @@ from datetime import datetime
 from controllers.daily_controller import DailyController
 from models.database import get_connection
 from utils.ui_factory import UIFactory
+from utils.date_formatter import format_friendly_datetime
 
 
 class DailyModule:
@@ -242,8 +243,8 @@ class DailyModule:
                 # Resolver nombre de sitio
                 nombre_sitio = self._get_site_name(cur, id_sitio)
                 
-                # Formatear fecha/hora
-                fecha_str = fecha_hora.strftime("%Y-%m-%d %H:%M:%S") if fecha_hora else ""
+                # Formatear fecha/hora de forma amigable
+                fecha_str = format_friendly_datetime(fecha_hora, show_seconds=False) if fecha_hora else ""
                 
                 # Fila para mostrar (formato consistente con Specials)
                 display_row = [
@@ -404,11 +405,13 @@ class DailyModule:
         if self.blackboard and hasattr(self.blackboard, '_show_datetime_picker'):
             # Callback para actualizar la celda
             def update_cell(dt):
-                self.sheet.set_cell_data(row, col, dt.strftime("%Y-%m-%d %H:%M:%S"))
+                self.sheet.set_cell_data(row, col, format_friendly_datetime(dt, show_seconds=False))
                 self.sheet.redraw()
                 # Marcar cambio pendiente
                 if row < len(self.row_ids):
                     self.pending_changes.add(row)
+                    # Guardar después del cambio
+                    self.parent.after(500, self._auto_save_pending)
             
             self.blackboard._show_datetime_picker(
                 callback=update_cell,
@@ -491,6 +494,8 @@ class DailyModule:
                     self.sheet.redraw()
                     self.pending_changes.add(row)
                     picker_win.destroy()
+                    # Guardar después del cambio
+                    self.parent.after(500, self._auto_save_pending)
                 else:
                     messagebox.showwarning("Advertencia", "Selecciona un sitio", parent=picker_win)
             
@@ -551,6 +556,8 @@ class DailyModule:
                     self.sheet.redraw()
                     self.pending_changes.add(row)
                     picker_win.destroy()
+                    # Guardar después del cambio
+                    self.parent.after(500, self._auto_save_pending)
                 else:
                     messagebox.showwarning("Advertencia", "Selecciona un sitio", parent=picker_win)
             
@@ -649,6 +656,8 @@ class DailyModule:
                     self.sheet.redraw()
                     self.pending_changes.add(row)
                     picker_win.destroy()
+                    # Guardar después del cambio
+                    self.parent.after(500, self._auto_save_pending)
                 else:
                     messagebox.showwarning("Advertencia", "Selecciona una actividad", parent=picker_win)
             
@@ -709,6 +718,8 @@ class DailyModule:
                     self.sheet.redraw()
                     self.pending_changes.add(row)
                     picker_win.destroy()
+                    # Guardar después del cambio
+                    self.parent.after(500, self._auto_save_pending)
                 else:
                     messagebox.showwarning("Advertencia", "Selecciona una actividad", parent=picker_win)
             

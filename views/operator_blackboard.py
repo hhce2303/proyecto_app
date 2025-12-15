@@ -2,21 +2,25 @@
 OperatorBlackboard - Contenedor de tabs para operadores.
 Hereda de Blackboard y personaliza para operador.
 
-ENFOQUE ACTUAL: Daily + Specials con módulos MVC
-PENDIENTES: Covers
+ENFOQUE ACTUAL: Daily + Specials + Covers con módulos MVC
 
 IMPORTANTE: 
 - DAILY = OPERADOR (crear eventos) - ✅ FUNCIONANDO
 - SPECIALS = OPERADOR (eventos especiales con timezone) - ✅ FUNCIONANDO
-- COVERS = OPERADOR (solicitar covers) - ⏳ Pendiente
+- COVERS = OPERADOR (solicitar/visualizar covers) - ✅ IMPLEMENTADO
 """
 from views.blackboard import Blackboard
 from views.modules.daily_module import DailyModule
 from views.modules.specials_module import SpecialsModule
+from views.modules.covers_module import CoversModule
+from views.dialogs.request_cover_dialog import RequestCoverDialog
+from views.dialogs.register_cover_dialog import RegisterCoverDialog
 from controllers.daily_controller import DailyController
 from under_super import FilteredCombobox
 import tkinter as tk
 from datetime import datetime
+import login
+import backend_super
 try:
     import tkcalendar
 except ImportError:
@@ -38,20 +42,33 @@ class OperatorBlackboard(Blackboard):
         # Inicializar controller
         self.controller = DailyController(username)
         
-        super().__init__(username, role, session_id, station, root)
+        # Variables para control de shift
+        self.shift_warning_label = None
+        self.start_shift_btn = None
+        self.end_shift_btn = None
+        self.add_event_btn = None
+        self.solicitar_cover_btn = None
+        self.registrar_cover_btn = None
+        self.send_selected_btn = None
+        self.send_all_btn = None
+        self.refresh_job = None
         
-        # Botón de logout
-        #self.ui_factory.button(
-            #parent,
-            #text="🚪 Logout",
-            #command=self._on_logout,
-            #width=100,
-            #fg_color="#d32f2f",
-            #hover_color="#b71c1c"
-        #).pack(side="right", padx=10)
+        super().__init__(username, role, session_id, station, root)
+    
+    def _build(self):
+        """Sobrescribe _build para inicializar estado de shift después de construir"""
+        # Llamar al build del padre
+        super()._build()
+        
+        # Inicializar estado de controles según shift activo
+        self._update_shift_controls()
+        
+        # Iniciar auto-refresh
+        self._start_auto_refresh()
     
     def _setup_tabs_content(self, parent):
-        """Tabs de Operador: Daily, Specials, Covers"""
+        """Tabs de Operador: Daily, Specials, Covers + Botón Solicitar Cover"""
+        # Tabs (izquierda)
         tabs = [
             ("📝 Daily", "Daily"),
             ("⭐ Specials", "Specials"),
@@ -69,6 +86,50 @@ class OperatorBlackboard(Blackboard):
             btn.pack(side="left", padx=5, pady=10)
             self.tab_buttons[tab_name] = btn
         
+        # Botón End Shift (derecha, primero para que aparezca más a la derecha)
+        self.end_shift_btn = self.ui_factory.button(
+            parent,
+            text="🏁 End Shift",
+            command=self._end_shift,
+            width=130,
+            fg_color="#d32f2f",
+            hover_color="#b71c1c"
+        )
+        self.end_shift_btn.pack(side="right", padx=(5, 10), pady=10)
+        
+        # Botón Start Shift (derecha)
+        self.start_shift_btn = self.ui_factory.button(
+            parent,
+            text="🚀 Start Shift",
+            command=self._start_shift,
+            width=130,
+            fg_color="#00c853",
+            hover_color="#00a043"
+        )
+        self.start_shift_btn.pack(side="right", padx=(10, 5), pady=10)
+        
+        # Botón Registrar Cover
+        self.registrar_cover_btn = self.ui_factory.button(
+            parent,
+            text="✍️ Registrar Cover",
+            command=self._register_cover,
+            width=150,
+            fg_color="#ff6f00",
+            hover_color="#e65100"
+        )
+        self.registrar_cover_btn.pack(side="right", padx=(5, 10), pady=10)
+        
+        # Botón Solicitar Cover
+        self.solicitar_cover_btn = self.ui_factory.button(
+            parent,
+            text="🙋 Solicitar Cover",
+            command=self._request_cover,
+            width=150,
+            fg_color="#2e7d32",
+            hover_color="#1b5e20"
+        )
+        self.solicitar_cover_btn.pack(side="right", padx=(10, 5), pady=10)
+        
         self._update_tab_buttons()
     
     def _setup_content(self, parent):
@@ -76,6 +137,18 @@ class OperatorBlackboard(Blackboard):
         
         # ========== TAB DAILY (EXCLUSIVO DE OPERADORES) ==========
         daily_frame = self.ui_factory.frame(parent, fg_color="#1e1e1e")
+        
+        # Label de advertencia (solo visible cuando NO hay turno activo)
+        warning_frame = self.ui_factory.frame(daily_frame, fg_color="#b71c1c", border_width=2, border_color="#ff5252")
+        warning_frame.pack(fill="x", padx=10, pady=10)
+        
+        self.shift_warning_label = self.ui_factory.label(
+            warning_frame,
+            text="⚠️ INICIA TU TURNO PARA COMENZAR A REGISTRAR EVENTOS ⚠️",
+            text_color="#ffffff",
+            font=("Segoe UI", 16, "bold")
+        )
+        self.shift_warning_label.pack(pady=15)
         
         # DailyModule primero
         try:
@@ -135,40 +208,53 @@ class OperatorBlackboard(Blackboard):
         specials_toolbar = self.ui_factory.frame(specials_frame, fg_color="#2b2b2b")
         specials_toolbar.pack(fill="x", padx=10, pady=(0, 10))
         
-        self.ui_factory.button(
+        self.send_selected_btn = self.ui_factory.button(
             specials_toolbar,
             text="📤 Enviar Seleccionados",
             command=self._send_selected_specials,
             width=180,
             fg_color="#4CAF50",
             hover_color="#45a049"
-        ).pack(side="left", padx=5, pady=5)
+        )
+        self.send_selected_btn.pack(side="left", padx=5, pady=5)
         
-        self.ui_factory.button(
+        self.send_all_btn = self.ui_factory.button(
             specials_toolbar,
             text="📤 Enviar Todos",
             command=self._send_all_specials,
             width=150,
             fg_color="#2196F3",
             hover_color="#1976D2"
-        ).pack(side="left", padx=5, pady=5)
+        )
+        self.send_all_btn.pack(side="left", padx=5, pady=5)
         
         self.tab_frames["Specials"] = specials_frame
         
-        # ========== TAB COVERS (placeholder) ==========
+        # ========== TAB COVERS (MVC COMPLETO) ==========
         covers_frame = self.ui_factory.frame(parent, fg_color="#23272a")
-        self.ui_factory.label(
-            covers_frame,
-            text="Contenido de Covers",
-            font=("Segoe UI", 18, "bold"),
-            fg="#00bfae"
-        ).pack(pady=20)
-        self.ui_factory.label(
-            covers_frame,
-            text="Próximo módulo a implementar",
-            font=("Segoe UI", 12),
-            fg="#999999"
-        ).pack(pady=10)
+        
+        # CoversModule
+        try:
+            self.covers_module = CoversModule(
+                container=covers_frame,
+                username=self.username,
+                ui_factory=self.ui_factory,
+                UI=self.UI
+            )
+            # Establecer referencia al blackboard
+            self.covers_module.blackboard = self
+            print(f"[DEBUG] CoversModule inicializado para OPERADOR: {self.username}")
+        except Exception as e:
+            print(f"[ERROR] No se pudo inicializar CoversModule: {e}")
+            import traceback
+            traceback.print_exc()
+            self.ui_factory.label(
+                covers_frame,
+                text=f"Error al cargar Covers: {e}",
+                font=("Segoe UI", 12),
+                fg="#ff4444"
+            ).pack(pady=20)
+        
         self.tab_frames["Covers"] = covers_frame
         
         self._show_current_tab()
@@ -185,6 +271,8 @@ class OperatorBlackboard(Blackboard):
                 self.daily_module.load_data()
             elif tab_name == "Specials" and hasattr(self, 'specials_module'):
                 self.specials_module.load_data()
+            elif tab_name == "Covers" and hasattr(self, 'covers_module'):
+                self.covers_module.load_data()
     
     def _show_current_tab(self):
         """Muestra el frame del tab actual"""
@@ -201,6 +289,161 @@ class OperatorBlackboard(Blackboard):
                 self.ui_factory.set_widget_color(btn, fg_color="#4a90e2")
             else:
                 self.ui_factory.set_widget_color(btn, fg_color="#4D6068")
+    
+    def _request_cover(self):
+        """
+        Solicita un cover directamente con motivo predeterminado.
+        Usa cover_model.request_covers() (model) para inserción en BD.
+        """
+        from tkinter import messagebox
+        
+        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
+        if not backend_super.has_active_shift(self.username):
+            messagebox.showwarning(
+                "Sin Turno Activo",
+                "⚠️ Debes iniciar tu turno antes de solicitar covers.\n\n"
+                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
+                parent=self.window
+            )
+            return
+        
+        try:
+            # Preparar datos para request_covers()
+            from datetime import datetime
+            time_request = datetime.now()
+            motivo = "Necesito un cover"  # Motivo predeterminado
+            approved = 1  # Siempre aprobado
+            
+            # Llamar al modelo para insertar en BD
+            from models import cover_model
+            
+            cover_id = cover_model.request_covers(
+                username=self.username,
+                time_request=time_request,
+                reason=motivo,
+                aprvoved=approved  # Nota: typo en función original
+            )
+            
+            if cover_id:
+                print(f"[DEBUG] Cover solicitado exitosamente. ID: {cover_id}")
+                # Refrescar módulo de covers si está activo
+                if self.current_tab == "Covers" and hasattr(self, 'covers_module'):
+                    self.covers_module.load_data()
+            else:
+                print("[DEBUG] No se generó ID de cover (posible validación fallida)")
+        
+        except Exception as e:
+            from tkinter import messagebox
+            messagebox.showerror(
+                "Error",
+                f"No se pudo solicitar el cover:\n{e}",
+                parent=self.window
+            )
+            print(f"[ERROR] _request_cover: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _register_cover(self):
+        """
+        Registra un cover realizado y cambia de sesión al operador que cubre.
+        Usa RegisterCoverDialog (view), cover_model.insertar_cover() (model),
+        y login.logout_silent + login.auto_login para cambio de sesión.
+        """
+        from tkinter import messagebox
+        
+        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
+        if not backend_super.has_active_shift(self.username):
+            messagebox.showwarning(
+                "Sin Turno Activo",
+                "⚠️ Debes iniciar tu turno antes de registrar covers.\n\n"
+                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
+                parent=self.window
+            )
+            return
+        
+        try:
+            # Obtener lista de operadores
+            from models.database import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT Nombre_Usuario 
+                FROM user 
+                WHERE Rol = 'Operador'
+                ORDER BY Nombre_Usuario
+                """
+            )
+            operadores = [row[0] for row in cursor.fetchall()]
+            cursor.close()
+            conn.close()
+            
+            if not operadores:
+                from tkinter import messagebox
+                messagebox.showwarning(
+                    "Sin operadores",
+                    "No hay operadores disponibles en el sistema.",
+                    parent=self.window
+                )
+                return
+            
+            # Mostrar diálogo para capturar datos
+            dialog = RegisterCoverDialog(
+                parent=self.window,
+                ui_factory=self.ui_factory,
+                UI=self.UI
+            )
+            
+            result = dialog.show(operadores)
+            
+            if not result:
+                # Usuario canceló
+                print("[DEBUG] Registro de cover cancelado por usuario")
+                return
+            
+            # Obtener datos del diálogo
+            motivo = result['motivo']
+            covered_by = result['covered_by']
+            
+            print(f"[DEBUG] Registrando cover: {self.username} cubierto por {covered_by}, motivo: {motivo}")
+            
+            # Llamar al modelo para insertar cover
+            # insertar_cover ya hace logout_silent al final
+            from models import cover_model
+            
+            cover_model.insertar_cover(
+                username=self.username,
+                Covered_by=covered_by,
+                Motivo=motivo,
+                session_id=self.session_id,
+                station=self.station
+            )
+            
+            # Cerrar ventana actual antes de abrir nueva sesión
+            self.window.destroy()
+            
+            # Auto-login del operador que cubre
+            # Esto abre automáticamente el blackboard del nuevo usuario
+            login.auto_login(
+                username=covered_by,
+                station=self.station,
+                password="1234",
+                parent=None,
+                silent=True
+            )
+            
+            print(f"[DEBUG] Sesión cambiada exitosamente a {covered_by}")
+        
+        except Exception as e:
+            from tkinter import messagebox
+            messagebox.showerror(
+                "Error",
+                f"No se pudo registrar el cover:\n{e}",
+                parent=self.window
+            )
+            print(f"[ERROR] _register_cover: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _on_logout(self):
         """Handler de logout"""
@@ -221,7 +464,7 @@ class OperatorBlackboard(Blackboard):
         inner_frame.pack(fill="x", padx=(0, 10), pady=5)
         
         # Botón Agregar (lado izquierdo, como row index)
-        add_btn = self.ui_factory.button(
+        self.add_event_btn = self.ui_factory.button(
             inner_frame,
             text="➕",
             command=self._add_event,
@@ -229,7 +472,7 @@ class OperatorBlackboard(Blackboard):
             fg_color="#4CAF50",
             hover_color="#45a049"
         )
-        add_btn.pack(side="left", padx=(2, 12))
+        self.add_event_btn.pack(side="left", padx=(2, 12))
 
         # Campo Fecha/Hora - ancho 150px
         datetime_container = tk.Frame(inner_frame, bg="#2b2b2b")
@@ -427,6 +670,16 @@ class OperatorBlackboard(Blackboard):
     def _add_event(self):
         """Agrega un nuevo evento usando arquitectura MVC"""
         from tkinter import messagebox
+        
+        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
+        if not backend_super.has_active_shift(self.username):
+            messagebox.showwarning(
+                "Sin Turno Activo",
+                "⚠️ Debes iniciar tu turno antes de registrar eventos.\n\n"
+                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
+                parent=self.window
+            )
+            return
         
         # Obtener valores del formulario
         site_text = self.site_combo.get()
@@ -804,6 +1057,18 @@ class OperatorBlackboard(Blackboard):
     
     def _send_selected_specials(self):
         """Envía eventos especiales seleccionados a un supervisor"""
+        from tkinter import messagebox
+        
+        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
+        if not backend_super.has_active_shift(self.username):
+            messagebox.showwarning(
+                "Sin Turno Activo",
+                "⚠️ Debes iniciar tu turno antes de enviar eventos.\n\n"
+                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
+                parent=self.window
+            )
+            return
+        
         if not hasattr(self, 'specials_module'):
             return
         
@@ -836,6 +1101,18 @@ class OperatorBlackboard(Blackboard):
     
     def _send_all_specials(self):
         """Envía todos los eventos especiales visibles a un supervisor"""
+        from tkinter import messagebox
+        
+        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
+        if not backend_super.has_active_shift(self.username):
+            messagebox.showwarning(
+                "Sin Turno Activo",
+                "⚠️ Debes iniciar tu turno antes de enviar eventos.\n\n"
+                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
+                parent=self.window
+            )
+            return
+        
         if not hasattr(self, 'specials_module'):
             return
         
@@ -1058,3 +1335,279 @@ class OperatorBlackboard(Blackboard):
                 width=12,
                 font=("Segoe UI", 11)
             ).pack(side="left", padx=10)
+    
+    def _start_shift(self):
+        """Inicia el turno del operador"""
+        try:
+            # Llamar a la función de backend_super que muestra el date/time picker
+            success = backend_super.on_start_shift(self.username, self.window)
+            
+            if success:
+                print(f"[DEBUG] START SHIFT registrado exitosamente para {self.username}")
+                # Actualizar controles inmediatamente
+                self._update_shift_controls()
+                # Refrescar módulos
+                if hasattr(self, 'daily_module'):
+                    self.daily_module.load_data()
+                if hasattr(self, 'specials_module'):
+                    self.specials_module.load_data()
+                if hasattr(self, 'covers_module'):
+                    self.covers_module.load_data()
+            else:
+                print(f"[DEBUG] START SHIFT cancelado o falló para {self.username}")
+        
+        except Exception as e:
+            from tkinter import messagebox
+            messagebox.showerror(
+                "Error",
+                f"No se pudo iniciar turno:\n{e}",
+                parent=self.window
+            )
+            print(f"[ERROR] _start_shift: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _end_shift(self):
+        """Finaliza el turno del operador"""
+        from tkinter import messagebox
+        
+        try:
+            # Verificar que han pasado 7 horas
+            if not backend_super.can_end_shift(self.username):
+                start_time = backend_super.get_shift_start_time(self.username)
+                if start_time:
+                    from datetime import datetime, timedelta
+                    elapsed = datetime.now() - start_time
+                    hours_elapsed = elapsed.total_seconds() / 3600
+                    hours_remaining = 7.0 - hours_elapsed
+                    
+                    messagebox.showwarning(
+                        "Turno Incompleto",
+                        f"Debes completar al menos 7 horas de turno.\n\n"
+                        f"Tiempo transcurrido: {hours_elapsed:.1f} horas\n"
+                        f"Tiempo restante: {hours_remaining:.1f} horas",
+                        parent=self.window
+                    )
+                else:
+                    messagebox.showwarning(
+                        "Sin turno activo",
+                        "No tienes un turno activo para finalizar.",
+                        parent=self.window
+                    )
+                return
+            
+            # Confirmar cierre de turno
+            if messagebox.askyesno(
+                "Confirmar End Shift",
+                "¿Deseas finalizar tu turno?\n\nSe registrará el END OF SHIFT.",
+                parent=self.window
+            ):
+                backend_super.on_end_shift(self.username)
+                print(f"[DEBUG] END OF SHIFT registrado exitosamente para {self.username}")
+                
+                # Actualizar controles
+                self._update_shift_controls()
+                
+                # Refrescar módulos
+                if hasattr(self, 'daily_module'):
+                    self.daily_module.load_data()
+                if hasattr(self, 'specials_module'):
+                    self.specials_module.load_data()
+                if hasattr(self, 'covers_module'):
+                    self.covers_module.load_data()
+        
+        except Exception as e:
+            messagebox.showerror(
+                "Error",
+                f"No se pudo finalizar turno:\n{e}",
+                parent=self.window
+            )
+            print(f"[ERROR] _end_shift: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _update_shift_controls(self):
+        """Actualiza el estado de todos los controles según si hay turno activo"""
+        try:
+            print(f"[DEBUG] _update_shift_controls: Verificando turno para usuario '{self.username}'")
+            has_shift = backend_super.has_active_shift(self.username)
+            can_end = backend_super.can_end_shift(self.username)
+            
+            print(f"[DEBUG] _update_shift_controls: has_shift={has_shift}, can_end={can_end}")
+            
+            # Estado de botones Start/End Shift
+            if has_shift:
+                # Hay turno activo
+                if self.start_shift_btn:
+                    self.start_shift_btn.configure(state='disabled')
+                if self.end_shift_btn:
+                    if can_end:
+                        self.end_shift_btn.configure(state='normal')
+                    else:
+                        self.end_shift_btn.configure(state='disabled')
+                
+                # Ocultar label de advertencia
+                if self.shift_warning_label:
+                    self.shift_warning_label.master.pack_forget()
+                
+                # Habilitar todos los controles
+                if self.add_event_btn:
+                    self.add_event_btn.configure(state='normal')
+                if self.solicitar_cover_btn:
+                    self.solicitar_cover_btn.configure(state='normal')
+                if self.registrar_cover_btn:
+                    self.registrar_cover_btn.configure(state='normal')
+                if self.send_selected_btn:
+                    self.send_selected_btn.configure(state='normal')
+                if self.send_all_btn:
+                    self.send_all_btn.configure(state='normal')
+                
+                # Habilitar campos del formulario
+                self._enable_form_fields(True)
+            
+            else:
+                # NO hay turno activo
+                if self.start_shift_btn:
+                    self.start_shift_btn.configure(state='normal')
+                if self.end_shift_btn:
+                    self.end_shift_btn.configure(state='disabled')
+                
+                # Mostrar label de advertencia
+                if self.shift_warning_label:
+                    # Encontrar el daily_frame para reinsertar el warning
+                    try:
+                        daily_frame = self.tab_frames.get("Daily")
+                        if daily_frame:
+                            self.shift_warning_label.master.pack(fill="x", padx=10, pady=10, before=self.daily_module.parent if hasattr(self, 'daily_module') else None)
+                    except:
+                        pass
+                
+                # Deshabilitar todos los controles
+                if self.add_event_btn:
+                    self.add_event_btn.configure(state='disabled')
+                if self.solicitar_cover_btn:
+                    self.solicitar_cover_btn.configure(state='disabled')
+                if self.registrar_cover_btn:
+                    self.registrar_cover_btn.configure(state='disabled')
+                if self.send_selected_btn:
+                    self.send_selected_btn.configure(state='disabled')
+                if self.send_all_btn:
+                    self.send_all_btn.configure(state='disabled')
+                
+                # Deshabilitar campos del formulario
+                self._enable_form_fields(False)
+        
+        except Exception as e:
+            print(f"[ERROR] _update_shift_controls: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _enable_form_fields(self, enable=True):
+        """Habilita o deshabilita los campos del formulario"""
+        try:
+            state = 'normal' if enable else 'disabled'
+            
+            # Deshabilitar comboboxes
+            if hasattr(self, 'site_combo'):
+                self.site_combo.configure(state='readonly' if enable else 'disabled')
+            if hasattr(self, 'activity_combo'):
+                self.activity_combo.configure(state='readonly' if enable else 'disabled')
+            
+            # Deshabilitar entries
+            if hasattr(self, 'quantity_entry'):
+                self.quantity_entry.configure(state=state)
+            if hasattr(self, 'camera_entry'):
+                self.camera_entry.configure(state=state)
+            if hasattr(self, 'description_entry'):
+                self.description_entry.configure(state=state)
+        
+        except Exception as e:
+            print(f"[ERROR] _enable_form_fields: {e}")
+    
+    def _start_auto_refresh(self):
+        """Inicia el auto-refresh de controles cada 60 segundos"""
+        self._auto_refresh_cycle()
+    
+    def _auto_refresh_cycle(self):
+        """Ciclo de auto-refresh recursivo"""
+        try:
+            # Actualizar controles
+            self._update_shift_controls()
+            
+            # Programar próxima actualización en 60 segundos
+            if self.window and self.window.winfo_exists():
+                self.refresh_job = self.window.after(60000, self._auto_refresh_cycle)
+        
+        except Exception as e:
+            print(f"[ERROR] _auto_refresh_cycle: {e}")
+            # Reintentar de todos modos
+            if self.window and self.window.winfo_exists():
+                self.refresh_job = self.window.after(60000, self._auto_refresh_cycle)
+    
+    def _stop_auto_refresh(self):
+        """Detiene el auto-refresh"""
+        if self.refresh_job:
+            try:
+                self.window.after_cancel(self.refresh_job)
+                self.refresh_job = None
+            except Exception as e:
+                print(f"[ERROR] _stop_auto_refresh: {e}")
+    
+    def _on_close(self):
+        """
+        Handler personalizado para cierre de ventana de operador.
+        Ejecuta logout y muestra ventana de login.
+        """
+        from tkinter import messagebox
+        
+        if messagebox.askokcancel(
+            "Cerrar Sesión",
+            f"¿Deseas cerrar sesión de {self.username}?",
+            parent=self.window
+        ):
+            try:
+                # Detener auto-refresh
+                self._stop_auto_refresh()
+                
+                # Hacer logout si hay sesión activa
+                if self.session_id and self.station:
+                    print(f"[DEBUG] Cerrando sesión: {self.username} (ID: {self.session_id})")
+                    login.do_logout(self.session_id, self.station, self.window)
+                
+                # Destruir ventana
+                self.window.destroy()
+                
+                # Mostrar login nuevamente
+                try:
+                    login.show_login()
+                except Exception as e:
+                    print(f"[ERROR] Error mostrando login: {e}")
+            
+            except Exception as e:
+                print(f"[ERROR] Error durante cierre: {e}")
+                import traceback
+                traceback.print_exc()
+                # Destruir de todos modos
+                try:
+                    self.window.destroy()
+                except:
+                    pass
+
+
+def open_operator_blackboard(username, session_id, station, root=None):
+    """
+    Función de entrada para abrir el blackboard de operador.
+    
+    Args:
+        username (str): Nombre del usuario autenticado
+        session_id (int): ID de la sesión activa
+        station (str): Estación asignada al usuario
+        root: Ventana padre (opcional)
+    """
+    OperatorBlackboard(
+        username=username,
+        role="Operador",
+        session_id=session_id,
+        station=station,
+        root=root
+    )

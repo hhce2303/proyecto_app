@@ -129,6 +129,99 @@ def Dinamic_button_Shift(username):
         # En caso de error, ser conservadores y no romper el flujo; permitir Start
         return True
 
+def has_active_shift(username):
+    """
+    Verifica si el usuario tiene un turno activo (START SHIFT sin END OF SHIFT).
+    
+    Returns:
+        bool: True si hay turno activo, False si no
+    """
+    try:
+        print(f"[DEBUG] has_active_shift: Verificando para username='{username}'")
+        # Reutilizar lógica de Dinamic_button_Shift
+        # Si Dinamic_button_Shift retorna False, significa que hay turno activo
+        result_dinamic = Dinamic_button_Shift(username)
+        result_has_shift = not result_dinamic
+        print(f"[DEBUG] has_active_shift: Dinamic_button_Shift retornó {result_dinamic}, has_active_shift retorna {result_has_shift}")
+        return result_has_shift
+    except Exception as e:
+        print(f"[ERROR] has_active_shift: {e}")
+        traceback.print_exc()
+        return False
+
+def get_shift_start_time(username):
+    """
+    Obtiene la fecha/hora del último START SHIFT del usuario.
+    
+    Returns:
+        datetime or None: Fecha/hora del START SHIFT o None si no hay
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Buscar el último START SHIFT
+        cur.execute(
+            """
+            SELECT e.FechaHora
+            FROM Eventos e
+            INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
+            WHERE u.Nombre_Usuario = %s
+              AND e.Nombre_Actividad = 'START SHIFT'
+            ORDER BY e.FechaHora DESC
+            LIMIT 1
+            """,
+            (username,),
+        )
+        
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if row:
+            print(f"[DEBUG] get_shift_start_time({username}): START SHIFT en {row[0]}")
+            return row[0]
+        
+        print(f"[DEBUG] get_shift_start_time({username}): No hay START SHIFT")
+        return None
+    
+    except Exception as e:
+        print(f"[ERROR] get_shift_start_time: {e}")
+        traceback.print_exc()
+        return None
+
+def can_end_shift(username):
+    """
+    Verifica si han pasado al menos 7 horas desde el START SHIFT.
+    
+    Returns:
+        bool: True si han pasado 7+ horas, False si no o no hay turno activo
+    """
+    try:
+        # Verificar que hay turno activo
+        if not has_active_shift(username):
+            print(f"[DEBUG] can_end_shift({username}): No hay turno activo")
+            return False
+        
+        # Obtener hora de inicio
+        start_time = get_shift_start_time(username)
+        if not start_time:
+            print(f"[DEBUG] can_end_shift({username}): No se pudo obtener hora de inicio")
+            return False
+        
+        # Calcular tiempo transcurrido
+        elapsed = datetime.now() - start_time
+        hours_elapsed = elapsed.total_seconds() / 3600
+        
+        print(f"[DEBUG] can_end_shift({username}): {hours_elapsed:.2f} horas desde START SHIFT")
+        
+        return hours_elapsed >= 7.0
+    
+    except Exception as e:
+        print(f"[ERROR] can_end_shift: {e}")
+        traceback.print_exc()
+        return False
+
 def update_event_button(username):
     """Devuelve True si el botón debe mostrar 'Start Shift', False si debe mostrar 'End of Shift'.
 

@@ -20,6 +20,7 @@ import re
 
 from models.database import get_connection
 from utils.ui_factory import UIFactory
+from utils.date_formatter import format_friendly_datetime
 
 
 class SpecialsModule:
@@ -275,9 +276,9 @@ class SpecialsModule:
                         fh = fecha_hora
                     
                     fh_adjusted = fh + timedelta(hours=tz_offset_hours)
-                    fecha_str = fh_adjusted.strftime("%Y-%m-%d %H:%M:%S")
+                    fecha_str = format_friendly_datetime(fh_adjusted, show_seconds=False)
                 except Exception:
-                    fecha_str = fecha_hora.strftime("%Y-%m-%d %H:%M:%S") if fecha_hora else ""
+                    fecha_str = format_friendly_datetime(fecha_hora, show_seconds=False) if fecha_hora else ""
                 
                 # Ajustar timestamps en descripción
                 descripcion_display = self._adjust_description_timestamps(
@@ -304,7 +305,7 @@ class SpecialsModule:
                             try:
                                 fh_sup = datetime.strptime(str(fecha_supervisor)[:19], "%Y-%m-%d %H:%M:%S") if isinstance(fecha_supervisor, str) else fecha_supervisor
                                 fh_sup_adjusted = fh_sup + timedelta(hours=tz_offset_hours)
-                                fecha_str_display = fh_sup_adjusted.strftime("%Y-%m-%d %H:%M:%S")
+                                fecha_str_display = format_friendly_datetime(fh_sup_adjusted, show_seconds=False)
                             except:
                                 fecha_str_display = fecha_str
                         else:

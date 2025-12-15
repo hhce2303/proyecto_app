@@ -105,7 +105,6 @@ class Blackboard:
         win.geometry(self._get_window_geometry())
         win.resizable(True, True)
         return win
-
     
     def _create_tabs(self):
         """Crea frame de tabs - las subclases lo llenan"""

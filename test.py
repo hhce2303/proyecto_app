@@ -19,7 +19,7 @@ def test():
         username="prueba",
         role="Operador",
         session_id=None,
-        station="ST-TEST",
+        station="1",
         root=root
     )
     

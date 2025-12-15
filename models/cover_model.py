@@ -297,3 +297,181 @@ def insertar_cover(username, Covered_by, Motivo, session_id, station):
         conn.close()
         login.logout_silent(session_id, station)
 
+
+def get_covers_realizados_by_user(username, fecha_desde=None):
+    """
+    Obtiene covers realizados por el usuario desde una fecha específica.
+    Incluye LEFT JOIN con covers_programados para obtener Time_request.
+    
+    Args:
+        username (str): Nombre del usuario
+        fecha_desde (datetime): Fecha desde la cual buscar covers (opcional)
+    
+    Returns:
+        list: Lista de tuplas (id_realizado, nombre_usuario, cover_in, cover_out,
+                               motivo, covered_by, activo, id_programado, time_request)
+    """
+    try:
+        conn = get_connection()
+        if not conn:
+            print("[ERROR] get_covers_realizados_by_user: No se pudo conectar a BD")
+            return []
+        
+        cursor = conn.cursor()
+        
+        # Query con LEFT JOIN para covers de emergencia
+        # Nota: 'Activo' se calcula como (Cover_out IS NULL)
+        query = """
+            SELECT 
+                cr.ID_Covers,
+                cr.Nombre_usuarios,
+                cr.Cover_in,
+                cr.Cover_out,
+                cr.Motivo,
+                cr.Covered_by,
+                cr.ID_programacion_covers,
+                cp.ID_Cover,
+                cp.Time_request
+            FROM covers_realizados cr
+            LEFT JOIN covers_programados cp 
+                ON cr.ID_programacion_covers = cp.ID_Cover
+            WHERE cr.Nombre_usuarios = %s
+        """
+        
+        params = [username]
+        
+        # Filtrar por fecha si se especifica
+        if fecha_desde:
+            query += " AND cr.Cover_in >= %s"
+            params.append(fecha_desde)
+        
+        query += " ORDER BY cr.Cover_in DESC"
+        
+        print(f"[DEBUG] get_covers_realizados_by_user: Query para username='{username}', fecha_desde={fecha_desde}")
+        
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+        
+        print(f"[DEBUG] get_covers_realizados_by_user: Obtenidos {len(results)} resultados")
+        
+        cursor.close()
+        conn.close()
+        
+        return results
+    
+    except Exception as e:
+        print(f"[ERROR] get_covers_realizados_by_user: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
+def cancel_cover_programado(programado_id):
+    """
+    Cancela un cover programado actualizando is_Active a 0.
+    
+    Args:
+        programado_id (int): ID del cover programado
+    
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    try:
+        conn = get_connection()
+        if not conn:
+            return False, "No se pudo conectar a la base de datos"
+        
+        cursor = conn.cursor()
+        
+        # Verificar que el cover exista y esté activo
+        cursor.execute(
+            """
+            SELECT is_Active, ID_user, Time_request
+            FROM covers_programados
+            WHERE ID_Cover = %s
+            """,
+            (programado_id,)
+        )
+        
+        result = cursor.fetchone()
+        
+        if not result:
+            cursor.close()
+            conn.close()
+            return False, "Cover programado no encontrado"
+        
+        is_active, id_user, time_request = result
+        
+        if is_active == 0:
+            cursor.close()
+            conn.close()
+            return False, "Este cover ya fue cancelado previamente"
+        
+        # Actualizar is_Active a 0
+        cursor.execute(
+            """
+            UPDATE covers_programados
+            SET is_Active = 0
+            WHERE ID_Cover = %s
+            """,
+            (programado_id,)
+        )
+        
+        conn.commit()
+        rows_affected = cursor.rowcount
+        
+        cursor.close()
+        conn.close()
+        
+        if rows_affected > 0:
+            print(f"[DEBUG] Cover {programado_id} cancelado correctamente ✅")
+            return True, f"Cover programado cancelado exitosamente.\n\nUsuario: {id_user}\nSolicitado: {time_request}"
+        else:
+            return False, "No se pudo actualizar el cover"
+    
+    except Exception as e:
+        print(f"[ERROR] cancel_cover_programado: {e}")
+        import traceback
+        traceback.print_exc()
+        return False, str(e)
+
+
+def get_active_covers_programados():
+    """
+    Obtiene todos los covers programados activos ordenados por Time_request.
+    
+    Returns:
+        list: Lista de tuplas (ID_Cover, ID_user, Time_request, Station, Reason, Approved)
+              Ordenadas por Time_request ASC (más antiguo primero)
+    """
+    try:
+        conn = get_connection()
+        if not conn:
+            print("[ERROR] get_active_covers_programados: No hay conexión a BD")
+            return []
+        
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            """
+            SELECT ID_Cover, ID_user, Time_request, Station, Reason, Approved
+            FROM covers_programados
+            WHERE is_Active = 1
+            ORDER BY Time_request ASC
+            """
+        )
+        
+        results = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        print(f"[DEBUG] get_active_covers_programados: {len(results)} covers activos")
+        return results
+    
+    except Exception as e:
+        print(f"[ERROR] get_active_covers_programados: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+

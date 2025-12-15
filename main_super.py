@@ -28,9 +28,9 @@ def open_main_window(username, station, role, session_id):
     print(f"🚀 Iniciando sesión para: {username} | Rol: {role} | Estación: {station} | Session ID: {session_id}")
     
     if role == "Operador":
-        # Operador: Ventana híbrida con registro de eventos y covers
-        import operator_window
-        operator_window.open_hybrid_events(
+        # Operador: Ventana modular con Daily, Specials y Covers
+        from views.operator_blackboard import open_operator_blackboard
+        open_operator_blackboard(
             username=username,
             session_id=session_id,
             station=station,
