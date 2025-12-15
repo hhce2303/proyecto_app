@@ -1,0 +1,37 @@
+ID_Special,FechaHora,ID_Sitio,Nombre_Actividad,Cantidad,Camera,Descripcion,Usuario,Time_Zone,Supervisor,marked_status,marked_at,marked_by
+93,"2025-10-28 01:17:58",305,"Change Split",0,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+94,"2025-10-28 05:20:46",165,"Change Split",0,1234prueb,prueba,Prueba,CT,prueba2,NULL,NULL,NULL
+95,"2025-10-28 06:21:54",124,"Change Split",0,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+96,"2025-10-28 07:34:25",119,"Change Split",121212,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+97,"2025-10-31 02:08:47",305,"Change Station",1233,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+98,"2025-10-31 03:37:47",124,"Change Station",12,prueba,prueba,Prueba,ET,prueba2,NULL,NULL,NULL
+134,"2025-11-06 02:53:12",119,Call,12,12,12,prueba,ET,prueba2,done,"2025-11-06 05:56:57","Logan G"
+135,"2025-11-06 01:02:41",126,"Call Report",123,123,"prueba 8 [05:24:22]",prueba,ET,prueba2,done,"2025-11-06 07:16:10",prueba2
+138,"2025-11-06 02:34:04",165,Call,23,2323,23,prueba,CT,prueba2,done,"2025-11-06 07:16:10",prueba2
+139,"2025-11-05 22:34:08",165,Call,12,12,12,Prueba,CT,prueba2,NULL,NULL,NULL
+142,"2025-11-09 01:41:11",165,Call,0,1,1,Prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+143,"2025-11-09 01:29:17",165,Call,1,1pru,"prueba out at [02:30:55] [01:31:07]",Prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+144,"2025-11-08 22:25:22",165,"Delivery in",1,3,,prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+145,"2025-11-08 00:14:24",230,"Voice Down",1,1,"prueba [00:43:00]",prueba,ET,prueba2,done,"2025-11-11 06:03:35",prueba2
+146,"2025-11-06 05:35:46",130,"Late Employee",1,2,2,prueba,MT,prueba2,flagged,"2025-11-09 02:45:44",prueba2
+147,"2025-11-06 07:26:49",325,"Cleaner in",1,4,2,prueba,ET,prueba2,done,"2025-11-11 06:03:35",prueba2
+148,"2025-11-06 07:19:15",124,"Contractor in",1,5,"5 prueba 06:32",prueba,ET,prueba2,done,"2025-11-11 06:03:35",prueba2
+149,"2025-11-06 06:00:16",165,"Employee out",1,2,prueba,prueba,CT,prueba2,flagged,"2025-11-09 02:45:44",prueba2
+150,"2025-11-06 06:27:24",325,Dropoff,7,7,123,prueba,ET,prueba2,flagged,"2025-11-09 02:45:44",prueba2
+151,"2025-11-06 01:02:41",126,"Call Report",123,123,"prueba 8 [05:24:22]",Prueba,ET,prueba2,NULL,NULL,NULL
+152,"2025-11-09 05:03:33",130,"Cleaner in",1,1,"prueba eee 99 [06:19:17]",prueba,MT,prueba2,flagged,"2025-11-10 23:38:32",prueba2
+153,"2025-11-09 02:29:17",335,"Change Split",1,1pru,"prueba out at [04:12:10]",prueba,ET,prueba2,done,"2025-11-11 06:03:35",prueba2
+154,"2025-11-08 23:25:22",165,"Delivery in",1,3,fwefwfwfe,prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+155,"2025-11-06 07:35:46",130,"Late Employee",1,2,"2 - [07:23:00]",prueba,MT,prueba2,done,"2025-11-11 06:03:35",prueba2
+156,"2025-11-06 07:00:16",165,"Employee out",1,2,prueba,prueba,CT,prueba2,done,"2025-11-11 06:03:35",prueba2
+157,"2025-11-12 03:34:04",165,Call,23,2323,23,prueba,CT,prueba2,done,"2025-11-27 09:05:07",prueba2
+158,"2025-11-09 20:54:43",185,"Employee out",2,12,"prueba [20:01:57]",prueba,ET,prueba2,flagged,"2025-11-10 23:38:32",prueba2
+159,"2025-11-09 19:52:52",130,"Cleaner in",1,1,03:23,prueba,MT,prueba2,flagged,"2025-11-10 23:38:32",prueba2
+160,"2025-11-10 00:45:19",130,"Employee in",40,.,,prueba,MT,prueba2,flagged,"2025-11-10 23:38:32",prueba2
+161,"2025-11-10 07:17:36",301,"Employee on site",2,2,prueba,prueba,ET,prueba2,done,"2025-11-16 04:53:04",prueba2
+2918,"2025-11-24 00:54:19",124,"Change Station",0,,gfftyrtr28278528552,prueba,ET,prueba2,done,"2025-11-27 09:05:13",prueba2
+4151,"2025-11-27 16:01:29",130,"Cleaner in",1,11,"4:01 04:21 - 16:21",prueba,MT,prueba2,NULL,NULL,NULL
+4152,"2025-11-27 22:45:35",288,Dropoff,1,4,"Black SUV",prueba,CT,prueba2,NULL,NULL,NULL
+4337,"2025-11-25 09:37:16",144,"Cleaner on site",5,15,,prueba,MT,prueba2,NULL,NULL,NULL
+4338,"2025-11-29 01:30:50",329,"First Employee",1,1,01:22,prueba,ET,prueba2,NULL,NULL,NULL
+4456,"2025-11-29 02:55:51",144,"Cleaner on site",5,15,,prueba,MT,prueba2,NULL,NULL,NULL

@@ -1724,106 +1724,9 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
             print(f"[ERROR] get_last_shift_start: {e}")
             return None
 
-    def load_daily():
-        """Carga eventos del turno actual desde la base de datos (MODO DAILY)"""
-        nonlocal row_data_cache, row_ids, pending_changes
-        
-        try:
-            last_shift_time = get_last_shift_start()
-            if last_shift_time is None:
-                data = [["No hay shift activo"] + [""] * (len(columns)-1)]
-                sheet.set_sheet_data(data)
-                apply_sheet_widths()
-                row_data_cache.clear()
-                row_ids.clear()
-                pending_changes.clear()
-                return
+# se extrajo load_daily para implementar MVC en panel de operador
 
-            conn = get_connection()
-            cur = conn.cursor()
-            
-            # Obtener eventos del usuario desde el último shift
-            cur.execute("""
-                SELECT 
-                    e.ID_Eventos,
-                    e.FechaHora,
-                    e.ID_Sitio,
-                    e.Nombre_Actividad,
-                    e.Cantidad,
-                    e.Camera,
-                    e.Descripcion
-                FROM Eventos e
-                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
-                WHERE u.Nombre_Usuario = %s AND e.FechaHora >= %s
-                ORDER BY e.FechaHora ASC
-            """, (username, last_shift_time))
 
-            eventos = cur.fetchall()
-            
-            row_data_cache.clear()
-            row_ids.clear()
-            display_rows = []
-
-            for evento in eventos:
-                (id_evento, fecha_hora, id_sitio, nombre_actividad, cantidad, camera, descripcion) = evento
-
-                # Resolver Nombre_Sitio desde ID_Sitio
-                try:
-                    cur.execute("SELECT Nombre_Sitio FROM Sitios WHERE ID_Sitio = %s", (id_sitio,))
-                    sit_row = cur.fetchone()
-                    # ⭐ Formato consistente: "Nombre (ID)" igual que en load_specials
-                    nombre_sitio = f"{sit_row[0]} ({id_sitio})" if sit_row else f"ID: {id_sitio}"
-                except Exception:
-                    nombre_sitio = f"ID: {id_sitio}"
-
-                # Formatear fecha/hora
-                fecha_str = fecha_hora.strftime("%Y-%m-%d %H:%M:%S") if fecha_hora else ""
-
-                # Guardar en cache
-                row_data_cache.append({
-                    'id': id_evento,
-                    'fecha_hora': fecha_hora,
-                    'sitio_id': id_sitio,
-                    'sitio_nombre': nombre_sitio,
-                    'actividad': nombre_actividad or "",
-                    'cantidad': cantidad or 0,
-                    'camera': camera or "",
-                    'descripcion': descripcion or "",
-                    'status': 'saved'
-                })
-                row_ids.append(id_evento)
-
-                # Fila para mostrar
-                display_rows.append([
-                    fecha_str,
-                    nombre_sitio,
-                    nombre_actividad or "",
-                    str(cantidad) if cantidad is not None else "0",
-                    camera or "",
-                    descripcion or ""
-                ])
-
-            cur.close()
-            conn.close()
-
-            if not display_rows:
-                display_rows = [["No hay eventos en este turno"] + [""] * (len(columns)-1)]
-                row_data_cache.clear()
-                row_ids.clear()
-
-            sheet.set_sheet_data(display_rows)
-            
-            # ⭐ LIMPIAR COLORES (solo Specials tiene colores)
-            sheet.dehighlight_all()
-            
-            apply_sheet_widths()
-            pending_changes.clear()
-
-            print(f"[DEBUG] Loaded {len(row_ids)} events for {username}")
-
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo cargar eventos:\n{e}", parent=top)
-            traceback.print_exc()
 
     def load_specials():
             """Carga eventos de grupos especiales (AS, KG, HUD, PE, SCH, WAG, LT, DT) desde el último START SHIFT (MODO SPECIALS)"""
@@ -2059,27 +1962,28 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     mark_color = None  # None = sin color, "green" = enviado, "amber" = pendiente
                     
                     try:
-                        # ⭐ Buscar usando la fecha AJUSTADA (con timezone) porque así se guarda en specials
-                        # fecha_str ya tiene el ajuste de timezone aplicado
-                        
-                        # Buscar si existe en specials (MISMO CRITERIO que on_window_close y accion_supervisores)
+                        # ⭐ Buscar si existe en specials (SIN FechaHora para evitar problemas de timezone)
+                        # La búsqueda correcta es solo por Usuario, Actividad y Sitio
                         cur.execute(
                             """
                             SELECT ID_special, Supervisor, FechaHora, ID_Sitio, Nombre_Actividad, 
                                 Cantidad, Camera, Descripcion
                             FROM specials
-                            WHERE FechaHora = %s
-                            AND Usuario = %s
-                            AND Nombre_Actividad = %s
-                            AND IFNULL(ID_Sitio, 0) = IFNULL(%s, 0)
+                            WHERE Usuario = %s
+                              AND Nombre_Actividad = %s
+                              AND IFNULL(ID_Sitio, 0) = IFNULL(%s, 0)
                             LIMIT 1
                             """,
-                            (fecha_str, usuario_original, nombre_actividad, id_sitio),
+                            (usuario_original, nombre_actividad, id_sitio),
                         )
                         special_row = cur.fetchone()
                         
+                        # ⭐ GUARDAR ID_special para usar en accion_supervisores()
+                        id_special_cache = None
+                        
                         if special_row:
-                            # Existe en specials - USAR VALORES DE SPECIALS para mostrar
+                            # Existe en specials - GUARDAR ID y COMPARAR TODOS LOS CAMPOS
+                            id_special_cache = special_row[0]  # ⭐ GUARDAR ID
                             special_supervisor = special_row[1]
                             special_fechahora = special_row[2]
                             special_id_sitio = special_row[3]
@@ -2088,29 +1992,39 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                             special_camera = special_row[6]
                             special_desc = special_row[7]
                             
-                            # ⭐ IMPORTANTE: Para comparar, usar valores AJUSTADOS de Eventos
-                            # (porque accion_supervisores() y on_window_close() guardan valores ajustados en specials)
-                            
-                            # Normalizar valores de Eventos (con ajuste de timezone aplicado)
+                            # ⭐ NORMALIZAR valores de Eventos (con ajuste de timezone aplicado)
                             try:
                                 eventos_cantidad = int(cantidad) if cantidad is not None and str(cantidad).strip() else 0
                             except (ValueError, TypeError):
                                 eventos_cantidad = 0
                             eventos_camera = str(camera).strip() if camera else ""
-                            eventos_desc = str(descripcion).strip() if descripcion else ""  # ⭐ Usar descripcion AJUSTADA
+                            eventos_desc = str(descripcion).strip() if descripcion else ""
+                            eventos_fechahora = fecha_str  # Hora AJUSTADA
+                            eventos_id_sitio = id_sitio
+                            eventos_actividad = nombre_actividad
                             
-                            # Normalizar valores de specials (convertir a tipos comparables)
+                            # ⭐ NORMALIZAR valores de specials
                             try:
                                 specials_cantidad = int(special_cantidad) if special_cantidad is not None and str(special_cantidad).strip() else 0
                             except (ValueError, TypeError):
                                 specials_cantidad = 0
                             specials_camera = str(special_camera).strip() if special_camera else ""
                             specials_desc = str(special_desc).strip() if special_desc else ""
+                            specials_fechahora = special_fechahora.strftime("%Y-%m-%d %H:%M:%S") if special_fechahora else ""
+                            specials_id_sitio = special_id_sitio
+                            specials_actividad = special_actividad
                             
-                            # Comparar valores normalizados
-                            if (eventos_cantidad != specials_cantidad or 
-                                eventos_camera != specials_camera or 
-                                eventos_desc != specials_desc):
+                            # ⭐ COMPARAR TODOS LOS CAMPOS (no solo cantidad, camera, descripcion)
+                            hay_cambios = (
+                                eventos_fechahora != specials_fechahora or
+                                eventos_id_sitio != specials_id_sitio or
+                                eventos_actividad != specials_actividad or
+                                eventos_cantidad != specials_cantidad or
+                                eventos_camera != specials_camera or
+                                eventos_desc != specials_desc
+                            )
+                            
+                            if hay_cambios:
                                 # HAY CAMBIOS: Estado "Pendiente por actualizar"
                                 mark_display = "⏳ Pendiente por actualizar"
                                 mark_color = "amber"
@@ -2124,7 +2038,7 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                                 mark_color = "green"
                                 
                                 # USAR VALORES DE SPECIALS para mostrar cuando está enviado sin cambios
-                                fecha_str_display = special_fechahora if special_fechahora else fecha_str
+                                fecha_str_display = special_fechahora.strftime("%Y-%m-%d %H:%M:%S") if special_fechahora else fecha_str
                                 descripcion_display = special_desc if special_desc else descripcion
                         else:
                             # NO EXISTE EN SPECIALS: Estado vacío (sin enviar)
@@ -2156,8 +2070,18 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     
                     processed.append({
                         'id': id_evento,
+                        'id_special': id_special_cache,  # ⭐ ID en tabla specials (None si no existe)
                         'values': display_row,
-                        'mark_color': mark_color  # Para aplicar color después
+                        'mark_color': mark_color,  # Para aplicar color después
+                        # ⭐ VALORES ORIGINALES (sin offset) para recalcular en cambios de estación
+                        'fecha_hora_original': fecha_hora_original,
+                        'descripcion_original': descripcion_original,
+                        'id_sitio': id_sitio,
+                        'nombre_actividad': nombre_actividad,
+                        'cantidad': cantidad,
+                        'camera': camera,
+                        'usuario': usuario_original,
+                        'time_zone': tz
                     })
                 
                 cur.close()
@@ -2682,6 +2606,11 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     except Exception:
                         valores = []
                     
+                    # ⭐ OBTENER ID_special DEL CACHE (si existe)
+                    id_special_cache = None
+                    if r < len(row_data_cache):
+                        id_special_cache = row_data_cache[r].get('id_special')
+                    
                     # ⭐ Extraer valores según NUEVAS columnas (sin ID ni Usuario)
                     # Columnas: ["Fecha_hora", "ID_Sitio", "Nombre_Actividad", "Cantidad", "Camera", "Descripcion", "Time_Zone", "Marca"]
                     fecha_hora = valores[0] if len(valores) > 0 else None
@@ -2714,26 +2643,10 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                     descripcion_normalizada = str(descripcion).strip() if descripcion else ""
 
                     
-                    # Upsert en tabla specials
+                    # ⭐ UPSERT usando ID_special del cache (si existe)
                     try:
-                        # Verificar si ya existe en specials (buscar SOLO por campos clave)
-                        cur.execute(
-                            """
-                            SELECT ID_special
-                            FROM specials
-                            WHERE FechaHora = %s
-                              AND Usuario = %s
-                              AND Nombre_Actividad = %s
-                              AND IFNULL(ID_Sitio, 0) = IFNULL(%s, 0)
-                            LIMIT 1
-                            """,
-                            (fecha_hora, usuario_evt, nombre_actividad, id_sitio),
-                        )
-                        row_exist = cur.fetchone()
-                        
-                        if row_exist:
-                            # Actualizar registro existente (SIEMPRE actualizar con los valores actuales de Eventos)
-                            special_id = row_exist[0]
+                        if id_special_cache:
+                            # Ya existe en specials - UPDATE directo usando ID del cache
                             try:
                                 cur.execute(
                                     """
@@ -2754,14 +2667,14 @@ def open_hybrid_events(username, session_id=None, station=None, root=None):
                                     """,
                                     (fecha_hora, id_sitio, nombre_actividad, cantidad_normalizada, 
                                      camera_normalizada, descripcion_normalizada, 
-                                     usuario_evt, time_zone, supervisor, special_id),
+                                     usuario_evt, time_zone, supervisor, id_special_cache),
                                 )
                                 updated += 1
-                                print(f"  -> ACTUALIZADO en specials (ID={special_id})")
+                                print(f"  -> ACTUALIZADO en specials (ID={id_special_cache} desde cache)")
                             except Exception as ue:
-                                print(f"[ERROR] al actualizar fila en specials (ID={special_id}): {ue}")
+                                print(f"[ERROR] al actualizar fila en specials (ID={id_special_cache}): {ue}")
                         else:
-                            # Insertar nuevo registro (con campos marked_* inicializados a NULL)
+                            # No existe en specials - INSERT nuevo registro
                             try:
                                 cur.execute(
                                     """

@@ -8,6 +8,7 @@ from datetime import datetime
 from models.database import get_connection
 
 
+
 def add_event(username, site, activity, quantity, camera, desc, hour, minute, second):
     """
     Inserta un nuevo evento en la tabla Eventos en MySQL con tipos correctos.
@@ -61,6 +62,27 @@ def add_event(username, site, activity, quantity, camera, desc, hour, minute, se
         except:
             pass
 
+
+def get_last_shift_start(username):
+        """Obtiene la última hora de inicio de shift del usuario"""
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT e.FechaHora 
+                FROM Eventos e
+                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
+                WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = %s
+                ORDER BY e.FechaHora DESC
+                LIMIT 1
+            """, (username, "START SHIFT"))
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+            return row[0] if row and row[0] else None
+        except Exception as e:
+            print(f"[ERROR] get_last_shift_start: {e}")
+            return None
 
 
 

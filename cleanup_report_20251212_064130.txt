@@ -1,0 +1,686 @@
+================================================================================
+REPORTE DE LIMPIEZA DE DUPLICADOS - TABLA SPECIALS
+================================================================================
+Fecha: 2025-12-12 06:41:32
+Tabla de backup: specials_duplicates_backup
+Registros eliminados: 663
+================================================================================
+
+REGISTROS ELIMINADOS:
+--------------------------------------------------------------------------------
+ID: 111 | FechaHora: 2025-11-04 05:32:39 | Usuario: Emanuel B | Actividad: First Employee | Sitio: 350
+ID: 117 | FechaHora: 2025-11-04 01:46:57 | Usuario: Emanuel B | Actividad: Dropoff | Sitio: 303
+ID: 118 | FechaHora: 2025-11-04 00:31:41 | Usuario: Emanuel B | Actividad: Cleaner out | Sitio: 288
+ID: 120 | FechaHora: 2025-11-04 01:13:37 | Usuario: Emanuel B | Actividad: Dropoff | Sitio: 342
+ID: 121 | FechaHora: 2025-11-04 00:58:20 | Usuario: Emanuel B | Actividad: Cleaner out | Sitio: 344
+ID: 122 | FechaHora: 2025-11-04 00:45:46 | Usuario: Emanuel B | Actividad: Cleaner out | Sitio: 339
+ID: 124 | FechaHora: 2025-11-03 23:56:40 | Usuario: Emanuel B | Actividad: Dropoff | Sitio: 344
+ID: 125 | FechaHora: 2025-11-03 23:38:53 | Usuario: Emanuel B | Actividad: Pickup | Sitio: 355
+ID: 127 | FechaHora: 2025-11-03 23:29:55 | Usuario: Emanuel B | Actividad: Security Patroling | Sitio: 355
+ID: 139 | FechaHora: 2025-11-05 22:34:08 | Usuario: Prueba | Actividad: Call | Sitio: 165
+ID: 151 | FechaHora: 2025-11-06 01:02:41 | Usuario: Prueba | Actividad: Call Report | Sitio: 126
+ID: 156 | FechaHora: 2025-11-06 07:00:16 | Usuario: prueba | Actividad: Employee out | Sitio: 165
+ID: 157 | FechaHora: 2025-11-12 03:34:04 | Usuario: prueba | Actividad: Call | Sitio: 165
+ID: 274 | FechaHora: 2025-11-16 16:07:21 | Usuario: Harold v | Actividad: Dropoff | Sitio: 292
+ID: 356 | FechaHora: 2025-11-17 02:54:07 | Usuario: Eddie R | Actividad: Charging Station | Sitio: 230
+ID: 387 | FechaHora: 2025-11-17 04:25:00 | Usuario: Alejandra O | Actividad: Contractor in | Sitio: 136
+ID: 411 | FechaHora: 2025-11-17 05:53:46 | Usuario: Juan Diego F | Actividad: First Employee | Sitio: 168
+ID: 504 | FechaHora: 2025-11-17 22:57:25 | Usuario: Juan Jose C | Actividad: Cleaner on site | Sitio: 230
+ID: 753 | FechaHora: 2025-11-18 05:44:52 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 346
+ID: 769 | FechaHora: 2025-11-18 04:16:06 | Usuario: Andrez C | Actividad: Delivery in | Sitio: 323
+ID: 794 | FechaHora: 2025-11-18 04:22:30 | Usuario: Andrez C | Actividad: Delivery in | Sitio: 323
+ID: 1094 | FechaHora: 2025-11-19 03:14:16 | Usuario: Kevin Contreras | Actividad: Cleaner out | Sitio: 289
+ID: 1097 | FechaHora: 2025-11-19 03:11:25 | Usuario: Sandra L | Actividad: Delivery in | Sitio: 323
+ID: 1099 | FechaHora: 2025-11-19 03:21:28 | Usuario: Sandra L | Actividad: Delivery in | Sitio: 323
+ID: 1100 | FechaHora: 2025-11-19 03:34:16 | Usuario: Sandra L | Actividad: Delivery in | Sitio: 323
+ID: 1108 | FechaHora: 2025-11-18 22:45:47 | Usuario: Samuel R | Actividad: cleaner out | Sitio: 237
+ID: 1135 | FechaHora: 2025-11-19 04:07:22 | Usuario: Sandra L | Actividad: Delivery out | Sitio: 323
+ID: 1234 | FechaHora: 2025-11-19 06:15:47 | Usuario: Maria Paula L | Actividad: First Employee | Sitio: 144
+ID: 1264 | FechaHora: 2025-11-19 21:35:00 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 193
+ID: 1268 | FechaHora: 2025-11-19 21:29:04 | Usuario: Danna C | Actividad: Cleaner on site | Sitio: 189
+ID: 1340 | FechaHora: 2025-11-20 00:12:47 | Usuario: Maria C | Actividad: Cleaner out | Sitio: 219
+ID: 1354 | FechaHora: 2025-11-19 22:02:00 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 298
+ID: 1489 | FechaHora: 2025-11-20 03:40:40 | Usuario: Emanuel B | Actividad: Cleaner out | Sitio: 118
+ID: 1553 | FechaHora: 2025-11-20 05:43:11 | Usuario: Victoria V | Actividad: Cleaner in | Sitio: 346
+ID: 1566 | FechaHora: 2025-11-20 05:59:25 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 189
+ID: 1567 | FechaHora: 2025-11-20 04:17:55 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 280
+ID: 1569 | FechaHora: 2025-11-20 04:29:55 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 280
+ID: 1656 | FechaHora: 2025-11-20 21:30:08 | Usuario: vladimir p | Actividad: Detailer on site | Sitio: 162
+ID: 1681 | FechaHora: 2025-11-20 22:02:14 | Usuario: Carolina N | Actividad: Cleaner on site | Sitio: 141
+ID: 1685 | FechaHora: 2025-11-20 22:31:48 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 188
+ID: 1691 | FechaHora: 2025-11-20 23:00:23 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 188
+ID: 1724 | FechaHora: 2025-11-20 22:01:28 | Usuario: Emanuel B | Actividad: Cleaner on site | Sitio: 136
+ID: 1738 | FechaHora: 2025-11-20 22:01:45 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 1818 | FechaHora: 2025-11-21 01:42:38 | Usuario: Kevin Contreras | Actividad: Dropoff | Sitio: 345
+ID: 1819 | FechaHora: 2025-11-21 00:01:01 | Usuario: vladimir p | Actividad: Cleaner out | Sitio: 289
+ID: 1821 | FechaHora: 2025-11-21 00:56:15 | Usuario: vladimir p | Actividad: Dropoff | Sitio: 287
+ID: 1844 | FechaHora: 2025-11-20 23:24:22 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 342
+ID: 1848 | FechaHora: 2025-11-21 22:53:27 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 288
+ID: 1856 | FechaHora: 2025-11-20 23:26:38 | Usuario: Jaime A | Actividad: Dropoff | Sitio: 345
+ID: 1926 | FechaHora: 2025-11-21 03:57:30 | Usuario: vladimir p | Actividad: Delivery in | Sitio: 347
+ID: 1927 | FechaHora: 2025-11-21 02:58:26 | Usuario: vladimir p | Actividad: Dropoff | Sitio: 287
+ID: 1942 | FechaHora: 2025-11-20 23:51:00 | Usuario: Sandra L | Actividad: Trespasser | Sitio: 342
+ID: 1975 | FechaHora: 2025-11-21 04:47:26 | Usuario: Santiago F | Actividad: Cleaner out | Sitio: 231
+ID: 1976 | FechaHora: 2025-11-21 04:07:17 | Usuario: Danna C | Actividad: Delivery out | Sitio: 159
+ID: 1979 | FechaHora: 2025-11-21 05:42:20 | Usuario: Danna C | Actividad: First Employee | Sitio: 301
+ID: 2201 | FechaHora: 2025-11-22 00:15:10 | Usuario: Jhon S | Actividad: Cleaner in | Sitio: 168
+ID: 2322 | FechaHora: 2025-11-22 01:17:19 | Usuario: Lorena Z | Actividad: Dropoff | Sitio: 144
+ID: 2334 | FechaHora: 2025-11-22 04:15:47 | Usuario: Brahian G | Actividad: Cleaner on site | Sitio: 159
+ID: 2336 | FechaHora: 2025-11-21 23:33:08 | Usuario: Yosselin C | Actividad: Cleaner in | Sitio: 167
+ID: 2419 | FechaHora: 2025-11-22 09:20:19 | Usuario: Harold v | Actividad: Employee in | Sitio: 144
+ID: 2422 | FechaHora: 2025-11-22 12:15:20 | Usuario: Harold v | Actividad: Employee in | Sitio: 144
+ID: 2449 | FechaHora: 2025-11-22 23:52:59 | Usuario: joel m | Actividad: Cleaner on site | Sitio: 162
+ID: 2493 | FechaHora: 2025-11-22 22:03:52 | Usuario: Ivan M | Actividad: Employee on site | Sitio: 156
+ID: 2505 | FechaHora: 2025-11-23 03:02:52 | Usuario: joel m | Actividad: Security Patroling | Sitio: 195
+ID: 2516 | FechaHora: 2025-11-22 21:02:43 | Usuario: Maritza V | Actividad: Cleaner on site | Sitio: 288
+ID: 2618 | FechaHora: 2025-11-23 08:57:51 | Usuario: Juan Jose C | Actividad: Cleaner on site | Sitio: 156
+ID: 2627 | FechaHora: 2025-11-23 09:01:17 | Usuario: Nicolas C | Actividad: Employee on site | Sitio: 331
+ID: 2639 | FechaHora: 2025-11-23 10:12:58 | Usuario: Mateo I | Actividad: Employee in | Sitio: 350
+ID: 2660 | FechaHora: 2025-11-23 11:24:20 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 159
+ID: 2662 | FechaHora: 2025-11-23 11:26:40 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 159
+ID: 2664 | FechaHora: 2025-11-23 11:32:45 | Usuario: Aramis M | Actividad: Employee out | Sitio: 159
+ID: 2691 | FechaHora: 2025-11-23 13:03:33 | Usuario: Jeison N | Actividad: Charging Station | Sitio: 141
+ID: 2731 | FechaHora: 2025-11-23 13:15:43 | Usuario: Santiago F | Actividad: Cleaner out | Sitio: 264
+ID: 2771 | FechaHora: 2025-11-23 17:47:13 | Usuario: Sandra L | Actividad: Dropoff | Sitio: 341
+ID: 2786 | FechaHora: 2025-11-23 18:32:44 | Usuario: Sandra L | Actividad: Dropoff | Sitio: 341
+ID: 2793 | FechaHora: 2025-11-23 18:00:05 | Usuario: Emanuel B | Actividad: Dropoff | Sitio: 288
+ID: 2796 | FechaHora: 2025-11-23 16:26:37 | Usuario: Juan R | Actividad: Dropoff | Sitio: 307
+ID: 2810 | FechaHora: 2025-11-23 19:15:03 | Usuario: Sandra L | Actividad: Dropoff | Sitio: 341
+ID: 2817 | FechaHora: 2025-11-23 14:48:03 | Usuario: Daniela B | Actividad: Dropoff | Sitio: 301
+ID: 2819 | FechaHora: 2025-11-23 18:48:48 | Usuario: Daniela B | Actividad: Dropoff | Sitio: 301
+ID: 2822 | FechaHora: 2025-11-23 19:25:28 | Usuario: Andrez C | Actividad: Employee in | Sitio: 337
+ID: 3087 | FechaHora: 2025-11-24 21:09:01 | Usuario: Joel M | Actividad: Cleaner on site | Sitio: 141
+ID: 3100 | FechaHora: 2025-11-24 22:11:57 | Usuario: Sandra L | Actividad: Cleaner on site | Sitio: 342
+ID: 3105 | FechaHora: 2025-11-24 22:13:13 | Usuario: Cesar O | Actividad: Cleaner on site | Sitio: 119
+ID: 3119 | FechaHora: 2025-11-24 21:13:05 | Usuario: Danna C | Actividad: Cleaner on site | Sitio: 188
+ID: 3125 | FechaHora: 2025-11-24 22:01:50 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 337
+ID: 3127 | FechaHora: 2025-11-24 22:08:40 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 337
+ID: 3138 | FechaHora: 2025-11-24 23:09:08 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 337
+ID: 3141 | FechaHora: 2025-11-24 22:27:00 | Usuario: vladimir p | Actividad: Employee on site | Sitio: 331
+ID: 3147 | FechaHora: 2025-11-24 18:19:32 | Usuario: Carolina N | Actividad: Cleaner in | Sitio: 144
+ID: 3177 | FechaHora: 2025-11-24 21:04:16 | Usuario: Lorena Z | Actividad: Cleaner on site | Sitio: 130
+ID: 3181 | FechaHora: 2025-11-24 20:07:17 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 3182 | FechaHora: 2025-11-24 20:21:48 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 3183 | FechaHora: 2025-11-24 20:44:07 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 3217 | FechaHora: 2025-11-24 21:59:54 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 298
+ID: 3218 | FechaHora: 2025-11-24 22:00:27 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 298
+ID: 3222 | FechaHora: 2025-11-25 01:02:59 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 337
+ID: 3253 | FechaHora: 2025-11-24 23:12:18 | Usuario: Ruben T | Actividad: Cleaner on site | Sitio: 195
+ID: 3286 | FechaHora: 2025-11-25 03:09:24 | Usuario: Carolina N | Actividad: First Employee | Sitio: 282
+ID: 3398 | FechaHora: 2025-11-25 04:18:08 | Usuario: prueba | Actividad: Cleaner in | Sitio: 130
+ID: 3399 | FechaHora: 2025-11-25 05:49:00 | Usuario: vladimir p | Actividad: First Employee | Sitio: 340
+ID: 3401 | FechaHora: 2025-11-25 05:01:06 | Usuario: vladimir p | Actividad: Employee on site | Sitio: 292
+ID: 3406 | FechaHora: 2025-11-25 05:12:13 | Usuario: Juan R | Actividad: Delivery | Sitio: 230
+ID: 3424 | FechaHora: 2025-11-25 04:49:18 | Usuario: Cesar O | Actividad: First Employee | Sitio: 343
+ID: 3425 | FechaHora: 2025-11-25 04:51:42 | Usuario: Cesar O | Actividad: First Employee | Sitio: 341
+ID: 3455 | FechaHora: 2025-11-25 05:44:08 | Usuario: Danna C | Actividad: First Employee | Sitio: 301
+ID: 3457 | FechaHora: 2025-11-25 05:57:54 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 136
+ID: 3458 | FechaHora: 2025-11-25 05:06:13 | Usuario: Andrez C | Actividad: First Employee | Sitio: 130
+ID: 3459 | FechaHora: 2025-11-25 05:09:37 | Usuario: Kelly C | Actividad: First Employee | Sitio: 284
+ID: 3461 | FechaHora: 2025-11-25 05:20:54 | Usuario: Andrez C | Actividad: First Employee | Sitio: 174
+ID: 3494 | FechaHora: 2025-11-25 20:05:07 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 3495 | FechaHora: 2025-11-25 20:05:42 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 3496 | FechaHora: 2025-11-25 20:07:15 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 3497 | FechaHora: 2025-11-25 21:04:36 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 187
+ID: 3498 | FechaHora: 2025-11-25 22:03:13 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 303
+ID: 3515 | FechaHora: 2025-11-25 18:58:46 | Usuario: Carolina N | Actividad: Cleaner on site | Sitio: 144
+ID: 3516 | FechaHora: 2025-11-25 21:02:30 | Usuario: Carolina N | Actividad: Employee on site | Sitio: 155
+ID: 3533 | FechaHora: 2025-11-25 22:12:14 | Usuario: Juan Jose C | Actividad: Cleaner on site | Sitio: 230
+ID: 3539 | FechaHora: 2025-11-25 22:03:00 | Usuario: Kelly C | Actividad: Security Patroling | Sitio: 193
+ID: 3558 | FechaHora: 2025-11-25 22:01:15 | Usuario: Michael G | Actividad: Cleaner on site | Sitio: 129
+ID: 3585 | FechaHora: 2025-11-26 00:34:17 | Usuario: Michael G | Actividad: Charging Station | Sitio: 338
+ID: 3610 | FechaHora: 2025-11-26 00:11:12 | Usuario: Andrez C | Actividad: Cleaner out | Sitio: 289
+ID: 3672 | FechaHora: 2025-11-26 03:15:36 | Usuario: Danna C | Actividad: First Employee | Sitio: 159
+ID: 3678 | FechaHora: 2025-11-26 03:15:21 | Usuario: Carolina N | Actividad: First Employee | Sitio: 282
+ID: 3689 | FechaHora: 2025-11-26 01:17:38 | Usuario: Esteban Triv | Actividad: Employee in | Sitio: 260
+ID: 3698 | FechaHora: 2025-11-25 22:16:59 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 287
+ID: 3703 | FechaHora: 2025-11-26 02:33:02 | Usuario: Miguel L | Actividad: Cleaner out | Sitio: 289
+ID: 3721 | FechaHora: 2025-11-26 04:50:46 | Usuario: Emanuel B | Actividad: First Employee | Sitio: 118
+ID: 3734 | FechaHora: 2025-11-26 02:38:14 | Usuario: Sandra L | Actividad: Delivery in | Sitio: 128
+ID: 3757 | FechaHora: 2025-11-26 05:36:56 | Usuario: Danna C | Actividad: First Employee | Sitio: 301
+ID: 3774 | FechaHora: 2025-11-25 23:37:34 | Usuario: Jacobo B | Actividad: Cleaner on site | Sitio: 162
+ID: 3794 | FechaHora: 2025-11-26 05:05:56 | Usuario: Ivan M | Actividad: First Employee | Sitio: 316
+ID: 3822 | FechaHora: 2025-11-26 05:16:35 | Usuario: Karen C | Actividad: First Employee | Sitio: 174
+ID: 3866 | FechaHora: 2025-11-26 20:21:18 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 3867 | FechaHora: 2025-11-26 20:36:01 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 3870 | FechaHora: 2025-11-26 21:00:36 | Usuario: Carolina N | Actividad: Cleaner on site | Sitio: 156
+ID: 3872 | FechaHora: 2025-11-26 21:06:15 | Usuario: Carolina N | Actividad: Delivery out | Sitio: 156
+ID: 3877 | FechaHora: 2025-11-26 20:03:18 | Usuario: Andrez C | Actividad: Cleaner on site | Sitio: 144
+ID: 3884 | FechaHora: 2025-11-26 22:05:39 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 281
+ID: 3903 | FechaHora: 2025-11-26 22:07:48 | Usuario: Juan R | Actividad: Cleaner on site | Sitio: 162
+ID: 3904 | FechaHora: 2025-11-26 22:57:06 | Usuario: Juan R | Actividad: Delivery | Sitio: 162
+ID: 3917 | FechaHora: 2025-11-26 21:11:04 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 3918 | FechaHora: 2025-11-26 21:43:38 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 193
+ID: 3931 | FechaHora: 2025-11-26 22:02:48 | Usuario: Ruben T | Actividad: Cleaner on site | Sitio: 230
+ID: 3943 | FechaHora: 2025-11-27 00:43:58 | Usuario: Andrez C | Actividad: Security Patroling | Sitio: 156
+ID: 3948 | FechaHora: 2025-11-27 01:06:39 | Usuario: Michael G | Actividad: Cleaner on site | Sitio: 195
+ID: 3965 | FechaHora: 2025-11-27 00:42:14 | Usuario: Emanuel B | Actividad: Cleaner in | Sitio: 118
+ID: 3994 | FechaHora: 2025-11-26 23:39:11 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 342
+ID: 4038 | FechaHora: 2025-11-27 03:25:07 | Usuario: Kevin V | Actividad: Cleaner out | Sitio: 118
+ID: 4061 | FechaHora: 2025-11-27 00:01:27 | Usuario: Juan Jose C | Actividad: Cleaner on site | Sitio: 147
+ID: 4062 | FechaHora: 2025-11-27 00:02:11 | Usuario: Juan Jose C | Actividad: Cleaner on site | Sitio: 136
+ID: 4071 | FechaHora: 2025-11-27 00:10:43 | Usuario: Victoria V | Actividad: Detailer on site | Sitio: 292
+ID: 4083 | FechaHora: 2025-11-27 02:58:59 | Usuario: Catalina G | Actividad: Delivery in | Sitio: 160
+ID: 4188 | FechaHora: 2025-11-28 04:48:49 | Usuario: Michael G | Actividad: First Employee | Sitio: 341
+ID: 4195 | FechaHora: 2025-11-28 03:48:56 | Usuario: Maritza V | Actividad: First Employee | Sitio: 292
+ID: 4197 | FechaHora: 2025-11-28 05:14:33 | Usuario: Maritza V | Actividad: First Employee | Sitio: 324
+ID: 4216 | FechaHora: 2025-11-28 05:42:01 | Usuario: Santiago F | Actividad: First Employee | Sitio: 191
+ID: 4234 | FechaHora: 2025-11-28 04:38:22 | Usuario: Andrez C | Actividad: First Employee | Sitio: 240
+ID: 4240 | FechaHora: 2025-11-28 05:07:15 | Usuario: Maria .A | Actividad: First Employee | Sitio: 168
+ID: 4247 | FechaHora: 2025-11-28 04:55:41 | Usuario: Karen C | Actividad: First Employee | Sitio: 167
+ID: 4365 | FechaHora: 2025-11-28 22:03:55 | Usuario: Yurani B | Actividad: Cleaner on site | Sitio: 141
+ID: 4456 | FechaHora: 2025-11-29 02:55:51 | Usuario: prueba | Actividad: Cleaner on site | Sitio: 144
+ID: 4475 | FechaHora: 2025-11-29 04:21:43 | Usuario: Ivan M | Actividad: Delivery | Sitio: 316
+ID: 4486 | FechaHora: 2025-11-29 04:06:16 | Usuario: Brahian G | Actividad: Security Patroling | Sitio: 140
+ID: 4490 | FechaHora: 2025-11-27 22:45:35 | Usuario: prueba | Actividad: Dropoff | Sitio: 288
+ID: 4491 | FechaHora: 2025-11-27 22:45:35 | Usuario: prueba | Actividad: Dropoff | Sitio: 288
+ID: 4493 | FechaHora: 2025-11-27 22:45:35 | Usuario: prueba | Actividad: Dropoff | Sitio: 288
+ID: 4514 | FechaHora: 2025-11-29 09:13:00 | Usuario: David C | Actividad: Dropoff | Sitio: 144
+ID: 4517 | FechaHora: 2025-11-29 11:28:51 | Usuario: David C | Actividad: Dropoff | Sitio: 144
+ID: 4521 | FechaHora: 2025-11-29 13:30:27 | Usuario: David C | Actividad: Employee in | Sitio: 144
+ID: 4522 | FechaHora: 2025-11-29 13:31:39 | Usuario: David C | Actividad: Employee out | Sitio: 144
+ID: 4527 | FechaHora: 2025-11-29 16:41:45 | Usuario: Harold v | Actividad: Dropoff | Sitio: 144
+ID: 4552 | FechaHora: 2025-11-29 22:05:04 | Usuario: Joel M | Actividad: Cleaner on site | Sitio: 162
+ID: 4553 | FechaHora: 2025-11-29 19:31:45 | Usuario: Yurani B | Actividad: Cleaner on site | Sitio: 162
+ID: 4557 | FechaHora: 2025-11-29 18:39:02 | Usuario: Yurani B | Actividad: Employee out | Sitio: 144
+ID: 4598 | FechaHora: 2025-11-29 22:47:29 | Usuario: Matthew R | Actividad: Employee out | Sitio: 262
+ID: 4603 | FechaHora: 2025-11-29 23:36:42 | Usuario: Miguel B | Actividad: Employee out | Sitio: 141
+ID: 4612 | FechaHora: 2025-11-29 23:34:12 | Usuario: Matthew R | Actividad: Employee out | Sitio: 262
+ID: 4680 | FechaHora: 2025-11-30 07:17:58 | Usuario: Jacobo B | Actividad: Cleaner in | Sitio: 289
+ID: 4687 | FechaHora: 2025-11-30 07:28:28 | Usuario: Yosselin C | Actividad: Cleaner out | Sitio: 318
+ID: 4706 | FechaHora: 2025-11-30 09:02:12 | Usuario: vladimir p | Actividad: Employee on site | Sitio: 331
+ID: 4733 | FechaHora: 2025-11-30 08:27:39 | Usuario: JUAN R  | Actividad: Dropoff | Sitio: 144
+ID: 4734 | FechaHora: 2025-11-30 08:31:20 | Usuario: JUAN R  | Actividad: Dropoff | Sitio: 144
+ID: 4739 | FechaHora: 2025-11-30 10:37:00 | Usuario: vladimir p | Actividad: Employee in | Sitio: 331
+ID: 4754 | FechaHora: 2025-11-30 10:25:40 | Usuario: Camilo M | Actividad: First Employee | Sitio: 126
+ID: 4755 | FechaHora: 2025-11-30 10:12:30 | Usuario: Camilo M | Actividad: Cleaner in | Sitio: 137
+ID: 4786 | FechaHora: 2025-11-30 12:38:51 | Usuario: Jaime A | Actividad: Dropoff | Sitio: 339
+ID: 4833 | FechaHora: 2025-11-30 14:04:01 | Usuario: Camilo M | Actividad: Cleaner in | Sitio: 137
+ID: 4842 | FechaHora: 2025-11-30 10:57:21 | Usuario: Aramis M | Actividad: Employee out | Sitio: 159
+ID: 4867 | FechaHora: 2025-11-30 14:00:38 | Usuario: Jaime A | Actividad: Dropoff | Sitio: 339
+ID: 4869 | FechaHora: 2025-11-30 14:06:45 | Usuario: Jaime A | Actividad: Dropoff | Sitio: 339
+ID: 4870 | FechaHora: 2025-11-30 13:07:01 | Usuario: Jaime A | Actividad: Dropoff | Sitio: 288
+ID: 4875 | FechaHora: 2025-11-30 16:21:06 | Usuario: Jaime A | Actividad: Dropoff | Sitio: 339
+ID: 4893 | FechaHora: 2025-11-30 16:01:56 | Usuario: Elizabeth C | Actividad: Dropoff | Sitio: 235
+ID: 4896 | FechaHora: 2025-11-30 16:19:56 | Usuario: Isabella G | Actividad: Employee out | Sitio: 129
+ID: 4898 | FechaHora: 2025-11-30 14:18:11 | Usuario: vladimir p | Actividad: Dropoff | Sitio: 144
+ID: 4900 | FechaHora: 2025-11-30 17:11:22 | Usuario: vladimir p | Actividad: Cleaner on site | Sitio: 303
+ID: 4925 | FechaHora: 2025-11-30 18:00:03 | Usuario: Edwin O | Actividad: Dropoff | Sitio: 335
+ID: 4951 | FechaHora: 2025-11-30 10:54:36 | Usuario: Santiago F | Actividad: Employee in | Sitio: 158
+ID: 4956 | FechaHora: 2025-11-30 12:47:21 | Usuario: Kevin V | Actividad: Cleaner in | Sitio: 235
+ID: 4967 | FechaHora: 2025-11-30 12:32:38 | Usuario: Nicolas C | Actividad: Dropoff | Sitio: 144
+ID: 4969 | FechaHora: 2025-11-30 15:25:58 | Usuario: Nicolas C | Actividad: Dropoff | Sitio: 144
+ID: 4970 | FechaHora: 2025-11-30 15:26:54 | Usuario: Nicolas C | Actividad: Dropoff | Sitio: 144
+ID: 4984 | FechaHora: 2025-11-30 17:16:50 | Usuario: Edwin O | Actividad: Dropoff | Sitio: 292
+ID: 4992 | FechaHora: 2025-11-30 16:53:25 | Usuario: Karen C | Actividad: Dropoff | Sitio: 125
+ID: 4993 | FechaHora: 2025-11-30 17:16:01 | Usuario: Karen C | Actividad: Dropoff | Sitio: 125
+ID: 4994 | FechaHora: 2025-11-30 17:16:20 | Usuario: Karen C | Actividad: Dropoff | Sitio: 125
+ID: 4999 | FechaHora: 2025-11-30 16:48:33 | Usuario: Nicolas C | Actividad: Dropoff | Sitio: 144
+ID: 5017 | FechaHora: 2025-11-30 19:25:26 | Usuario: Isabella G | Actividad: Dropoff | Sitio: 190
+ID: 5057 | FechaHora: 2025-11-30 19:30:50 | Usuario: Jhon S | Actividad: Cleaner out | Sitio: 281
+ID: 5058 | FechaHora: 2025-11-30 20:43:10 | Usuario: Jhon S | Actividad: Employee out | Sitio: 331
+ID: 5059 | FechaHora: 2025-11-30 20:00:13 | Usuario: Jhon S | Actividad: Dropoff | Sitio: 281
+ID: 5060 | FechaHora: 2025-11-30 20:47:05 | Usuario: Jhon S | Actividad: Dropoff | Sitio: 307
+ID: 5063 | FechaHora: 2025-11-30 21:11:07 | Usuario: Sebastian S | Actividad: Employee on site | Sitio: 155
+ID: 5067 | FechaHora: 2025-11-30 18:59:20 | Usuario: Brahian G | Actividad: Dropoff | Sitio: 260
+ID: 5068 | FechaHora: 2025-11-30 19:01:51 | Usuario: Brahian G | Actividad: Pickup | Sitio: 130
+ID: 5069 | FechaHora: 2025-11-30 19:08:20 | Usuario: Brahian G | Actividad: Cleaner on site | Sitio: 130
+ID: 5070 | FechaHora: 2025-11-30 19:12:22 | Usuario: Brahian G | Actividad: Dropoff | Sitio: 130
+ID: 5080 | FechaHora: 2025-11-30 19:53:54 | Usuario: Yurani B | Actividad: Employee in | Sitio: 232
+ID: 5083 | FechaHora: 2025-11-30 19:41:06 | Usuario: Eddie R | Actividad: Dropoff | Sitio: 141
+ID: 5084 | FechaHora: 2025-11-30 20:47:40 | Usuario: Eddie R | Actividad: Detailer out | Sitio: 162
+ID: 5086 | FechaHora: 2025-11-30 21:10:02 | Usuario: Eddie R | Actividad: Dropoff | Sitio: 162
+ID: 5087 | FechaHora: 2025-11-30 21:38:01 | Usuario: Eddie R | Actividad: Employee out | Sitio: 162
+ID: 5105 | FechaHora: 2025-12-01 12:36:21 | Usuario: Fabian M | Actividad: Dropoff | Sitio: 133
+ID: 5145 | FechaHora: 2025-12-01 22:00:06 | Usuario: vladimir p | Actividad: Cleaner on site | Sitio: 337
+ID: 5146 | FechaHora: 2025-12-01 22:01:06 | Usuario: vladimir p | Actividad: Contractor on site | Sitio: 337
+ID: 5148 | FechaHora: 2025-12-01 21:04:20 | Usuario: Danna C | Actividad: Cleaner out | Sitio: 177
+ID: 5151 | FechaHora: 2025-12-01 21:38:23 | Usuario: Danna C | Actividad: Cleaner on site | Sitio: 188
+ID: 5161 | FechaHora: 2025-12-01 19:59:42 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 5162 | FechaHora: 2025-12-01 20:53:43 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 5164 | FechaHora: 2025-12-01 21:04:32 | Usuario: Miguel L | Actividad: Employee out | Sitio: 193
+ID: 5166 | FechaHora: 2025-12-01 22:09:13 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 303
+ID: 5170 | FechaHora: 2025-12-01 22:09:11 | Usuario: vladimir p | Actividad: Security Patroling | Sitio: 346
+ID: 5175 | FechaHora: 2025-12-01 22:05:27 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 159
+ID: 5179 | FechaHora: 2025-12-01 22:06:19 | Usuario: vladimir p | Actividad: Security Patroling | Sitio: 281
+ID: 5206 | FechaHora: 2025-12-01 23:10:36 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 337
+ID: 5207 | FechaHora: 2025-12-01 23:22:36 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 177
+ID: 5217 | FechaHora: 2025-12-01 22:06:04 | Usuario: Samuel R | Actividad: Cleaner on site | Sitio: 136
+ID: 5221 | FechaHora: 2025-12-01 22:15:10 | Usuario: Miguel L | Actividad: Delivery | Sitio: 303
+ID: 5233 | FechaHora: 2025-12-01 22:09:38 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 284
+ID: 5255 | FechaHora: 2025-12-02 00:26:21 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 337
+ID: 5258 | FechaHora: 2025-12-02 00:57:52 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 337
+ID: 5277 | FechaHora: 2025-12-02 01:57:49 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 348
+ID: 5292 | FechaHora: 2025-12-01 22:08:28 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 280
+ID: 5313 | FechaHora: 2025-12-01 22:03:06 | Usuario: Carolina N | Actividad: Cleaner on site | Sitio: 121
+ID: 5317 | FechaHora: 2025-12-02 01:58:55 | Usuario: Carolina N | Actividad: Delivery in | Sitio: 282
+ID: 5328 | FechaHora: 2025-12-02 03:14:30 | Usuario: Danna C | Actividad: First Employee | Sitio: 159
+ID: 5352 | FechaHora: 2025-12-02 02:11:30 | Usuario: Juan Jose C | Actividad: Cleaner on site | Sitio: 230
+ID: 5354 | FechaHora: 2025-12-02 01:01:36 | Usuario: Miguel L | Actividad: Dropoff | Sitio: 287
+ID: 5359 | FechaHora: 2025-12-02 03:45:38 | Usuario: Miguel L | Actividad: Police Patroling | Sitio: 346
+ID: 5366 | FechaHora: 2025-12-02 03:00:30 | Usuario: vladimir p | Actividad: Delivery in | Sitio: 306
+ID: 5367 | FechaHora: 2025-12-02 03:08:59 | Usuario: vladimir p | Actividad: Cleaner in | Sitio: 281
+ID: 5379 | FechaHora: 2025-12-02 05:00:35 | Usuario: Andrez C | Actividad: First Employee | Sitio: 193
+ID: 5389 | FechaHora: 2025-12-02 03:48:29 | Usuario: Juan R | Actividad: First Employee | Sitio: 292
+ID: 5425 | FechaHora: 2025-12-02 05:43:24 | Usuario: Danna C | Actividad: First Employee | Sitio: 301
+ID: 5434 | FechaHora: 2025-12-02 04:53:03 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 189
+ID: 5465 | FechaHora: 2025-12-02 05:36:43 | Usuario: vladimir p | Actividad: Employee in | Sitio: 307
+ID: 5491 | FechaHora: 2025-12-02 06:32:01 | Usuario: Maria Paula L | Actividad: Employee in | Sitio: 144
+ID: 5518 | FechaHora: 2025-12-02 15:16:48 | Usuario: Maria Paula L | Actividad: Delivery | Sitio: 144
+ID: 5519 | FechaHora: 2025-12-02 19:59:56 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 5520 | FechaHora: 2025-12-02 20:00:40 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 5523 | FechaHora: 2025-12-02 18:02:56 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 5524 | FechaHora: 2025-12-02 18:13:09 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 5525 | FechaHora: 2025-12-02 18:29:49 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 5528 | FechaHora: 2025-12-02 19:20:39 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 5529 | FechaHora: 2025-12-02 21:05:09 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 193
+ID: 5530 | FechaHora: 2025-12-02 21:24:37 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 5541 | FechaHora: 2025-12-02 22:01:26 | Usuario: Andrez C | Actividad: Cleaner on site | Sitio: 195
+ID: 5573 | FechaHora: 2025-12-02 23:09:26 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 342
+ID: 5608 | FechaHora: 2025-12-02 23:04:27 | Usuario: Edwin O | Actividad: Cleaner on site | Sitio: 160
+ID: 5623 | FechaHora: 2025-12-02 22:34:52 | Usuario: Maria .A | Actividad: Cleaner on site | Sitio: 137
+ID: 5694 | FechaHora: 2025-12-03 03:30:43 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 347
+ID: 5696 | FechaHora: 2025-12-03 02:29:13 | Usuario: Jaime A | Actividad: First Employee | Sitio: 282
+ID: 5697 | FechaHora: 2025-12-03 02:40:34 | Usuario: Jaime A | Actividad: Delivery out | Sitio: 282
+ID: 5713 | FechaHora: 2025-12-03 01:51:53 | Usuario: Elizabeth C | Actividad: Cleaner out | Sitio: 160
+ID: 5714 | FechaHora: 2025-12-03 04:10:04 | Usuario: Elizabeth C | Actividad: Cleaner in | Sitio: 120
+ID: 5725 | FechaHora: 2025-12-03 04:45:10 | Usuario: Miguel L | Actividad: First Employee | Sitio: 348
+ID: 5731 | FechaHora: 2025-12-03 03:35:20 | Usuario: Jhon S | Actividad: Delivery in | Sitio: 323
+ID: 5732 | FechaHora: 2025-12-03 03:51:40 | Usuario: Jhon S | Actividad: Delivery in | Sitio: 323
+ID: 5733 | FechaHora: 2025-12-03 03:58:01 | Usuario: Jhon S | Actividad: Delivery in | Sitio: 323
+ID: 5743 | FechaHora: 2025-12-03 04:34:01 | Usuario: Juan R | Actividad: First Employee | Sitio: 345
+ID: 5759 | FechaHora: 2025-12-03 05:20:12 | Usuario: Jacobo B | Actividad: Cleaner on site | Sitio: 348
+ID: 5763 | FechaHora: 2025-12-03 05:20:21 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 342
+ID: 5765 | FechaHora: 2025-12-03 05:37:48 | Usuario: Danna C | Actividad: First Employee | Sitio: 338
+ID: 5786 | FechaHora: 2025-12-03 00:03:20 | Usuario: Maria C | Actividad: Cleaner out | Sitio: 219
+ID: 5795 | FechaHora: 2025-12-03 03:53:56 | Usuario: Danna C | Actividad: Delivery in | Sitio: 298
+ID: 5822 | FechaHora: 2025-12-03 04:26:38 | Usuario: Maria .A | Actividad: First Employee | Sitio: 240
+ID: 5823 | FechaHora: 2025-12-03 05:36:21 | Usuario: Maria .A | Actividad: First Employee | Sitio: 137
+ID: 5846 | FechaHora: 2025-12-03 05:51:30 | Usuario: Andrez C | Actividad: First Employee | Sitio: 129
+ID: 5847 | FechaHora: 2025-12-03 05:54:40 | Usuario: Maria .A | Actividad: Contractor in | Sitio: 137
+ID: 5854 | FechaHora: 2025-12-03 05:14:25 | Usuario: Maritza V | Actividad: First Employee | Sitio: 284
+ID: 5906 | FechaHora: 2025-12-03 14:12:55 | Usuario: Maria Paula L | Actividad: Pickup | Sitio: 144
+ID: 5910 | FechaHora: 2025-12-03 21:20:17 | Usuario: vladimir p | Actividad: Cleaner on site | Sitio: 188
+ID: 5911 | FechaHora: 2025-12-03 21:38:34 | Usuario: vladimir p | Actividad: Cleaner on site | Sitio: 188
+ID: 5913 | FechaHora: 2025-12-03 21:58:00 | Usuario: vladimir p | Actividad: Cleaner out | Sitio: 184
+ID: 5921 | FechaHora: 2025-12-03 22:55:33 | Usuario: vladimir p | Actividad: Cleaner in | Sitio: 347
+ID: 5929 | FechaHora: 2025-12-03 19:36:54 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 5931 | FechaHora: 2025-12-03 19:57:46 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 5933 | FechaHora: 2025-12-03 21:05:19 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 193
+ID: 5937 | FechaHora: 2025-12-03 22:30:02 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 303
+ID: 5939 | FechaHora: 2025-12-03 21:58:53 | Usuario: Miguel L | Actividad: Cleaner in | Sitio: 289
+ID: 5941 | FechaHora: 2025-12-03 22:02:33 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 287
+ID: 5944 | FechaHora: 2025-12-03 17:49:52 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 5946 | FechaHora: 2025-12-03 21:00:27 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 190
+ID: 5967 | FechaHora: 2025-12-03 22:09:46 | Usuario: Juan R | Actividad: Cleaner on site | Sitio: 171
+ID: 5968 | FechaHora: 2025-12-03 23:14:26 | Usuario: Juan R | Actividad: Delivery | Sitio: 162
+ID: 5982 | FechaHora: 2025-12-03 23:40:17 | Usuario: vladimir p | Actividad: Cleaner in | Sitio: 318
+ID: 5984 | FechaHora: 2025-12-03 22:08:38 | Usuario: Juan Diego F | Actividad: Cleaner on site | Sitio: 195
+ID: 6011 | FechaHora: 2025-12-03 22:25:11 | Usuario: Kevin V | Actividad: Cleaner on site | Sitio: 136
+ID: 6020 | FechaHora: 2025-12-03 22:05:00 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 337
+ID: 6021 | FechaHora: 2025-12-03 22:05:48 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 337
+ID: 6022 | FechaHora: 2025-12-03 22:08:09 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 348
+ID: 6040 | FechaHora: 2025-12-03 23:24:11 | Usuario: Cesar O | Actividad: Delivery | Sitio: 178
+ID: 6064 | FechaHora: 2025-12-04 00:14:11 | Usuario: Juan C Perez | Actividad: Cleaner on site | Sitio: 168
+ID: 6070 | FechaHora: 2025-12-03 22:17:07 | Usuario: Maria .A | Actividad: Security Patroling | Sitio: 232
+ID: 6082 | FechaHora: 2025-12-04 00:16:08 | Usuario: Miguel L | Actividad: Cleaner out | Sitio: 289
+ID: 6086 | FechaHora: 2025-12-04 01:53:31 | Usuario: Sebastian S | Actividad: Security Patroling | Sitio: 281
+ID: 6106 | FechaHora: 2025-12-03 22:12:52 | Usuario: Ivan M | Actividad: Cleaner on site | Sitio: 240
+ID: 6135 | FechaHora: 2025-12-04 03:37:08 | Usuario: Juan R | Actividad: Employee in | Sitio: 323
+ID: 6136 | FechaHora: 2025-12-04 04:41:04 | Usuario: Juan R | Actividad: First Employee | Sitio: 331
+ID: 6171 | FechaHora: 2025-12-04 04:27:50 | Usuario: Cesar O | Actividad: First Employee | Sitio: 322
+ID: 6182 | FechaHora: 2025-12-04 05:36:17 | Usuario: vladimir p | Actividad: Employee in | Sitio: 301
+ID: 6194 | FechaHora: 2025-12-04 05:52:58 | Usuario: vladimir p | Actividad: Employee in | Sitio: 301
+ID: 6249 | FechaHora: 2025-12-04 04:27:41 | Usuario: Joel M | Actividad: Delivery out | Sitio: 284
+ID: 6279 | FechaHora: 2025-12-04 11:03:39 | Usuario: Jacobo B | Actividad: Dropoff | Sitio: 144
+ID: 6282 | FechaHora: 2025-12-04 11:12:13 | Usuario: Jacobo B | Actividad: Pickup | Sitio: 144
+ID: 6286 | FechaHora: 2025-12-04 14:17:11 | Usuario: Jacobo B | Actividad: Pickup | Sitio: 144
+ID: 6287 | FechaHora: 2025-12-04 14:31:04 | Usuario: Jacobo B | Actividad: Dropoff | Sitio: 144
+ID: 6290 | FechaHora: 2025-12-04 15:15:20 | Usuario: Jacobo B | Actividad: Pickup | Sitio: 144
+ID: 6292 | FechaHora: 2025-12-04 21:01:57 | Usuario: Danna C | Actividad: Cleaner out | Sitio: 177
+ID: 6304 | FechaHora: 2025-12-04 22:12:14 | Usuario: Juan Diego F | Actividad: Cleaner in | Sitio: 303
+ID: 6322 | FechaHora: 2025-12-04 22:45:51 | Usuario: Victoria V | Actividad: Delivery | Sitio: 188
+ID: 6329 | FechaHora: 2025-12-04 23:14:32 | Usuario: Matthew R | Actividad: Cleaner on site | Sitio: 126
+ID: 6339 | FechaHora: 2025-12-04 22:02:54 | Usuario: vladimir p | Actividad: Cleaner on site | Sitio: 281
+ID: 6378 | FechaHora: 2025-12-04 18:35:46 | Usuario: Miguel L | Actividad: Dropoff | Sitio: 144
+ID: 6386 | FechaHora: 2025-12-04 22:45:38 | Usuario: Miguel L | Actividad: Cleaner in | Sitio: 191
+ID: 6390 | FechaHora: 2025-12-04 23:45:01 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 338
+ID: 6404 | FechaHora: 2025-12-05 00:08:00 | Usuario: Sebastian S | Actividad: Cleaner on site | Sitio: 281
+ID: 6431 | FechaHora: 2025-12-04 23:21:02 | Usuario: Miguel B | Actividad: Cleaner on site | Sitio: 260
+ID: 6453 | FechaHora: 2025-12-05 01:59:39 | Usuario: Maritza V | Actividad: Cleaner out | Sitio: 131
+ID: 6457 | FechaHora: 2025-12-04 22:08:35 | Usuario: Kevin Contreras | Actividad: Cleaner on site | Sitio: 322
+ID: 6493 | FechaHora: 2025-12-05 01:03:22 | Usuario: Yurani B | Actividad: Cleaner on site | Sitio: 219
+ID: 6494 | FechaHora: 2025-12-05 00:18:14 | Usuario: Yurani B | Actividad: Cleaner on site | Sitio: 136
+ID: 6501 | FechaHora: 2025-12-05 01:05:30 | Usuario: Danna C | Actividad: Delivery in | Sitio: 318
+ID: 6508 | FechaHora: 2025-12-04 22:04:07 | Usuario: Juan R | Actividad: Cleaner on site | Sitio: 162
+ID: 6510 | FechaHora: 2025-12-04 23:02:03 | Usuario: Juan R | Actividad: Cleaner on site | Sitio: 230
+ID: 6524 | FechaHora: 2025-12-05 03:14:33 | Usuario: Danna C | Actividad: First Employee | Sitio: 159
+ID: 6529 | FechaHora: 2025-12-05 01:50:17 | Usuario: Matthew R | Actividad: Delivery in | Sitio: 128
+ID: 6563 | FechaHora: 2025-12-05 00:35:14 | Usuario: Joel M | Actividad: Cleaner out | Sitio: 240
+ID: 6580 | FechaHora: 2025-12-05 02:59:42 | Usuario: Maritza V | Actividad: Delivery in | Sitio: 131
+ID: 6597 | FechaHora: 2025-12-05 02:57:00 | Usuario: vladimir p | Actividad: Cleaner out | Sitio: 281
+ID: 6598 | FechaHora: 2025-12-05 03:27:22 | Usuario: vladimir p | Actividad: Cleaner in | Sitio: 281
+ID: 6599 | FechaHora: 2025-12-05 05:17:02 | Usuario: vladimir p | Actividad: Employee in | Sitio: 184
+ID: 6600 | FechaHora: 2025-12-05 04:24:07 | Usuario: vladimir p | Actividad: Employee in | Sitio: 281
+ID: 6601 | FechaHora: 2025-12-05 05:26:00 | Usuario: vladimir p | Actividad: Employee in | Sitio: 306
+ID: 6607 | FechaHora: 2025-12-05 05:21:13 | Usuario: Danna C | Actividad: First Employee | Sitio: 301
+ID: 6627 | FechaHora: 2025-12-05 05:53:28 | Usuario: vladimir p | Actividad: Employee in | Sitio: 340
+ID: 6647 | FechaHora: 2025-12-05 05:12:55 | Usuario: Catalina G | Actividad: Cleaner on site | Sitio: 318
+ID: 6737 | FechaHora: 2025-12-05 22:43:39 | Usuario: Sebastian S | Actividad: Cleaner on site | Sitio: 230
+ID: 6749 | FechaHora: 2025-12-05 22:25:33 | Usuario: Victoria D | Actividad: Detailer on site | Sitio: 345
+ID: 6758 | FechaHora: 2025-12-05 22:29:43 | Usuario: Yurani B | Actividad: Employee on site | Sitio: 156
+ID: 6810 | FechaHora: 2025-12-06 01:00:39 | Usuario: Jacobo B | Actividad: Cleaner on site | Sitio: 195
+ID: 6842 | FechaHora: 2025-12-05 22:02:38 | Usuario: Dany V | Actividad: Employee on site | Sitio: 126
+ID: 6905 | FechaHora: 2025-12-06 04:25:19 | Usuario: Andrez C | Actividad: First Employee | Sitio: 133
+ID: 6911 | FechaHora: 2025-12-06 00:57:32 | Usuario: Sebastian Sanabria | Actividad: dropoff | Sitio: 345
+ID: 6952 | FechaHora: 2025-12-06 04:17:26 | Usuario: Matthew R | Actividad: Security Patroling | Sitio: 280
+ID: 6964 | FechaHora: 2025-12-06 05:29:50 | Usuario: Brahian G | Actividad: First Employee | Sitio: 159
+ID: 6966 | FechaHora: 2025-12-06 03:38:10 | Usuario: Jhon S | Actividad: Delivery in | Sitio: 240
+ID: 6992 | FechaHora: 2025-12-06 05:36:28 | Usuario: Andrez C | Actividad: First Employee | Sitio: 262
+ID: 7002 | FechaHora: 2025-12-06 17:21:41 | Usuario: Yurani B | Actividad: Employee out | Sitio: 144
+ID: 7004 | FechaHora: 2025-12-06 19:28:13 | Usuario: Yurani B | Actividad: Cleaner on site | Sitio: 280
+ID: 7005 | FechaHora: 2025-12-06 21:06:57 | Usuario: Yurani B | Actividad: Cleaner on site | Sitio: 156
+ID: 7014 | FechaHora: 2025-12-06 22:00:52 | Usuario: Joel M | Actividad: Cleaner on site | Sitio: 162
+ID: 7020 | FechaHora: 2025-12-06 22:00:58 | Usuario: Yurani B | Actividad: Cleaner on site | Sitio: 126
+ID: 7025 | FechaHora: 2025-12-06 22:09:35 | Usuario: Brahian G | Actividad: Cleaner on site | Sitio: 141
+ID: 7030 | FechaHora: 2025-12-06 20:01:03 | Usuario: Victoria D | Actividad: Cleaner on site | Sitio: 280
+ID: 7036 | FechaHora: 2025-12-06 21:58:46 | Usuario: Andrez C | Actividad: Employee on site | Sitio: 239
+ID: 7038 | FechaHora: 2025-12-06 22:39:26 | Usuario: Ruben T | Actividad: Cleaner on site | Sitio: 342
+ID: 7050 | FechaHora: 2025-12-07 00:10:14 | Usuario: Andrez C | Actividad: Cleaner on site | Sitio: 195
+ID: 7057 | FechaHora: 2025-12-06 19:31:46 | Usuario: Dany V | Actividad: Employee on site | Sitio: 162
+ID: 7058 | FechaHora: 2025-12-06 17:34:24 | Usuario: Dany V | Actividad: Employee on site | Sitio: 144
+ID: 7059 | FechaHora: 2025-12-06 21:03:29 | Usuario: Dany V | Actividad: Cleaner on site | Sitio: 288
+ID: 7060 | FechaHora: 2025-12-06 22:05:11 | Usuario: Dany V | Actividad: Security Patroling | Sitio: 344
+ID: 7080 | FechaHora: 2025-12-06 22:05:35 | Usuario: Victoria D | Actividad: Cleaner on site | Sitio: 283
+ID: 7121 | FechaHora: 2025-12-07 07:53:14 | Usuario: Jacobo B | Actividad: First Employee | Sitio: 331
+ID: 7241 | FechaHora: 2025-12-07 13:15:07 | Usuario: Juan R | Actividad: Dropoff | Sitio: 141
+ID: 7284 | FechaHora: 2025-12-07 17:13:30 | Usuario: Maritza V | Actividad: Dropoff | Sitio: 339
+ID: 7315 | FechaHora: 2025-12-07 15:04:08 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 282
+ID: 7316 | FechaHora: 2025-12-07 16:11:32 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 282
+ID: 7351 | FechaHora: 2025-12-07 17:31:22 | Usuario: Maria Paula L | Actividad: Dropoff | Sitio: 190
+ID: 7376 | FechaHora: 2025-12-07 18:33:08 | Usuario: Matthew R | Actividad: Cleaner on site | Sitio: 318
+ID: 7430 | FechaHora: 2025-12-07 23:30:33 | Usuario: Yosselin C | Actividad: Dropoff | Sitio: 337
+ID: 7444 | FechaHora: 2025-12-08 03:08:16 | Usuario: Andrez C | Actividad: Cleaner in | Sitio: 125
+ID: 7464 | FechaHora: 2025-12-08 02:32:10 | Usuario: Andrez C | Actividad: First Employee | Sitio: 141
+ID: 7475 | FechaHora: 2025-12-07 21:09:25 | Usuario: Dany V | Actividad: Dropoff | Sitio: 264
+ID: 7501 | FechaHora: 2025-12-08 04:09:55 | Usuario: Yurani B | Actividad: First Employee | Sitio: 165
+ID: 7528 | FechaHora: 2025-12-08 04:59:48 | Usuario: Daniel P | Actividad: First Employee | Sitio: 118
+ID: 7529 | FechaHora: 2025-12-08 05:27:47 | Usuario: Daniel P | Actividad: First Employee | Sitio: 127
+ID: 7532 | FechaHora: 2025-12-08 04:40:40 | Usuario: Andrez C | Actividad: First Employee | Sitio: 240
+ID: 7537 | FechaHora: 2025-12-08 05:47:01 | Usuario: Juan C Perez | Actividad: First Employee | Sitio: 168
+ID: 7539 | FechaHora: 2025-12-08 04:57:23 | Usuario: Andrez C | Actividad: First Employee | Sitio: 130
+ID: 7585 | FechaHora: 2025-12-08 20:03:31 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 7587 | FechaHora: 2025-12-08 20:26:26 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 7588 | FechaHora: 2025-12-08 20:34:03 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 7590 | FechaHora: 2025-12-08 20:59:11 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 193
+ID: 7592 | FechaHora: 2025-12-08 21:11:52 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 193
+ID: 7595 | FechaHora: 2025-12-08 18:03:37 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 7596 | FechaHora: 2025-12-08 18:35:10 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 7597 | FechaHora: 2025-12-08 18:51:25 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 7598 | FechaHora: 2025-12-08 21:00:08 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 190
+ID: 7599 | FechaHora: 2025-12-08 21:01:45 | Usuario: Jaime A | Actividad: Employee on site | Sitio: 156
+ID: 7600 | FechaHora: 2025-12-08 21:02:06 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 156
+ID: 7601 | FechaHora: 2025-12-08 21:05:43 | Usuario: Jaime A | Actividad: Delivery out | Sitio: 156
+ID: 7602 | FechaHora: 2025-12-08 21:02:46 | Usuario: Danna C | Actividad: Cleaner out | Sitio: 177
+ID: 7603 | FechaHora: 2025-12-08 21:03:16 | Usuario: Danna C | Actividad: Cleaner on site | Sitio: 188
+ID: 7647 | FechaHora: 2025-12-08 22:41:15 | Usuario: Matthew R | Actividad: Cleaner on site | Sitio: 318
+ID: 7648 | FechaHora: 2025-12-08 22:55:04 | Usuario: Matthew R | Actividad: Cleaner on site | Sitio: 318
+ID: 7668 | FechaHora: 2025-12-08 22:40:14 | Usuario: Juan Diego F | Actividad: Cleaner on site | Sitio: 219
+ID: 7693 | FechaHora: 2025-12-08 22:02:53 | Usuario: Danna C | Actividad: Delivery | Sitio: 338
+ID: 7696 | FechaHora: 2025-12-08 22:13:52 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 126
+ID: 7697 | FechaHora: 2025-12-08 22:23:16 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 176
+ID: 7701 | FechaHora: 2025-12-08 22:04:18 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 295
+ID: 7759 | FechaHora: 2025-12-08 23:48:01 | Usuario: Miguel L | Actividad: Cleaner out | Sitio: 287
+ID: 7763 | FechaHora: 2025-12-08 23:06:13 | Usuario: Victoria V | Actividad: Cleaner on site | Sitio: 337
+ID: 7769 | FechaHora: 2025-12-09 00:12:28 | Usuario: Victoria V | Actividad: Contractor on site | Sitio: 280
+ID: 7801 | FechaHora: 2025-12-09 03:03:13 | Usuario: Carolina N | Actividad: First Employee | Sitio: 337
+ID: 7805 | FechaHora: 2025-12-09 01:02:06 | Usuario: Matthew R | Actividad: Cleaner in | Sitio: 318
+ID: 7825 | FechaHora: 2025-12-08 22:57:17 | Usuario: Kevin Castro | Actividad: Employee on site | Sitio: 141
+ID: 7831 | FechaHora: 2025-12-09 04:06:29 | Usuario: Matthew R | Actividad: Delivery out | Sitio: 159
+ID: 7839 | FechaHora: 2025-12-09 03:45:30 | Usuario: Matthew R | Actividad: Delivery in | Sitio: 323
+ID: 7863 | FechaHora: 2025-12-09 03:48:20 | Usuario: Matthew R | Actividad: Delivery in | Sitio: 323
+ID: 7864 | FechaHora: 2025-12-09 04:05:39 | Usuario: Matthew R | Actividad: Delivery in | Sitio: 323
+ID: 7875 | FechaHora: 2025-12-09 04:27:20 | Usuario: Matthew R | Actividad: Delivery out | Sitio: 323
+ID: 7877 | FechaHora: 2025-12-09 04:37:09 | Usuario: Matthew R | Actividad: Delivery out | Sitio: 323
+ID: 7889 | FechaHora: 2025-12-09 04:46:15 | Usuario: Matthew R | Actividad: Delivery out | Sitio: 323
+ID: 7890 | FechaHora: 2025-12-09 04:48:26 | Usuario: Matthew R | Actividad: Delivery out | Sitio: 323
+ID: 7901 | FechaHora: 2025-12-08 22:39:42 | Usuario: Kevin Contreras | Actividad: Detailer on site | Sitio: 292
+ID: 7916 | FechaHora: 2025-12-09 05:53:57 | Usuario: Matthew R | Actividad: Employee in | Sitio: 159
+ID: 7923 | FechaHora: 2025-12-08 23:10:07 | Usuario: Kevin V | Actividad: Cleaner out | Sitio: 135
+ID: 7947 | FechaHora: 2025-12-09 04:46:12 | Usuario: Cesar O | Actividad: Cleaner out | Sitio: 289
+ID: 7950 | FechaHora: 2025-12-09 05:11:09 | Usuario: Aramis M | Actividad: Security Patroling | Sitio: 280
+ID: 7951 | FechaHora: 2025-12-09 05:20:27 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 280
+ID: 7956 | FechaHora: 2025-12-09 05:42:25 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 316
+ID: 7957 | FechaHora: 2025-12-09 05:45:58 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 280
+ID: 7972 | FechaHora: 2025-12-09 05:26:17 | Usuario: Maria .A | Actividad: First Employee | Sitio: 168
+ID: 7978 | FechaHora: 2025-12-09 05:36:06 | Usuario: Karen C | Actividad: First Employee | Sitio: 260
+ID: 8002 | FechaHora: 2025-12-09 12:02:54 | Usuario: Lorena Z | Actividad: Dropoff | Sitio: 144
+ID: 8013 | FechaHora: 2025-12-09 13:40:16 | Usuario: Lorena Z | Actividad: Pickup | Sitio: 144
+ID: 8018 | FechaHora: 2025-12-09 15:16:22 | Usuario: Lorena Z | Actividad: Dropoff | Sitio: 144
+ID: 8026 | FechaHora: 2025-12-09 20:03:57 | Usuario: Andrez C | Actividad: Cleaner on site | Sitio: 144
+ID: 8027 | FechaHora: 2025-12-09 17:59:08 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 8028 | FechaHora: 2025-12-09 21:04:10 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 156
+ID: 8029 | FechaHora: 2025-12-09 19:13:37 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 8033 | FechaHora: 2025-12-09 22:00:13 | Usuario: Aramis M | Actividad: Site Down | Sitio: 220
+ID: 8038 | FechaHora: 2025-12-09 20:36:13 | Usuario: Jefferson R | Actividad: Cleaner on site | Sitio: 144
+ID: 8042 | FechaHora: 2025-12-09 23:13:47 | Usuario: Jaime A | Actividad: Employee on site | Sitio: 344
+ID: 8056 | FechaHora: 2025-12-10 00:02:17 | Usuario: Andrez C | Actividad: Cleaner on site | Sitio: 162
+ID: 8057 | FechaHora: 2025-12-09 19:56:19 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 8059 | FechaHora: 2025-12-09 19:59:12 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 8060 | FechaHora: 2025-12-09 20:37:36 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 8061 | FechaHora: 2025-12-09 20:43:03 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 8064 | FechaHora: 2025-12-09 21:05:58 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 193
+ID: 8065 | FechaHora: 2025-12-09 21:07:49 | Usuario: Miguel L | Actividad: Employee out | Sitio: 193
+ID: 8067 | FechaHora: 2025-12-09 22:05:03 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 303
+ID: 8074 | FechaHora: 2025-12-09 23:36:47 | Usuario: Miguel L | Actividad: Police Patroling | Sitio: 346
+ID: 8077 | FechaHora: 2025-12-09 23:07:00 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 287
+ID: 8090 | FechaHora: 2025-12-09 23:11:01 | Usuario: Kevin V | Actividad: Cleaner on site | Sitio: 147
+ID: 8095 | FechaHora: 2025-12-09 23:13:42 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 337
+ID: 8099 | FechaHora: 2025-12-09 22:02:54 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 298
+ID: 8100 | FechaHora: 2025-12-10 00:07:51 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 337
+ID: 8102 | FechaHora: 2025-12-09 22:10:27 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 284
+ID: 8125 | FechaHora: 2025-12-09 22:47:15 | Usuario: Karen C | Actividad: Cleaner on site | Sitio: 219
+ID: 8169 | FechaHora: 2025-12-09 21:45:32 | Usuario: Danna C | Actividad: Cleaner on site | Sitio: 189
+ID: 8200 | FechaHora: 2025-12-09 22:02:13 | Usuario: Juan R | Actividad: Cleaner on site | Sitio: 129
+ID: 8240 | FechaHora: 2025-12-09 22:52:58 | Usuario: Aramis M | Actividad: Cleaner out | Sitio: 298
+ID: 8245 | FechaHora: 2025-12-10 03:05:20 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 348
+ID: 8283 | FechaHora: 2025-12-10 03:33:42 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 337
+ID: 8284 | FechaHora: 2025-12-10 03:34:18 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 189
+ID: 8285 | FechaHora: 2025-12-10 03:54:08 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 189
+ID: 8287 | FechaHora: 2025-12-10 03:20:46 | Usuario: Ivan M | Actividad: First Employee | Sitio: 159
+ID: 8293 | FechaHora: 2025-12-10 04:03:13 | Usuario: Jaime A | Actividad: First Employee | Sitio: 282
+ID: 8295 | FechaHora: 2025-12-10 01:48:15 | Usuario: Sebastian Sanabria | Actividad: Cleaner on site | Sitio: 219
+ID: 8310 | FechaHora: 2025-12-10 03:13:42 | Usuario: Sebastian Sanabria | Actividad: Employee on site | Sitio: 141
+ID: 8315 | FechaHora: 2025-12-10 03:50:56 | Usuario: Ivan M | Actividad: Delivery | Sitio: 323
+ID: 8323 | FechaHora: 2025-12-10 04:01:31 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 346
+ID: 8331 | FechaHora: 2025-12-09 22:12:13 | Usuario: Miguel B | Actividad: Cleaner on site | Sitio: 141
+ID: 8343 | FechaHora: 2025-12-09 23:42:49 | Usuario: Kevin Contreras | Actividad: Delivery in | Sitio: 336
+ID: 8368 | FechaHora: 2025-12-10 04:51:50 | Usuario: Andres G | Actividad: first employee | Sitio: 136
+ID: 8389 | FechaHora: 2025-12-10 04:48:18 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 292
+ID: 8390 | FechaHora: 2025-12-10 04:50:56 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 292
+ID: 8413 | FechaHora: 2025-12-10 05:16:35 | Usuario: Karen C | Actividad: First Employee | Sitio: 195
+ID: 8428 | FechaHora: 2025-12-10 05:12:50 | Usuario: Karen C | Actividad: First Employee | Sitio: 269
+ID: 8435 | FechaHora: 2025-12-10 08:48:36 | Usuario: Lorena Z | Actividad: Dropoff | Sitio: 144
+ID: 8441 | FechaHora: 2025-12-10 10:34:42 | Usuario: Lorena Z | Actividad: Pickup | Sitio: 144
+ID: 8447 | FechaHora: 2025-12-10 11:02:58 | Usuario: Lorena Z | Actividad: Pickup | Sitio: 144
+ID: 8451 | FechaHora: 2025-12-10 12:25:29 | Usuario: Lorena Z | Actividad: Dropoff | Sitio: 144
+ID: 8452 | FechaHora: 2025-12-10 12:31:20 | Usuario: Lorena Z | Actividad: Pickup | Sitio: 144
+ID: 8455 | FechaHora: 2025-12-10 12:50:56 | Usuario: Lorena Z | Actividad: Pickup | Sitio: 144
+ID: 8463 | FechaHora: 2025-12-10 15:26:23 | Usuario: Lorena Z | Actividad: Pickup | Sitio: 144
+ID: 8469 | FechaHora: 2025-12-10 18:04:37 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 8470 | FechaHora: 2025-12-10 21:02:12 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 190
+ID: 8472 | FechaHora: 2025-12-10 21:04:41 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 131
+ID: 8475 | FechaHora: 2025-12-10 19:48:58 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 8476 | FechaHora: 2025-12-10 19:52:07 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 8479 | FechaHora: 2025-12-10 20:59:00 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 187
+ID: 8480 | FechaHora: 2025-12-10 21:00:12 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 193
+ID: 8481 | FechaHora: 2025-12-10 21:40:48 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 8485 | FechaHora: 2025-12-10 22:06:53 | Usuario: Jaime A | Actividad: Detailer on site | Sitio: 128
+ID: 8496 | FechaHora: 2025-12-10 22:07:09 | Usuario: Juan R | Actividad: Cleaner on site | Sitio: 292
+ID: 8497 | FechaHora: 2025-12-10 22:06:55 | Usuario: Ivan M | Actividad: Cleaner on site | Sitio: 219
+ID: 8509 | FechaHora: 2025-12-10 22:26:58 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 342
+ID: 8515 | FechaHora: 2025-12-10 23:08:05 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 339
+ID: 8519 | FechaHora: 2025-12-10 22:14:07 | Usuario: Kevin V | Actividad: Cleaner out | Sitio: 135
+ID: 8539 | FechaHora: 2025-12-10 23:04:31 | Usuario: Sebastian S | Actividad: Cleaner on site | Sitio: 135
+ID: 8551 | FechaHora: 2025-12-10 22:08:50 | Usuario: Victoria V | Actividad: Employee on site | Sitio: 345
+ID: 8557 | FechaHora: 2025-12-10 23:59:35 | Usuario: Maria Paula L | Actividad: Cleaner on site | Sitio: 131
+ID: 8572 | FechaHora: 2025-12-10 23:35:49 | Usuario: Cesar O | Actividad: Delivery in | Sitio: 337
+ID: 8573 | FechaHora: 2025-12-10 22:26:56 | Usuario: Ivan M | Actividad: Cleaner on site | Sitio: 240
+ID: 8577 | FechaHora: 2025-12-10 22:44:24 | Usuario: Miguel L | Actividad: Cleaner in | Sitio: 191
+ID: 8579 | FechaHora: 2025-12-10 22:04:41 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 295
+ID: 8591 | FechaHora: 2025-12-11 00:23:40 | Usuario: Sebastian S | Actividad: Delivery in | Sitio: 141
+ID: 8597 | FechaHora: 2025-12-11 01:29:27 | Usuario: Maria .A | Actividad: Delivery in | Sitio: 186
+ID: 8602 | FechaHora: 2025-12-10 23:21:20 | Usuario: Sebastian Sanabria | Actividad: Cleaner on site | Sitio: 171
+ID: 8607 | FechaHora: 2025-12-11 00:04:31 | Usuario: Sebastian S | Actividad: Cleaner on site | Sitio: 135
+ID: 8608 | FechaHora: 2025-12-11 01:19:46 | Usuario: Sebastian S | Actividad: Detailer on site | Sitio: 190
+ID: 8609 | FechaHora: 2025-12-11 02:02:10 | Usuario: Sebastian S | Actividad: Detailer on site | Sitio: 128
+ID: 8610 | FechaHora: 2025-12-11 01:23:40 | Usuario: Sebastian S | Actividad: Delivery in | Sitio: 141
+ID: 8614 | FechaHora: 2025-12-11 01:54:27 | Usuario: Brahian G | Actividad: Delivery | Sitio: 215
+ID: 8616 | FechaHora: 2025-12-11 01:34:22 | Usuario: Brahian G | Actividad: Delivery out | Sitio: 318
+ID: 8618 | FechaHora: 2025-12-10 23:02:02 | Usuario: Jefferson R | Actividad: Site Down | Sitio: 159
+ID: 8619 | FechaHora: 2025-12-10 23:03:26 | Usuario: Jefferson R | Actividad: Site Down | Sitio: 220
+ID: 8621 | FechaHora: 2025-12-11 00:05:57 | Usuario: Jefferson R | Actividad: Detailer on site | Sitio: 292
+ID: 8629 | FechaHora: 2025-12-10 23:06:26 | Usuario: Kevin Contreras | Actividad: Cleaner on site | Sitio: 195
+ID: 8632 | FechaHora: 2025-12-10 23:17:39 | Usuario: Kevin Contreras | Actividad: Dropoff | Sitio: 141
+ID: 8642 | FechaHora: 2025-12-10 23:04:07 | Usuario: Karen C | Actividad: Cleaner on site | Sitio: 213
+ID: 8643 | FechaHora: 2025-12-10 21:12:13 | Usuario: Karen C | Actividad: Cleaner on site | Sitio: 144
+ID: 8654 | FechaHora: 2025-12-11 00:04:41 | Usuario: Dany V | Actividad: Cleaner on site | Sitio: 288
+ID: 8658 | FechaHora: 2025-12-11 01:53:30 | Usuario: Dany V | Actividad: Cleaner on site | Sitio: 288
+ID: 8677 | FechaHora: 2025-12-10 23:02:12 | Usuario: Maria Paula L | Actividad: Cleaner on site | Sitio: 166
+ID: 8678 | FechaHora: 2025-12-10 22:13:27 | Usuario: Maria Paula L | Actividad: Cleaner on site | Sitio: 144
+ID: 8679 | FechaHora: 2025-12-10 22:49:06 | Usuario: Maria Paula L | Actividad: Employee out | Sitio: 144
+ID: 8680 | FechaHora: 2025-12-11 00:59:35 | Usuario: Maria Paula L | Actividad: Cleaner on site | Sitio: 131
+ID: 8681 | FechaHora: 2025-12-11 01:00:26 | Usuario: Maria Paula L | Actividad: Cleaner on site | Sitio: 160
+ID: 8683 | FechaHora: 2025-12-11 01:15:09 | Usuario: Maria Paula L | Actividad: Cleaner on site | Sitio: 160
+ID: 8684 | FechaHora: 2025-12-11 00:22:19 | Usuario: Maria Paula L | Actividad: Cleaner in | Sitio: 231
+ID: 8685 | FechaHora: 2025-12-11 00:28:00 | Usuario: Maria Paula L | Actividad: Cleaner in | Sitio: 231
+ID: 8691 | FechaHora: 2025-12-10 23:00:32 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 303
+ID: 8692 | FechaHora: 2025-12-10 23:03:25 | Usuario: Aramis M | Actividad: Security Patroling | Sitio: 344
+ID: 8693 | FechaHora: 2025-12-10 23:05:54 | Usuario: Aramis M | Actividad: Employee out | Sitio: 355
+ID: 8694 | FechaHora: 2025-12-10 23:09:21 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 355
+ID: 8695 | FechaHora: 2025-12-10 23:20:47 | Usuario: Aramis M | Actividad: Cleaner out | Sitio: 303
+ID: 8696 | FechaHora: 2025-12-10 23:23:29 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 355
+ID: 8697 | FechaHora: 2025-12-10 23:26:58 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 342
+ID: 8698 | FechaHora: 2025-12-10 23:30:18 | Usuario: Aramis M | Actividad: Dropoff | Sitio: 188
+ID: 8699 | FechaHora: 2025-12-10 23:38:01 | Usuario: Aramis M | Actividad: Dropoff | Sitio: 303
+ID: 8700 | FechaHora: 2025-12-10 23:38:43 | Usuario: Aramis M | Actividad: Employee out | Sitio: 303
+ID: 8701 | FechaHora: 2025-12-10 23:41:08 | Usuario: Aramis M | Actividad: Employee out | Sitio: 355
+ID: 8702 | FechaHora: 2025-12-10 23:59:54 | Usuario: Aramis M | Actividad: Dropoff | Sitio: 342
+ID: 8703 | FechaHora: 2025-12-11 00:08:05 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 339
+ID: 8704 | FechaHora: 2025-12-11 00:23:36 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 303
+ID: 8705 | FechaHora: 2025-12-11 00:36:39 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 303
+ID: 8706 | FechaHora: 2025-12-11 00:52:57 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 303
+ID: 8708 | FechaHora: 2025-12-11 01:08:54 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 282
+ID: 8709 | FechaHora: 2025-12-11 01:50:20 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 282
+ID: 8726 | FechaHora: 2025-12-10 23:37:46 | Usuario: Cesar O | Actividad: Detailer out | Sitio: 337
+ID: 8727 | FechaHora: 2025-12-11 00:35:49 | Usuario: Cesar O | Actividad: Delivery in | Sitio: 337
+ID: 8730 | FechaHora: 2025-12-11 04:01:29 | Usuario: Cesar O | Actividad: First Employee | Sitio: 299
+ID: 8748 | FechaHora: 2025-12-11 03:20:41 | Usuario: Aramis M | Actividad: First Employee | Sitio: 316
+ID: 8750 | FechaHora: 2025-12-11 04:55:49 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 346
+ID: 8751 | FechaHora: 2025-12-11 04:56:18 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 346
+ID: 8754 | FechaHora: 2025-12-11 05:34:23 | Usuario: Sebastian S | Actividad: Cleaner on site | Sitio: 128
+ID: 8756 | FechaHora: 2025-12-11 05:36:46 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 346
+ID: 8764 | FechaHora: 2025-12-11 05:03:23 | Usuario: Juan Diego F | Actividad: Delivery | Sitio: 159
+ID: 8768 | FechaHora: 2025-12-10 23:20:59 | Usuario: Edwin O | Actividad: Cleaner in | Sitio: 127
+ID: 8776 | FechaHora: 2025-12-10 23:02:09 | Usuario: Kevin V | Actividad: Dropoff | Sitio: 121
+ID: 8777 | FechaHora: 2025-12-10 23:06:00 | Usuario: Kevin V | Actividad: Cleaner on site | Sitio: 121
+ID: 8778 | FechaHora: 2025-12-10 23:06:39 | Usuario: Kevin V | Actividad: Detailer on site | Sitio: 121
+ID: 8779 | FechaHora: 2025-12-10 23:42:00 | Usuario: Kevin V | Actividad: Dropoff | Sitio: 155
+ID: 8780 | FechaHora: 2025-12-10 23:12:25 | Usuario: Kevin V | Actividad: Cleaner out | Sitio: 129
+ID: 8781 | FechaHora: 2025-12-10 23:14:07 | Usuario: Kevin V | Actividad: Cleaner out | Sitio: 135
+ID: 8782 | FechaHora: 2025-12-10 23:17:00 | Usuario: Kevin V | Actividad: Employee out | Sitio: 129
+ID: 8783 | FechaHora: 2025-12-11 00:31:33 | Usuario: Kevin V | Actividad: Pickup | Sitio: 128
+ID: 8784 | FechaHora: 2025-12-11 01:04:48 | Usuario: Kevin V | Actividad: Cleaner on site | Sitio: 119
+ID: 8791 | FechaHora: 2025-12-10 23:20:16 | Usuario: Maritza V | Actividad: Dropoff | Sitio: 179
+ID: 8792 | FechaHora: 2025-12-10 23:07:56 | Usuario: Maritza V | Actividad: Cleaner on site | Sitio: 147
+ID: 8793 | FechaHora: 2025-12-10 23:34:40 | Usuario: Maritza V | Actividad: Delivery in | Sitio: 136
+ID: 8794 | FechaHora: 2025-12-10 23:38:03 | Usuario: Maritza V | Actividad: Dropoff | Sitio: 147
+ID: 8802 | FechaHora: 2025-12-10 23:06:55 | Usuario: Ivan M | Actividad: Cleaner on site | Sitio: 219
+ID: 8803 | FechaHora: 2025-12-10 23:07:34 | Usuario: Ivan M | Actividad: Cleaner on site | Sitio: 160
+ID: 8804 | FechaHora: 2025-12-10 23:20:45 | Usuario: Ivan M | Actividad: Dropoff | Sitio: 193
+ID: 8805 | FechaHora: 2025-12-10 21:48:16 | Usuario: Ivan M | Actividad: Cleaner on site | Sitio: 264
+ID: 8807 | FechaHora: 2025-12-11 00:14:46 | Usuario: Ivan M | Actividad: Cleaner on site | Sitio: 195
+ID: 8808 | FechaHora: 2025-12-10 23:26:56 | Usuario: Ivan M | Actividad: Cleaner on site | Sitio: 240
+ID: 8823 | FechaHora: 2025-12-11 06:41:49 | Usuario: Kevin Contreras | Actividad: Dropoff | Sitio: 343
+ID: 8830 | FechaHora: 2025-12-10 23:03:09 | Usuario: Juan R | Actividad: Contractor on site | Sitio: 324
+ID: 8832 | FechaHora: 2025-12-10 23:46:22 | Usuario: Juan R | Actividad: Voice Down | Sitio: 324
+ID: 8833 | FechaHora: 2025-12-10 23:54:27 | Usuario: Juan R | Actividad: Dropoff | Sitio: 282
+ID: 8834 | FechaHora: 2025-12-11 00:06:16 | Usuario: Juan R | Actividad: Employee out | Sitio: 346
+ID: 8835 | FechaHora: 2025-12-10 23:07:09 | Usuario: Juan R | Actividad: Cleaner on site | Sitio: 292
+ID: 8844 | FechaHora: 2025-12-10 23:05:51 | Usuario: Cesar O | Actividad: Cleaner out | Sitio: 337
+ID: 8845 | FechaHora: 2025-12-10 23:09:09 | Usuario: Cesar O | Actividad: Cleaner out | Sitio: 337
+ID: 8846 | FechaHora: 2025-12-10 23:25:53 | Usuario: Cesar O | Actividad: Cleaner out | Sitio: 189
+ID: 8852 | FechaHora: 2025-12-11 06:05:33 | Usuario: Emanuel B | Actividad: First Employee | Sitio: 118
+ID: 8853 | FechaHora: 2025-12-11 06:09:18 | Usuario: Emanuel B | Actividad: First Employee | Sitio: 127
+ID: 8857 | FechaHora: 2025-12-10 23:13:21 | Usuario: Maria .A | Actividad: Employee out | Sitio: 131
+ID: 8858 | FechaHora: 2025-12-10 23:32:08 | Usuario: Maria .A | Actividad: Cleaner on site | Sitio: 230
+ID: 8859 | FechaHora: 2025-12-10 23:46:40 | Usuario: Maria .A | Actividad: Cleaner in | Sitio: 131
+ID: 8860 | FechaHora: 2025-12-10 23:08:36 | Usuario: Maria .A | Actividad: Security Switch | Sitio: 139
+ID: 8861 | FechaHora: 2025-12-10 23:23:17 | Usuario: Maria .A | Actividad: Worker in | Sitio: 235
+ID: 8863 | FechaHora: 2025-12-11 00:41:23 | Usuario: Maria .A | Actividad: Security Switch | Sitio: 232
+ID: 8864 | FechaHora: 2025-12-11 01:53:15 | Usuario: Maria .A | Actividad: Delivery in | Sitio: 128
+ID: 8865 | FechaHora: 2025-12-11 00:55:29 | Usuario: Maria .A | Actividad: Cleaner out | Sitio: 139
+ID: 8872 | FechaHora: 2025-12-11 06:31:56 | Usuario: Maria .A | Actividad: First Employee | Sitio: 167
+ID: 8899 | FechaHora: 2025-12-11 06:00:12 | Usuario: Dany V | Actividad: Cleaner on site | Sitio: 318
+ID: 8918 | FechaHora: 2025-12-11 22:14:51 | Usuario: Juan Diego F | Actividad: Cleaner on site | Sitio: 188
+ID: 8924 | FechaHora: 2025-12-11 20:46:37 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 8925 | FechaHora: 2025-12-11 20:55:12 | Usuario: Miguel L | Actividad: Cleaner on site | Sitio: 162
+ID: 8927 | FechaHora: 2025-12-11 21:41:01 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 162
+ID: 8928 | FechaHora: 2025-12-11 22:00:50 | Usuario: Miguel L | Actividad: Employee on site | Sitio: 193
+ID: 8951 | FechaHora: 2025-12-11 18:09:17 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 8952 | FechaHora: 2025-12-11 18:14:10 | Usuario: Jaime A | Actividad: Cleaner in | Sitio: 144
+ID: 8954 | FechaHora: 2025-12-11 20:59:05 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 156
+ID: 8957 | FechaHora: 2025-12-11 22:27:50 | Usuario: Jaime A | Actividad: Cleaner on site | Sitio: 280
+ID: 8959 | FechaHora: 2025-12-11 22:04:48 | Usuario: Matthew R | Actividad: Cleaner on site | Sitio: 129
+ID: 8961 | FechaHora: 2025-12-11 22:18:38 | Usuario: Matthew R | Actividad: Cleaner on site | Sitio: 129
+ID: 8968 | FechaHora: 2025-12-11 22:40:40 | Usuario: Maria C | Actividad: Cleaner out | Sitio: 264
+ID: 8969 | FechaHora: 2025-12-11 22:02:22 | Usuario: Victoria V | Actividad: Employee on site | Sitio: 324
+ID: 8981 | FechaHora: 2025-12-11 23:34:35 | Usuario: Miguel L | Actividad: Cleaner in | Sitio: 191
+ID: 8985 | FechaHora: 2025-12-11 23:24:50 | Usuario: Miguel L | Actividad: Dropoff | Sitio: 289
+ID: 8987 | FechaHora: 2025-12-12 00:02:26 | Usuario: Miguel L | Actividad: Cleaner out | Sitio: 287
+ID: 8990 | FechaHora: 2025-12-11 22:58:41 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 339
+ID: 8991 | FechaHora: 2025-12-11 23:30:54 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 303
+ID: 8995 | FechaHora: 2025-12-11 22:02:59 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 298
+ID: 8996 | FechaHora: 2025-12-12 00:11:44 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 303
+ID: 8997 | FechaHora: 2025-12-11 22:13:41 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 284
+ID: 9008 | FechaHora: 2025-12-11 23:04:11 | Usuario: Ivan M | Actividad: Cleaner on site | Sitio: 195
+ID: 9010 | FechaHora: 2025-12-12 00:26:39 | Usuario: Jaime A | Actividad: Delivery | Sitio: 282
+ID: 9015 | FechaHora: 2025-12-11 22:07:31 | Usuario: Kevin V | Actividad: Cleaner on site | Sitio: 147
+ID: 9024 | FechaHora: 2025-12-11 22:28:44 | Usuario: Matthew R | Actividad: Cleaner on site | Sitio: 240
+ID: 9025 | FechaHora: 2025-12-11 23:34:52 | Usuario: Matthew R | Actividad: Cleaner out | Sitio: 129
+ID: 9046 | FechaHora: 2025-12-11 23:06:25 | Usuario: Jefferson R | Actividad: Cleaner on site | Sitio: 121
+ID: 9058 | FechaHora: 2025-12-12 02:00:43 | Usuario: Cesar O | Actividad: Cleaner out | Sitio: 119
+ID: 9061 | FechaHora: 2025-12-11 20:22:02 | Usuario: Karen C | Actividad: Cleaner on site | Sitio: 144
+ID: 9082 | FechaHora: 2025-12-12 03:24:32 | Usuario: Juan Diego F | Actividad: Delivery | Sitio: 159
+ID: 9095 | FechaHora: 2025-12-11 22:03:27 | Usuario: Aramis M | Actividad: Cleaner on site | Sitio: 342
+ID: 9096 | FechaHora: 2025-12-11 22:05:07 | Usuario: Aramis M | Actividad: Security Patroling | Sitio: 344
+ID: 9097 | FechaHora: 2025-12-11 22:06:40 | Usuario: Aramis M | Actividad: Employee on site | Sitio: 342
+ID: 9117 | FechaHora: 2025-12-12 02:29:47 | Usuario: Daniel P | Actividad: Cleaner out | Sitio: 134
+ID: 9118 | FechaHora: 2025-12-12 03:51:15 | Usuario: Daniel P | Actividad: Cleaner out | Sitio: 118
+ID: 9125 | FechaHora: 2025-12-12 05:09:39 | Usuario: Juan Diego F | Actividad: Delivery | Sitio: 159
+ID: 9150 | FechaHora: 2025-12-12 04:03:35 | Usuario: Yurani B | Actividad: Cleaner on site | Sitio: 159
+ID: 9152 | FechaHora: 2025-12-12 05:09:04 | Usuario: Yurani B | Actividad: First Employee | Sitio: 124
+ID: 9154 | FechaHora: 2025-12-12 05:12:27 | Usuario: Edwin O | Actividad: First Employee | Sitio: 118
+ID: 9155 | FechaHora: 2025-12-12 01:11:02 | Usuario: Joel M | Actividad: Employee on site | Sitio: 288
+ID: 9156 | FechaHora: 2025-12-12 02:14:19 | Usuario: Joel M | Actividad: Dropoff | Sitio: 344
+ID: 9157 | FechaHora: 2025-12-12 02:24:22 | Usuario: Joel M | Actividad: Detailer in | Sitio: 135
+ID: 9159 | FechaHora: 2025-12-12 02:43:32 | Usuario: Joel M | Actividad: Employee in | Sitio: 129
+ID: 9173 | FechaHora: 2025-12-12 02:58:42 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 288
+ID: 9174 | FechaHora: 2025-12-12 03:22:46 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 288
+ID: 9178 | FechaHora: 2025-12-12 05:32:55 | Usuario: Aramis M | Actividad: Delivery in | Sitio: 339
+ID: 9221 | FechaHora: 2025-12-12 05:51:46 | Usuario: Aramis M | Actividad: Delivery out | Sitio: 339
+ID: 9246 | FechaHora: 2025-12-12 05:16:24 | Usuario: Emanuel B | Actividad: First Employee | Sitio: 133
+ID: 9249 | FechaHora: 2025-12-12 10:05:00 | Usuario: prueba | Actividad: break | Sitio: 130
+
+================================================================================
+QUERY PARA REVERTIR (si es necesario):
+--------------------------------------------------------------------------------
+
+-- Para restaurar los registros eliminados:
+INSERT INTO specials 
+SELECT 
+    ID_special, FechaHora, ID_Sitio, Nombre_Actividad, Cantidad, 
+    Camera, Descripcion, Usuario, Time_Zone, Turno, Supervisor,
+    marked_status, marked_by, marked_at
+FROM specials_duplicates_backup;
+        

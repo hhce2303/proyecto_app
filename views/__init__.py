@@ -1,13 +1,12 @@
 """
-🎨 CAPA DE VISTA (Views Layer)
+Views package - Vistas de la aplicación usando patrón Dashboard
 
-Este paquete contiene todas las interfaces de usuario (UI) de la aplicación.
-Las vistas son responsables únicamente de mostrar datos y capturar entradas del usuario.
-
-Responsabilidades:
-- Crear y gestionar ventanas y widgets
-- Capturar eventos de usuario (clicks, teclas, etc.)
-- Mostrar datos proporcionados por los controladores
+Arquitectura:
+    Dashboard (clase base super general)
+        ↓ hereda
+    OperatorDashboard / SupervisorDashboard / AdminDashboard
+        ↓ usa
+    Módulos específicos (daily, specials, covers, etc.)
 - NO contener lógica de negocio
 
 Archivos:

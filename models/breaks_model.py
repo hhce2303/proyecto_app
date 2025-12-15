@@ -106,7 +106,7 @@ def load_covers_from_db():
             INNER JOIN user u_covered ON gbp.User_covered = u_covered.ID_Usuario
             INNER JOIN user u_covering ON gbp.User_covering = u_covering.ID_Usuario
             LEFT JOIN user u_supervisor ON gbp.Supervisor = u_supervisor.ID_Usuario
-            WHERE gbp.is_Active = 1
+            WHERE gbp.is_Active in (1,0,-1)
             ORDER BY gbp.Fecha_hora_cover
         """
         cur.execute(query)
