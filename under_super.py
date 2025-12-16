@@ -620,7 +620,11 @@ class FilteredCombobox(tk.Frame):
         except Exception as e:
             print(f"[DEBUG] Style config error (non-critical): {e}")
         
-        # Crear el Combobox interno
+        # Crear el Combobox interno con estado NORMAL (editable)
+        # Si no se especifica state en kwargs, usar 'normal' por defecto
+        if 'state' not in combobox_kwargs:
+            combobox_kwargs['state'] = 'normal'
+        
         self._combobox = ttk.Combobox(self, style=style_name, **combobox_kwargs)
         self._combobox.pack(fill='both', expand=True, padx=0, pady=0)
         

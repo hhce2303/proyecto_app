@@ -1,56 +1,30 @@
-"""
-CoversModule - Módulo para visualizar y gestionar covers del operador.
-Muestra covers realizados con duración, posición en turno y opción de cancelar.
-
-Responsabilidades:
-- Mostrar covers en tksheet (solo lectura)
-- Calcular y mostrar duración de covers
-- Mostrar posición en turno/cola
-- Permitir cancelar covers programados activos
-- Refrescar datos automáticamente
-"""
 import tkinter as tk
 from tkinter import messagebox
 from tksheet import Sheet
 import traceback
 from datetime import datetime
-
 from controllers.covers_operator_controller import CoversOperatorController
 from utils.ui_factory import UIFactory
 from utils.date_formatter import format_friendly_datetime
 
 
-class CoversModule:
-    """
-    Módulo Covers - Gestiona visualización de covers realizados y programados.
-    Modo solo lectura con opción de cancelar covers activos.
-    """
-    
+class CoversListModule:
+    """Módulo para mostrar lista de covers"""
     # Configuración de columnas
     COLUMNS = [
-        "Nombre Usuario",
-        "Time Request",
-        "Cover In",
-        "Cover Out",
-        "Duración",
         "Turno",
-        "Motivo",
-        "Covered By",
-        "Activo"
+        "Operador",
+        "Hora solicitud",
+        "Approved"
     ]
     
     COLUMN_WIDTHS = {
-        "Nombre Usuario": 150,
-        "Time Request": 150,
-        "Cover In": 140,
-        "Cover Out": 140,
-        "Duración": 100,
-        "Turno": 80,
-        "Motivo": 180,
-        "Covered By": 150,
-        "Activo": 80
+        "Turno": 150,
+        "Operador": 150,
+        "Hora solicitud": 140,
+        "Approved": 140,
     }
-    
+
     def __init__(self, container, username, ui_factory, UI=None):
         """
         Inicializa el módulo Covers
@@ -88,67 +62,79 @@ class CoversModule:
         
         # Renderizar
         self.render()
-    
+
     def render(self):
-        """Renderiza el módulo completo"""
-        self._create_toolbar()
-        self._create_position_label()
-        self._create_sheet()
-        self.load_data()
-        self._start_auto_refresh()
-    
-    def _create_toolbar(self):
-        """Crea toolbar con botones de acción"""
-        self.toolbar = self.ui_factory.frame(self.container, fg_color="#2c2f33")
-        self.toolbar.pack(fill="x", padx=10, pady=(10, 5))
-        
+        """Renderiza el módulo completo con barra superior, info y tabla"""
+        # Barra superior
+        self.toolbar = self.ui_factory.frame(self.container, fg_color="#23272a")
+        self.toolbar.pack(fill="x", padx=0, pady=(0, 2))
+
+        # Título
+        if self.UI:
+            self.ui_factory.label(
+                self.toolbar,
+                text="\U0001F4CB Lista de Covers Programados",
+                font=("Segoe UI", 20, "bold"),
+                text_color="#4a90e2",
+                anchor="w"
+            ).pack(side="left", padx=(12, 10), pady=10)
+        else:
+            tk.Label(
+                self.toolbar,
+                text="\U0001F4CB Lista de Covers Programados",
+                font=("Segoe UI", 20, "bold"),
+                fg="#4a90e2",
+                bg="#23272a",
+                anchor="w"
+            ).pack(side="left", padx=(12, 10), pady=10)
+
         # Botón Refrescar
         self.ui_factory.button(
             self.toolbar,
-            text="🔄 Refrescar",
-            command=self.load_data,
-            width=120,
-            fg_color="#4D6068",
-            hover_color="#27a3e0"
-        ).pack(side="left", padx=5)
-        
-        # Botón Cancelar Cover (solo covers con Activo=1)
+            text="\u21bb Refrescar",
+            command=self.refresh,
+            width=110,
+            fg_color="#607d8b",
+            hover_color="#90a4ae"
+        ).pack(side="right", padx=(0, 10), pady=10)
+
+        # Botón Cerrar (cambia a tab Daily si blackboard está presente)
+        def close_tab():
+            if self.blackboard:
+                self.blackboard._switch_tab("Daily")
         self.ui_factory.button(
             self.toolbar,
-            text="❌ Cancelar Cover",
-            command=self._cancel_selected_cover,
-            width=150,
+            text="\u274C Cerrar",
+            command=close_tab,
+            width=110,
             fg_color="#d32f2f",
             hover_color="#b71c1c"
-        ).pack(side="left", padx=5)
-        
-        # Label de información
-        self.info_label = self.ui_factory.label(
-            self.toolbar,
-            text="Cargando...",
-            text_color="#00bfae",
-            font=("Segoe UI", 12)
-        )
-        self.info_label.pack(side="right", padx=10)
-    
-    def _create_position_label(self):
-        """Crea label prominente con posición en turno (auto-refresh cada 10s)"""
-        self.position_frame = self.ui_factory.frame(
-            self.container,
-            fg_color="#1e3a5f",
-            border_width=2,
-            border_color="#4a90e2"
-        )
-        self.position_frame.pack(fill="x", padx=10, pady=(5, 10))
-        
-        self.position_label = self.ui_factory.label(
-            self.position_frame,
-            text="🎯 Calculando tu posición...",
-            text_color="#ffffff",
-            font=("Segoe UI", 16, "bold")
-        )
-        self.position_label.pack(pady=10)
-    
+        ).pack(side="right", padx=(0, 10), pady=10)
+
+        # Info label
+        if self.UI:
+            self.info_label = self.ui_factory.label(
+                self.container,
+                text="",
+                font=("Segoe UI", 12),
+                text_color="#b0bec5",
+                anchor="w"
+            )
+        else:
+            self.info_label = tk.Label(
+                self.container,
+                text="",
+                font=("Segoe UI", 12),
+                fg="#b0bec5",
+                bg="#23272a",
+                anchor="w"
+            )
+        self.info_label.pack(fill="x", padx=18, pady=(0, 2))
+
+        self._create_sheet()
+        self.load_data()
+        self._start_auto_refresh()
+
     def _create_sheet(self):
         """Crea tksheet para mostrar covers (modo solo lectura)"""
         self.sheet_frame = self.ui_factory.frame(self.container, fg_color="#2c2f33")
@@ -193,7 +179,7 @@ class CoversModule:
             print(f"[DEBUG] CoversModule: Cargando covers para {self.username}")
             
             # Obtener datos del controller
-            data = self.controller.load_covers_data()
+            data = self.controller.load_covers_list()
             
             # Limpiar sheet
             self.sheet.set_sheet_data([[]])
@@ -208,22 +194,21 @@ class CoversModule:
             
             # Preparar datos para sheet
             sheet_data = []
-            for item in data:
+            for idx, item in enumerate(data, start=1):
+                # item es una tupla: (ID_cover, nombre_usuario, time_request, approved, activo, cover_realizado_id, cover_programado_id, cover_out)
+                # Turno: mostrar número de fila (idx)
+                # Approved: mostrar texto amigable
+                aprobado_str = "Aprobado✅" if str(item[3]) == "1" else "Denegado❌"
                 sheet_data.append([
-                    item['nombre_usuario'],
-                    item['time_request'],
-                    item['cover_in'],
-                    item['cover_out'],
-                    item['duracion'],
-                    item['turno'],
-                    item['motivo'],
-                    item['covered_by'],
-                    item['activo']
+                    idx,  # Turno visual (1, 2, 3...)
+                    item[1],  # Operador
+                    item[2],  # Hora solicitud
+                    aprobado_str  # Approved
                 ])
-                
                 self.row_data.append(item)
-                self.row_ids.append(item['id_cover_realizado'])
-                self.programados_ids.append(item['id_cover_programado'])
+                self.row_ids.append(item[4])  # cover_realizado_id
+                if item[5]:
+                    self.programados_ids.append(item[5])
             
             # Actualizar sheet
             self.sheet.set_sheet_data(sheet_data)
@@ -232,26 +217,24 @@ class CoversModule:
             self._apply_row_colors(data)
             
             # Actualizar info
-            activos = sum(1 for item in data if item['activo'] == 'Sí')
+            activos = sum(1 for item in data if item[3] == 'Sí')
             self.info_label.configure(
                 text=f"📊 {len(data)} covers | ✅ {activos} activos"
             )
-            
-            # Actualizar posición en turno
-            self._update_position_label()
             
             print(f"[DEBUG] CoversModule: Cargados {len(data)} covers")
             
         except Exception as e:
             print(f"[ERROR] CoversModule.load_data: {e}")
             traceback.print_exc()
-            self.info_label.configure(text="❌ Error al cargar covers")
+            self.info_label.configure(text="❌ Error al cargar lista de covers")
     
     def _apply_row_colors(self, data):
         """Aplica colores según estado del cover"""
         for idx, item in enumerate(data):
             try:
-                if item['activo'] == 'Sí':
+                # item: (nombre_usuario, time_request, approved, activo, cover_realizado_id, cover_programado_id, cover_out)
+                if item[3] == 'Sí':
                     # Cover activo/programado - verde
                     self.sheet.highlight_rows(
                         rows=[idx],
@@ -259,7 +242,7 @@ class CoversModule:
                         fg="#00c853",
                         highlight_index=False
                     )
-                elif item['cover_out'] and item['cover_out'] != "En progreso":
+                elif item[6] and item[6] != "En progreso":
                     # Cover completado - gris
                     self.sheet.highlight_rows(
                         rows=[idx],

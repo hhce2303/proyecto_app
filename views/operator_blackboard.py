@@ -26,6 +26,9 @@ try:
 except ImportError:
     tkcalendar = None
 
+from covers_panel import show_covers_programados_panel
+from models.user_model import get_user_status_bd
+
 class OperatorBlackboard(Blackboard):
     """
     Blackboard para Operadores.
@@ -129,6 +132,34 @@ class OperatorBlackboard(Blackboard):
             hover_color="#1b5e20"
         )
         self.solicitar_cover_btn.pack(side="right", padx=(10, 5), pady=10)
+        
+        # BOTÓN LISTA DE COVERS (solo visible cuando Active = 2)
+        self.lista_covers_btn = self.ui_factory.button(
+            parent,
+            text="📋 Lista de Covers",
+            command=lambda: self._switch_tab("Lista Covers"),
+            width=160,
+            fg_color="#4D6068",
+            hover_color="#ffa726"
+        )
+        self.lista_covers_btn.pack_forget()  # Inicialmente oculto
+
+        def check_and_update_covers_button():
+            try:
+                active_status = get_user_status_bd(self.username)
+                if active_status == 2:
+                    if not self.lista_covers_btn.winfo_ismapped():
+                        self.lista_covers_btn.pack(side="left", padx=5, pady=10)
+                else:
+                    if self.lista_covers_btn.winfo_ismapped():
+                        self.lista_covers_btn.pack_forget()
+            except Exception as e:
+                print(f"[ERROR] Error checking covers button visibility: {e}")
+            # Programar siguiente verificación (cada 5 segundos)
+            (self.root or self.window).after(5000, check_and_update_covers_button)
+
+        # Iniciar verificación periódica
+        (self.root or self.window).after(500, check_and_update_covers_button)
         
         self._update_tab_buttons()
     
@@ -257,6 +288,30 @@ class OperatorBlackboard(Blackboard):
         
         self.tab_frames["Covers"] = covers_frame
         
+        # ========== TAB LISTA DE COVERS PROGRAMADOS ========== 
+        covers_list_frame = self.ui_factory.frame(parent, fg_color="#23272a")
+        try:
+            from views.modules.covers_list_module import CoversListModule
+            self.covers_list_module = CoversListModule(
+                container=covers_list_frame,
+                username=self.username,
+                ui_factory=self.ui_factory,
+                UI=self.UI
+            )
+            self.covers_list_module.blackboard = self
+            print(f"[DEBUG] CoversListModule inicializado para OPERADOR: {self.username}")
+        except Exception as e:
+            print(f"[ERROR] No se pudo inicializar CoversListModule: {e}")
+            import traceback
+            traceback.print_exc()
+            self.ui_factory.label(
+                covers_list_frame,
+                text=f"Error al cargar Lista de Covers: {e}",
+                font=("Segoe UI", 12),
+                fg="#ff4444"
+            ).pack(pady=20)
+        self.tab_frames["Lista Covers"] = covers_list_frame
+        
         self._show_current_tab()
     
     def _switch_tab(self, tab_name):
@@ -273,7 +328,9 @@ class OperatorBlackboard(Blackboard):
                 self.specials_module.load_data()
             elif tab_name == "Covers" and hasattr(self, 'covers_module'):
                 self.covers_module.load_data()
-    
+            elif tab_name == "Lista Covers" and hasattr(self, 'covers_list_module'):
+                self.covers_list_module.load_data()
+
     def _show_current_tab(self):
         """Muestra el frame del tab actual"""
         for tab_name, frame in self.tab_frames.items():
@@ -711,13 +768,25 @@ class OperatorBlackboard(Blackboard):
             messagebox.showerror("Error", "Cantidad debe ser un número", parent=self.window)
             return
         
+        # Obtener fecha/hora del datetime_entry
+        fecha_hora_str = self.datetime_entry.get().strip()
+        fecha_hora = None
+        if fecha_hora_str:
+            try:
+                from datetime import datetime
+                fecha_hora = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M:%S")
+            except Exception as e:
+                print(f"[WARNING] No se pudo parsear fecha del formulario: {fecha_hora_str}, usando datetime.now(). Error: {e}")
+                fecha_hora = None
+        
         # Llamar al controller para crear evento (MVC)
         success, message = self.controller.create_event(
             site_id,
             activity,
             quantity_val,
             camera,
-            description
+            description,
+            fecha_hora  # Pasar fecha/hora desde el formulario
         )
         
         if success:
@@ -1507,11 +1576,11 @@ class OperatorBlackboard(Blackboard):
         try:
             state = 'normal' if enable else 'disabled'
             
-            # Deshabilitar comboboxes
+            # Habilitar comboboxes en estado NORMAL (para permitir filtrado por escritura)
             if hasattr(self, 'site_combo'):
-                self.site_combo.configure(state='readonly' if enable else 'disabled')
+                self.site_combo.configure(state='normal' if enable else 'disabled')
             if hasattr(self, 'activity_combo'):
-                self.activity_combo.configure(state='readonly' if enable else 'disabled')
+                self.activity_combo.configure(state='normal' if enable else 'disabled')
             
             # Deshabilitar entries
             if hasattr(self, 'quantity_entry'):

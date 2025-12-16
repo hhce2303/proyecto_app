@@ -75,7 +75,7 @@ def get_activities():
         return []
 
 
-def create_event(username, site_id, activity, quantity, camera, description):
+def create_event(username, site_id, activity, quantity, camera, description, fecha_hora=None):
     """Crea un nuevo evento"""
     from datetime import datetime
     
@@ -96,13 +96,20 @@ def create_event(username, site_id, activity, quantity, camera, description):
         
         user_id = user_row[0]
         
-        # Insertar evento
-        fecha_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Usar fecha_hora proporcionada o datetime.now()
+        if fecha_hora is None:
+            fecha_hora = datetime.now()
+        
+        # Si fecha_hora es datetime, convertir a string
+        if isinstance(fecha_hora, datetime):
+            fecha_hora_str = fecha_hora.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            fecha_hora_str = fecha_hora
         cursor.execute("""
             INSERT INTO Eventos 
             (FechaHora, ID_Sitio, ID_Usuario, Nombre_Actividad, Cantidad, Camera, Descripcion)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (fecha_hora, site_id, user_id, activity, quantity, camera, description))
+        """, (fecha_hora_str, site_id, user_id, activity, quantity, camera, description))
         
         conn.commit()
         cursor.close()

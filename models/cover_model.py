@@ -475,3 +475,41 @@ def get_active_covers_programados():
         traceback.print_exc()
         return []
 
+def get_covers_list():
+    """
+    Obtiene la lista de covers programados activos.
+    
+    Returns:
+        list: Lista de tuplas con detalles de covers programados activos
+    """
+    try:
+        conn = get_connection()
+        if not conn:
+            print("[ERROR] get_covers_list: No hay conexión a BD")
+            return []
+        
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            """
+            SELECT ID_Cover, ID_user, Time_request, Station, Reason, Approved
+            FROM covers_programados
+            WHERE is_Active = 1
+            ORDER BY Time_request ASC
+            """
+        )
+        
+        results = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        print(f"[DEBUG] get_covers_list: {len(results)} covers activos")
+        return results
+    
+    except Exception as e:
+        print(f"[ERROR] get_covers_list: {e}")
+        import traceback
+        traceback.print_exc()
+
+        return []

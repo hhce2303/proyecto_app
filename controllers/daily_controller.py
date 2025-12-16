@@ -33,7 +33,7 @@ class DailyController:
         """Obtiene lista de actividades desde el modelo"""
         return daily_model.get_activities()
     
-    def create_event(self, site_id, activity, quantity, camera, description):
+    def create_event(self, site_id, activity, quantity, camera, description, fecha_hora=None):
         """Crea un nuevo evento usando el modelo"""
         return daily_model.create_event(
             self.username,
@@ -41,5 +41,6 @@ class DailyController:
             activity,
             quantity,
             camera,
-            description
+            description,
+            fecha_hora
         )

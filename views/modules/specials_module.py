@@ -75,13 +75,14 @@ class SpecialsModule:
             header_bg="#1a1a1a",
             header_fg="#e0e0e0",
             header_font=("Segoe UI", 10, "bold"),
+            show_row_index= True,
+            show_top_left=False,
             outline_thickness=0,
             outline_color="#3a3a3a",
             theme="dark blue",
             font=("Segoe UI", 10, "normal"),
             align="w",
             auto_resize_columns=False,
-            show_row_index=False
         )
         self.sheet.pack(fill="both", expand=True)
         
@@ -90,8 +91,19 @@ class SpecialsModule:
             width = self.column_widths[col_name]
             self.sheet.column_width(column=idx, width=width)
         
-        # Habilitar edición (para futura funcionalidad)
-        self.sheet.enable_bindings()
+        # Habilitar solo bindings esenciales (navegación, selección y undo)
+        self.sheet.enable_bindings([
+            "single_select",
+            "drag_select",
+            "column_select",
+            "row_select",
+            "column_width_resize",
+            "double_click_column_resize",
+            "arrowkeys",
+            "right_click_popup_menu",
+            "rc_select",
+            "undo"  # Solo UNDO (Ctrl+Z)
+        ])
     
     def _setup_bindings(self):
         """Configura eventos del sheet."""

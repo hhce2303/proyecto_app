@@ -6,6 +6,7 @@ Responsabilidad: Mediador entre Vista y Modelo
 
 from models import specials_model
 from datetime import datetime, timedelta
+from utils.timezone_adjuster import adjust_datetime, adjust_description_timestamps, get_timezone_offset
 import re
 
 
@@ -23,7 +24,6 @@ class SpecialsOperatorController:
             username (str): Nombre del operador
         """
         self.username = username
-        self.tz_config = {}
     
     def load_specials_data(self):
         """
@@ -51,9 +51,6 @@ class SpecialsOperatorController:
             if not last_shift:
                 print(f"[DEBUG] No hay último shift para {self.username}")
                 return []
-            
-            # Cargar configuración de timezone
-            self.tz_config = specials_model.load_tz_config()
             
             # Obtener eventos de grupos especiales
             eventos = specials_model.get_specials_eventos(self.username, last_shift)
@@ -94,8 +91,8 @@ class SpecialsOperatorController:
                     else:
                         display_sitio = nombre_sitio or ""
                     
-                    # Ajustar fecha/hora con timezone
-                    tz_offset_hours = self.tz_config.get((time_zone or '').upper(), 0)
+                    # Ajustar fecha/hora con timezone usando timezone_adjuster
+                    tz_offset_hours = get_timezone_offset(time_zone)
                     try:
                         if isinstance(fecha_hora, str):
                             fh = datetime.strptime(fecha_hora[:19], "%Y-%m-%d %H:%M:%S")
@@ -334,8 +331,21 @@ class SpecialsOperatorController:
                     errors.append(f"Evento {evento_id} no encontrado")
                     continue
                 
-                # Extraer ID del sitio
+                # Extraer ID del sitio y timezone
                 id_sitio = item['id_sitio']
+                time_zone = item['time_zone']
+                
+                # ⭐ APLICAR AJUSTES DE TIMEZONE ANTES DE ENVIAR
+                # Usar valores ORIGINALES (sin ajustar) y aplicar ajuste aquí
+                # Ajustar FechaHora según timezone del sitio
+                fecha_hora_ajustada = adjust_datetime(item['fecha_hora_original'], time_zone)
+                
+                # Ajustar timestamps en descripción según timezone
+                descripcion_ajustada = adjust_description_timestamps(
+                    item['descripcion_original'],
+                    item['fecha_hora_original'],  # Base datetime (original)
+                    time_zone
+                )
                 
                 # Normalizar valores
                 try:
@@ -344,21 +354,20 @@ class SpecialsOperatorController:
                     cantidad_int = 0
                 
                 camera_str = str(item['camera']).strip() if item['camera'] else ""
-                descripcion_str = str(item['descripcion']).strip() if item['descripcion'] else ""
                 
                 # Determinar si es INSERT o UPDATE
                 if item['id_special']:
                     # Ya existe en specials → UPDATE
                     success, message = specials_model.update_special(
                         id_special=item['id_special'],
-                        fecha_hora=item['fecha_hora'],
+                        fecha_hora=fecha_hora_ajustada,  # ⭐ Con ajuste de timezone
                         id_sitio=id_sitio,
                         nombre_actividad=item['nombre_actividad'],
                         cantidad=cantidad_int,
                         camera=camera_str,
-                        descripcion=descripcion_str,
+                        descripcion=descripcion_ajustada,  # ⭐ Con timestamps ajustados
                         usuario=item['usuario'],
-                        time_zone=item['time_zone'],
+                        time_zone=time_zone,
                         supervisor=supervisor
                     )
                     
@@ -370,14 +379,14 @@ class SpecialsOperatorController:
                     # No existe en specials → INSERT
                     success, message, id_special = specials_model.insert_special(
                         evento_id=evento_id,
-                        fecha_hora=item['fecha_hora'],
+                        fecha_hora=fecha_hora_ajustada,  # ⭐ Con ajuste de timezone
                         id_sitio=id_sitio,
                         nombre_actividad=item['nombre_actividad'],
                         cantidad=cantidad_int,
                         camera=camera_str,
-                        descripcion=descripcion_str,
+                        descripcion=descripcion_ajustada,  # ⭐ Con timestamps ajustados
                         usuario=item['usuario'],
-                        time_zone=item['time_zone'],
+                        time_zone=time_zone,
                         supervisor=supervisor
                     )
                     

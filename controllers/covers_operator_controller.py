@@ -136,6 +136,42 @@ class CoversOperatorController:
             traceback.print_exc()
             return []
     
+    def load_covers_list(self):
+        """
+        Carga lista simple de covers realizados (sin procesamiento adicional).
+        
+        Returns:
+            list: Lista de tuplas con campos:
+                - ID_Cover (int)
+                - ID_User (str)
+                - Time_request (datetime)
+                - Station (str)
+                - Reason (str)
+                - Approved (str)
+                - is_Active (int)
+
+        """
+        try:
+            print(f"[DEBUG] CoversOperatorController: Cargando lista simple de covers para {self.username}")
+            
+            
+            # Query covers realizados (con o sin filtro de fecha)
+            covers_list = cover_model.get_covers_list()
+
+            if not covers_list:
+                print("[DEBUG] CoversOperatorController: No hay covers en BD")
+                return []
+            
+            print(f"[DEBUG] CoversOperatorController: Obtenidos {len(covers_list)} covers de BD")
+            return covers_list
+        
+        except Exception as e:
+            print(f"[ERROR] CoversOperatorController.load_covers_list: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+
     def _get_last_shift_start(self):
         """
         Obtiene timestamp del último START SHIFT del usuario.
@@ -328,6 +364,8 @@ class CoversOperatorController:
                     return (id_cover, time_request, reason)
             
             return None
+        
+    
         
         except Exception as e:
             print(f"[ERROR] get_user_active_cover: {e}")

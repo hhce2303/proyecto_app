@@ -144,7 +144,7 @@ class DailyModule:
             empty_vertical=0
         )
         
-        # Habilitar bindings
+        # Habilitar bindings (solo navegación, selección y undo)
         self.sheet.enable_bindings([
             "single_select",
             "drag_select",
@@ -156,11 +156,7 @@ class DailyModule:
             "arrowkeys",
             "right_click_popup_menu",
             "rc_select",
-            "copy",
-            "cut",
-            "paste",
-            "delete",
-            "undo",
+            "undo",  # Solo mantener UNDO (Ctrl+Z)
             "edit_cell"
         ])
         
@@ -243,8 +239,9 @@ class DailyModule:
                 # Resolver nombre de sitio
                 nombre_sitio = self._get_site_name(cur, id_sitio)
                 
-                # Formatear fecha/hora de forma amigable
-                fecha_str = format_friendly_datetime(fecha_hora, show_seconds=False) if fecha_hora else ""
+                # Formatear fecha/hora en formato ISO estándar para facilitar edición
+                # Formato: "2025-12-16 14:30:00"
+                fecha_str = fecha_hora.strftime("%Y-%m-%d %H:%M:%S") if fecha_hora else ""
                 
                 # Fila para mostrar (formato consistente con Specials)
                 display_row = [
@@ -405,7 +402,9 @@ class DailyModule:
         if self.blackboard and hasattr(self.blackboard, '_show_datetime_picker'):
             # Callback para actualizar la celda
             def update_cell(dt):
-                self.sheet.set_cell_data(row, col, format_friendly_datetime(dt, show_seconds=False))
+                # Guardar en formato ISO estándar para facilitar parseo
+                # Formato: "2025-12-16 14:30:00"
+                self.sheet.set_cell_data(row, col, dt.strftime("%Y-%m-%d %H:%M:%S"))
                 self.sheet.redraw()
                 # Marcar cambio pendiente
                 if row < len(self.row_ids):
@@ -878,13 +877,34 @@ class DailyModule:
                     camera = row_data[4] if len(row_data) > 4 else None
                     descripcion = row_data[5] if len(row_data) > 5 else None
                     
-                    # Parsear fecha
+                    # Parsear fecha con soporte para múltiples formatos
                     fecha_hora = None
                     if fecha_str:
                         try:
-                            fecha_hora = datetime.strptime(fecha_str, "%Y-%m-%d %H:%M:%S")
-                        except:
+                            # Intentar parsear diferentes formatos que puede generar format_friendly_datetime
+                            formatos_posibles = [
+                                "%Y-%m-%d %H:%M:%S",  # Formato completo con segundos
+                                "%Y-%m-%d %H:%M",     # Formato sin segundos
+                            ]
+                            
+                            # Primero intentar formatos ISO estándar
+                            for formato in formatos_posibles:
+                                try:
+                                    fecha_hora = datetime.strptime(fecha_str, formato)
+                                    break
+                                except ValueError:
+                                    continue
+                            
+                            # Si no funcionó, podría ser formato amigable (HOY, AYER, VIE, etc.)
+                            if not fecha_hora:
+                                # Para formatos amigables, usar la fecha original del cache
+                                # ya que no podemos parsearlos fácilmente
+                                fecha_hora = cached.get('fecha_hora')
+                                print(f"[DEBUG] Usando fecha del cache para formato amigable: {fecha_str}")
+                        except Exception as e:
+                            # Si todo falla, usar fecha del cache
                             fecha_hora = cached.get('fecha_hora')
+                            print(f"[WARNING] No se pudo parsear fecha '{fecha_str}', usando cache: {e}")
                     
                     # Extraer ID_Sitio de formato "Nombre (ID)"
                     id_sitio = None
