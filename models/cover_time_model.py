@@ -33,7 +33,7 @@ def load_covers_programados():
     try:
         conn = get_connection()
         cur = conn.cursor()
-        query = "SELECT * FROM covers_programados ORDER BY Time_request DESC"
+        query = "SELECT * FROM covers_programados WHERE is_Active = '1' ORDER BY Time_request ASC"
         cur.execute(query)
         rows = cur.fetchall()
         col_names = [desc[0] for desc in cur.description]

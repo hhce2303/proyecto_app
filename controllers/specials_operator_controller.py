@@ -11,6 +11,23 @@ import re
 
 
 class SpecialsOperatorController:
+    def _normalize_description(self, desc):
+        """
+        Normaliza la descripción para comparación:
+        - Elimina ceros a la izquierda en horas tipo 07:33 → 7:33
+        - Quita espacios extra y minúsculas
+        - Quita punto final si existe
+        """
+        import re
+        if not desc:
+            return ""
+        # Quitar ceros a la izquierda en horas
+        desc = re.sub(r'\b0(\d):(\d{2})\b', r'\1:\2', desc)
+        # Quitar espacios extra
+        desc = desc.strip().lower()
+        # Quitar punto final al final
+        desc = desc[:-1] if desc.endswith('.') else desc
+        return desc
     """
     Controlador para gestión de specials del operador.
     Maneja la lógica de negocio para eventos especiales.
@@ -129,13 +146,14 @@ class SpecialsOperatorController:
                         eventos_camera = str(camera).strip() if camera else ""
                         specials_camera = str(special_camera).strip() if special_camera else ""
                         
-                        eventos_desc = str(desc_adjusted).strip()
-                        specials_desc = str(special_desc).strip() if special_desc else ""
+                        eventos_desc = self._normalize_description(str(desc_adjusted))
+                        specials_desc = self._normalize_description(str(special_desc)) if special_desc else ""
                         
                         eventos_fechahora = fecha_str
                         specials_fechahora = special_fecha.strftime("%Y-%m-%d %H:%M:%S") if special_fecha else ""
                         
-                        # Comparar todos los campos
+                        
+                        
                         hay_cambios = (
                             eventos_fechahora != specials_fechahora or
                             id_sitio != special_sitio or
@@ -144,13 +162,16 @@ class SpecialsOperatorController:
                             eventos_camera != specials_camera or
                             eventos_desc != specials_desc
                         )
+                        print(f"  hay_cambios: {hay_cambios}")
                         
                         if hay_cambios:
+                            print(f"[DEBUG] Evento {id_evento} marcado como PENDIENTE por actualizar (ámbar)")
                             estado = "⏳ Pendiente por actualizar"
                             estado_color = "amber"
                             fecha_display = fecha_str
                             desc_display = desc_adjusted
                         else:
+                            print(f"[DEBUG] Evento {id_evento} marcado como ENVIADO (verde)")
                             estado = f"✅ Enviado a {supervisor}"
                             estado_color = "green"
                             fecha_display = specials_fechahora
@@ -325,39 +346,45 @@ class SpecialsOperatorController:
             updated = 0
             errors = []
             
+            ignored = 0  # Contador de eventos ignorados por estar sincronizados (verde)
             for evento_id in evento_ids:
                 item = data_by_id.get(evento_id)
                 if not item:
                     errors.append(f"Evento {evento_id} no encontrado")
                     continue
-                
+
+                # Si el evento está en estado verde (sin cambios), ignorar el UPDATE
+                if item.get('id_special') and item.get('estado_color') == 'green':
+                    ignored += 1
+                    continue
+
                 # Extraer ID del sitio y timezone
                 id_sitio = item['id_sitio']
                 time_zone = item['time_zone']
-                
+
                 # ⭐ APLICAR AJUSTES DE TIMEZONE ANTES DE ENVIAR
                 # Usar valores ORIGINALES (sin ajustar) y aplicar ajuste aquí
                 # Ajustar FechaHora según timezone del sitio
                 fecha_hora_ajustada = adjust_datetime(item['fecha_hora_original'], time_zone)
-                
+
                 # Ajustar timestamps en descripción según timezone
                 descripcion_ajustada = adjust_description_timestamps(
                     item['descripcion_original'],
                     item['fecha_hora_original'],  # Base datetime (original)
                     time_zone
                 )
-                
+
                 # Normalizar valores
                 try:
                     cantidad_int = int(item['cantidad']) if item['cantidad'] else 0
                 except:
                     cantidad_int = 0
-                
+
                 camera_str = str(item['camera']).strip() if item['camera'] else ""
-                
+
                 # Determinar si es INSERT o UPDATE
                 if item['id_special']:
-                    # Ya existe en specials → UPDATE
+                    # Ya existe en specials → UPDATE (solo si no está verde)
                     success, message = specials_model.update_special(
                         id_special=item['id_special'],
                         fecha_hora=fecha_hora_ajustada,  # ⭐ Con ajuste de timezone
@@ -370,7 +397,7 @@ class SpecialsOperatorController:
                         time_zone=time_zone,
                         supervisor=supervisor
                     )
-                    
+
                     if success:
                         updated += 1
                     else:
@@ -389,30 +416,34 @@ class SpecialsOperatorController:
                         time_zone=time_zone,
                         supervisor=supervisor
                     )
-                    
+
                     if success:
                         inserted += 1
                     else:
                         errors.append(f"Error insertando evento {evento_id}: {message}")
             
+
             # Construir mensaje de resultado
             stats = {
                 'inserted': inserted,
                 'updated': updated,
+                'ignored': ignored,
                 'errors': len(errors),
                 'total': len(evento_ids)
             }
-            
+
             if errors:
                 error_msg = "\n".join(errors[:5])  # Mostrar máximo 5 errores
                 if len(errors) > 5:
                     error_msg += f"\n... y {len(errors) - 5} errores más"
                 return False, error_msg, stats
-            
+
             success_msg = f"Enviados a {supervisor}:\n"
             success_msg += f"• {inserted} nuevos\n"
-            success_msg += f"• {updated} actualizados"
-            
+            success_msg += f"• {updated} actualizados\n"
+            if ignored > 0:
+                success_msg += f"• {ignored} ya estaban sincronizados (ignorados)"
+
             return True, success_msg, stats
             
         except Exception as e:

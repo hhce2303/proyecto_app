@@ -9,6 +9,7 @@ IMPORTANTE:
 - SPECIALS = OPERADOR (eventos especiales con timezone) - ✅ FUNCIONANDO
 - COVERS = OPERADOR (solicitar/visualizar covers) - ✅ IMPLEMENTADO
 """
+from models.user_model import load_users
 from views.blackboard import Blackboard
 from views.modules.daily_module import DailyModule
 from views.modules.specials_module import SpecialsModule
@@ -21,6 +22,7 @@ import tkinter as tk
 from datetime import datetime
 import login
 import backend_super
+import customtkinter as ctk
 try:
     import tkcalendar
 except ImportError:
@@ -117,8 +119,8 @@ class OperatorBlackboard(Blackboard):
             text="✍️ Registrar Cover",
             command=self._register_cover,
             width=150,
-            fg_color="#ff6f00",
-            hover_color="#e65100"
+            fg_color="#4D6068",
+            hover_color="#0d679b"
         )
         self.registrar_cover_btn.pack(side="right", padx=(5, 10), pady=10)
         
@@ -128,8 +130,8 @@ class OperatorBlackboard(Blackboard):
             text="🙋 Solicitar Cover",
             command=self._request_cover,
             width=150,
-            fg_color="#2e7d32",
-            hover_color="#1b5e20"
+            fg_color="#4D6068",
+            hover_color="#0d679b"
         )
         self.solicitar_cover_btn.pack(side="right", padx=(10, 5), pady=10)
         
@@ -314,6 +316,10 @@ class OperatorBlackboard(Blackboard):
         
         self._show_current_tab()
     
+    def agregar_mi_widget(self):
+        # Puedes agregar cualquier widget a self.content_area
+        mi_label = tk.Label(self.tab_frames["Daily"], text="¡Hola desde el tab Daily!", bg="#222", fg="white")
+        mi_label.pack(pady=20)
     def _switch_tab(self, tab_name):
         """Cambia entre tabs y recarga datos"""
         if self.current_tab != tab_name:
@@ -419,21 +425,8 @@ class OperatorBlackboard(Blackboard):
             return
         
         try:
-            # Obtener lista de operadores
-            from models.database import get_connection
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT Nombre_Usuario 
-                FROM user 
-                WHERE Rol = 'Operador'
-                ORDER BY Nombre_Usuario
-                """
-            )
-            operadores = [row[0] for row in cursor.fetchall()]
-            cursor.close()
-            conn.close()
+            # Obtener lista de operadores disponibles para cubrir
+            operadores = load_users()
             
             if not operadores:
                 from tkinter import messagebox
@@ -514,6 +507,7 @@ class OperatorBlackboard(Blackboard):
         if messagebox.askokcancel("Cerrar", "¿Cerrar ventana?", parent=self.window):
             self.window.destroy()
     
+    
     def _create_event_form(self, parent):
         """Crea el formulario horizontal alineado con columnas del tksheet"""
         # Contenedor interno para alineación
@@ -548,17 +542,16 @@ class OperatorBlackboard(Blackboard):
         entry_wrapper = tk.Frame(datetime_container, bg="#333333", highlightthickness=0)
         entry_wrapper.pack(side="top")
         
-        self.datetime_entry = tk.Entry(
+        # Usar CTkEntry de customtkinter para borde y colores personalizados
+
+        self.datetime_entry = ctk.CTkEntry(
             entry_wrapper,
-            width=15,
+            width=120,  # Ajustar ancho visual
             font=("Segoe UI", 10),
-            bg="#333333",
-            fg="#ffffff",
-            insertbackground="#ffffff",
-            readonlybackground="#333333",
-            state="readonly",
-            relief="flat",
-            borderwidth=0
+            fg_color="#333333",
+            text_color="#ffffff",
+            border_width=3,
+            border_color="#4a90e2"
         )
         self.datetime_entry.pack(side="left", padx=(3, 0), pady=2)
         
@@ -591,14 +584,15 @@ class OperatorBlackboard(Blackboard):
         
         self.site_combo = FilteredCombobox(
             site_container,
-            width=40,
+            width=36,
+            height=5,
             values=self._get_sites()
         )
         self.site_combo.pack(side="top")
         
         # Campo Actividad
         activity_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        activity_container.pack(side="left", padx=0)
+        activity_container.pack(side="left", padx=3)
         
         tk.Label(
             activity_container,
@@ -618,7 +612,7 @@ class OperatorBlackboard(Blackboard):
         
         # Campo Cantidad
         quantity_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        quantity_container.pack(side="left", padx=0)
+        quantity_container.pack(side="left", padx=3)
         
         tk.Label(
             quantity_container,
@@ -629,13 +623,14 @@ class OperatorBlackboard(Blackboard):
             justify="center"
         ).pack(side="top")
         
-        self.quantity_entry = tk.Entry(
+        self.quantity_entry = ctk.CTkEntry(
             quantity_container,
-            width=10,
+            width=60,
             font=("Segoe UI", 10),
-            bg="#333333",
-            fg="#ffffff",
-            insertbackground="#ffffff",
+            fg_color="#333333",
+            text_color="#ffffff",
+            border_width=3,
+            border_color="#4a90e2",
             justify="center"
         )
         self.quantity_entry.insert(0, "0")
@@ -643,7 +638,7 @@ class OperatorBlackboard(Blackboard):
         
         # Campo Camera
         camera_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        camera_container.pack(side="left", padx=0)
+        camera_container.pack(side="left", padx=3)
         
         tk.Label(
             camera_container,
@@ -654,20 +649,21 @@ class OperatorBlackboard(Blackboard):
             justify="center"
         ).pack(side="top")
         
-        self.camera_entry = tk.Entry(
+        self.camera_entry = ctk.CTkEntry(
             camera_container,
-            width=12,
+            width=80,
             font=("Segoe UI", 10),
-            bg="#333333",
-            fg="#ffffff",
-            insertbackground="#ffffff",
+            fg_color="#333333",
+            text_color="#ffffff",
+            border_width=3,
+            border_color="#4a90e2",
             justify="center"
         )
         self.camera_entry.pack(side="top")
         
         # Campo Descripción
         description_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        description_container.pack(side="left", padx=0)
+        description_container.pack(side="left", padx=3)
         
         tk.Label(
             description_container,
@@ -678,13 +674,14 @@ class OperatorBlackboard(Blackboard):
             justify="center"
         ).pack(side="top")
         
-        self.description_entry = tk.Entry(
+        self.description_entry = ctk.CTkEntry(
             description_container,
-            width=45,
+            width=290,
             font=("Segoe UI", 10),
-            bg="#333333",
-            fg="#ffffff",
-            insertbackground="#ffffff"
+            fg_color="#333333",
+            text_color="#ffffff",
+            border_width=3,
+            border_color="#4a90e2"
         )
         self.description_entry.pack(side="top")
         
@@ -797,16 +794,18 @@ class OperatorBlackboard(Blackboard):
             self.quantity_entry.insert(0, "0")
             self.camera_entry.delete(0, "end")
             self.description_entry.delete(0, "end")
-            
+            # Limpiar campo de fecha/hora
+            self.datetime_entry.configure(state="normal")
+            self.datetime_entry.delete(0, "end")
+            self.datetime_entry.configure(state="readonly")
             # Refrescar DailyModule
             if hasattr(self, 'daily_module'):
                 self.daily_module.load_data()
-            
             print(f"[DEBUG] {message}")
         else:
             messagebox.showerror(
                 "Error",
-                f"No se pudo agregar el evento:\n{message}",
+                f"No se pudo agregar el evento: Recuerda no agregar numeros en el campo de actividad.",
                 parent=self.window
             )
     

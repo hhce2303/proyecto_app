@@ -367,22 +367,24 @@ class CoversModule:
             message = position_info.get('message', '❓ Estado desconocido')
             
             # Cambiar color según estado
-            if position_info.get('position'):
-                # Usuario tiene cover activo - amarillo/naranja
-                self.position_label.configure(text=message, text_color="#ffeb3b")
-            elif position_info.get('total') > 0:
-                # Hay covers activos pero usuario no está en cola - azul
-                self.position_label.configure(text=message, text_color="#4a90e2")
-            else:
-                # No hay covers activos - verde
-                self.position_label.configure(text=message, text_color="#00c853")
+            if self.position_label:
+                if position_info.get('position'):
+                    # Usuario tiene cover activo - amarillo/naranja
+                    self.position_label.configure(text=message, text_color="#ffeb3b")
+                elif position_info.get('total') > 0:
+                    # Hay covers activos pero usuario no está en cola - azul
+                    self.position_label.configure(text=message, text_color="#4a90e2")
+                else:
+                    # No hay covers activos - verde
+                    self.position_label.configure(text=message, text_color="#00c853")
         
         except Exception as e:
             print(f"[ERROR] _update_position_label: {e}")
-            self.position_label.configure(
-                text="❌ Error calculando posición",
-                text_color="#ff5252"
-            )
+            if self.position_label:
+                self.position_label.configure(
+                    text="❌ Error calculando posición",
+                    text_color="#ff5252"
+                )
     
     def _start_auto_refresh(self):
         """Inicia auto-refresh cada 10 segundos"""

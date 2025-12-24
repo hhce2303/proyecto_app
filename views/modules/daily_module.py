@@ -188,151 +188,69 @@ class DailyModule:
         self.sheet.bind("<Button-3>", self._show_context_menu, add=True)
     
     def load_data(self):
-        """Carga datos desde el último START SHIFT"""
+        """Carga datos desde el controlador y los muestra en el sheet"""
         try:
-            # Obtener último START SHIFT
-            last_shift_time = self._get_last_shift_start()
-            if last_shift_time is None:
-                data = [["No hay START SHIFT registrado. Inicia un turno primero."] + [""] * (len(self.COLUMNS)-1)]
-                self.sheet.set_sheet_data(data)
-                self._apply_column_widths()
-                self.row_data_cache.clear()
-                self.row_ids.clear()
-                self.pending_changes.clear()
-                self._update_status("Sin turno activo")
-                return
+            eventos = self.controller.load_daily()
             
-            # Obtener eventos desde la BD
-            conn = get_connection()
-            if not conn:
-                messagebox.showerror("Error", "No se pudo conectar a la base de datos")
-                return
-            
-            cur = conn.cursor()
-            
-            # Query para obtener eventos del usuario
-            cur.execute("""
-                SELECT 
-                    e.ID_Eventos,
-                    e.FechaHora,
-                    e.ID_Sitio,
-                    e.Nombre_Actividad,
-                    e.Cantidad,
-                    e.Camera,
-                    e.Descripcion
-                FROM Eventos e
-                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
-                WHERE u.Nombre_Usuario = %s AND e.FechaHora >= %s
-                ORDER BY e.FechaHora ASC
-            """, (self.username, last_shift_time))
-            
-            eventos = cur.fetchall()
-            
-            # Procesar eventos
-            self.row_data_cache.clear()
-            self.row_ids.clear()
+            # Procesar datos para el sheet
             display_rows = []
+            self.row_data_cache = []
+            self.row_ids = []
             
             for evento in eventos:
-                id_evento, fecha_hora, id_sitio, nombre_actividad, cantidad, camera, descripcion = evento
-                
-                # Resolver nombre de sitio
-                nombre_sitio = self._get_site_name(cur, id_sitio)
-                
-                # Formatear fecha/hora en formato ISO estándar para facilitar edición
-                # Formato: "2025-12-16 14:30:00"
-                fecha_str = fecha_hora.strftime("%Y-%m-%d %H:%M:%S") if fecha_hora else ""
-                
-                # Fila para mostrar (formato consistente con Specials)
-                display_row = [
+                (
+                    id_evento,
+                    fecha_hora,
+                    sitio_concatenado,
+                    nombre_actividad,
+                    cantidad,
+                    camera,
+                    descripcion,
+                    id_usuario
+                ) = evento
+
+                # Formatear fecha/hora
+                fecha_str = format_friendly_datetime(fecha_hora)
+
+                # El sitio ya viene concatenado como "ID - Nombre"
+                sitio_str = sitio_concatenado
+
+                row = [
                     fecha_str,
-                    nombre_sitio,
-                    nombre_actividad or "",
-                    str(cantidad) if cantidad is not None else "0",
-                    camera or "",
-                    descripcion or ""
+                    sitio_str,
+                    nombre_actividad,
+                    cantidad,
+                    camera,
+                    descripcion
                 ]
-                
-                display_rows.append(display_row)
-                
-                # Guardar en cache
+
+                display_rows.append(row)
+
+                # Cachear datos completos para edición futura
                 self.row_data_cache.append({
                     'id': id_evento,
                     'fecha_hora': fecha_hora,
-                    'id_sitio': id_sitio,
+                    'sitio': sitio_concatenado,
                     'nombre_actividad': nombre_actividad,
                     'cantidad': cantidad,
                     'camera': camera,
-                    'descripcion': descripcion
+                    'descripcion': descripcion,
+                    'id_usuario': id_usuario
                 })
+
                 self.row_ids.append(id_evento)
             
-            cur.close()
-            conn.close()
-            
-            # Mostrar datos
-            if not display_rows:
-                display_rows = [["No hay eventos en este turno"] + [""] * (len(self.COLUMNS)-1)]
-                self.row_data_cache.clear()
-                self.row_ids.clear()
-            
-            self.sheet.set_sheet_data(display_rows)
-            self.sheet.dehighlight_all()
+            # Cargar datos en el sheet
+            self.sheet.set_sheet_data(display_rows, reset_highlights=True)
             self._apply_column_widths()
-            self.pending_changes.clear()
-            
-            # Actualizar estado
-            self._update_status(f"{len(self.row_ids)} eventos cargados")
-            
-            print(f"[DEBUG] Loaded {len(self.row_ids)} events for {self.username}")
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo cargar eventos:\n{e}")
-            print(f"[ERROR] load_data: {e}")
-            traceback.print_exc()
-    
-    def _get_last_shift_start(self):
-        """Obtiene la última hora de inicio de shift del usuario"""
-        try:
-            conn = get_connection()
-            if not conn:
-                return None
-            
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT e.FechaHora 
-                FROM Eventos e
-                INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
-                WHERE u.Nombre_Usuario = %s AND e.Nombre_Actividad = %s
-                ORDER BY e.FechaHora DESC
-                LIMIT 1
-            """, (self.username, "START SHIFT"))
-            
-            row = cur.fetchone()
-            cur.close()
-            conn.close()
-            
-            return row[0] if row and row[0] else None
-        except Exception as e:
-            print(f"[ERROR] _get_last_shift_start: {e}")
-            return None
-    
-    def _get_site_name(self, cur, id_sitio):
-        """Obtiene el nombre del sitio formateado"""
-        if not id_sitio:
-            return "Sin sitio"
+            self._update_status(f"{len(display_rows)} eventos cargados")
         
-        try:
-            cur.execute("SELECT Nombre_Sitio FROM Sitios WHERE ID_Sitio = %s", (id_sitio,))
-            row = cur.fetchone()
-            if row and row[0]:
-                # Formato: "Nombre (ID)" - consistente con Specials
-                return f"{row[0]} ({id_sitio})"
-            else:
-                return f"ID: {id_sitio}"
         except Exception as e:
-            print(f"[ERROR] _get_site_name: {e}")
-            return f"ID: {id_sitio}"
+            traceback.print_exc()
+            messagebox.showerror("Error", f"No se pudieron cargar los datos:\n{e}")
+            print(f"[ERROR] load_data: {e}")
+
+
     
     def _on_cell_edit(self, event):
         """Handler cuando se edita una celda"""
@@ -343,8 +261,23 @@ class DailyModule:
                 if row_idx < len(self.row_data_cache):
                     self.pending_changes.add(row_idx)
                     print(f"[DEBUG] Cell edited - row {row_idx} marked for save")
-                    # Auto-save después de un breve delay
-                    self.parent.after(500, self._auto_save_pending)
+                    # Obtener los valores actuales de la fila
+                    row_data = self.sheet.get_row_data(row_idx)
+                    # Obtener el id_evento original
+                    id_evento = self.row_data_cache[row_idx]['id']
+                    # Empaquetar la tupla para el controlador
+                    evento = (
+                        id_evento,
+                        # Asegúrate de mapear los valores en el orden esperado por el controlador/modelo
+                        row_data[0],  # fecha_hora
+                        row_data[1],  # sitio_concatenado
+                        row_data[2],  # nombre_actividad
+                        row_data[3],  # cantidad
+                        row_data[4],  # camera
+                        row_data[5],  # descripcion
+                    )
+                    # Llamar al controlador con la tupla
+                    self.controller.auto_save_pending_event(evento)
         except Exception as e:
             print(f"[DEBUG] _on_cell_edit error: {e}")
     
@@ -360,28 +293,29 @@ class DailyModule:
     def _on_double_click(self, event):
         """Handler de doble click en celdas"""
         from datetime import datetime
-        
+
         try:
             # Obtener celda seleccionada
             selection = self.sheet.get_currently_selected()
             if not selection:
                 return
-            
+
             row = selection.row if hasattr(selection, 'row') else selection[0]
             col = selection.column if hasattr(selection, 'column') else selection[1]
-            
+
             # Columna 0: Fecha Hora
             if col == 0:
                 self._show_datetime_picker_for_cell(row, col)
-            
+
             # Columna 1: Sitio
             elif col == 1:
+                # El picker ya espera y devuelve el string en formato 'ID - Nombre'
                 self._show_site_picker(row)
-            
+
             # Columna 2: Actividad
             elif col == 2:
                 self._show_activity_picker(row)
-        
+
         except Exception as e:
             print(f"[ERROR] Error en doble click: {e}")
     
@@ -407,10 +341,22 @@ class DailyModule:
                 self.sheet.set_cell_data(row, col, dt.strftime("%Y-%m-%d %H:%M:%S"))
                 self.sheet.redraw()
                 # Marcar cambio pendiente
-                if row < len(self.row_ids):
+                if row < len(self.row_data_cache):
                     self.pending_changes.add(row)
+                    # Obtener la tupla completa del evento (igual que en _on_cell_edit)
+                    row_data = self.sheet.get_row_data(row)
+                    id_evento = self.row_data_cache[row]['id']
+                    evento = (
+                        id_evento,
+                        row_data[0],  # fecha_hora
+                        row_data[1],  # sitio_concatenado
+                        row_data[2],  # nombre_actividad
+                        row_data[3],  # cantidad
+                        row_data[4],  # camera
+                        row_data[5],  # descripcion
+                    )
                     # Guardar después del cambio
-                    self.parent.after(500, self._auto_save_pending)
+                    self.parent.after(500, lambda: self.controller.auto_save_pending_event(evento))
             
             self.blackboard._show_datetime_picker(
                 callback=update_cell,
@@ -430,7 +376,8 @@ class DailyModule:
         
         # Obtener sitios del controller
         sites = self.blackboard.controller.get_sites()
-        site_options = [f"{row[1]} ({row[0]})" for row in sites]
+        # Nuevo formato: 'ID - Nombre'
+        site_options = [f"{row[0]} - {row[1]}" for row in sites]
         
         # Crear ventana modal
         if self.UI is not None:
@@ -489,14 +436,40 @@ class DailyModule:
             def accept():
                 selected = combo_var.get().strip()
                 if selected:
-                    self.sheet.set_cell_data(row, 1, selected)
+                    # Asegurarse que el formato sea 'ID - Nombre'
+                    if ' - ' in selected:
+                        self.sheet.set_cell_data(row, 1, selected)
+                    else:
+                        # fallback: si el usuario escribe manualmente, intentar formatear
+                        try:
+                            id_part = selected.split('(')[-1].split(')')[0]
+                            name_part = selected.split('(')[0].strip()
+                            selected = f"{id_part} - {name_part}"
+                            self.sheet.set_cell_data(row, 1, selected)
+                        except Exception:
+                            self.sheet.set_cell_data(row, 1, selected)
                     self.sheet.redraw()
                     self.pending_changes.add(row)
-                    picker_win.destroy()
-                    # Guardar después del cambio
-                    self.parent.after(500, self._auto_save_pending)
+                    self.pending_changes.add(row)
+                    # Obtener la tupla completa del evento (igual que en _on_cell_edit)
+                    row_data = self.sheet.get_row_data(row)
+                    id_evento = self.row_data_cache[row]['id'] if row < len(self.row_data_cache) else None
+                    evento = (
+                        id_evento,
+                        row_data[0],  # fecha_hora
+                        row_data[1],  # sitio_concatenado
+                        row_data[2],  # nombre_actividad
+                        row_data[3],  # cantidad
+                        row_data[4],  # camera
+                        row_data[5],  # descripcion
+                    )
                 else:
                     messagebox.showwarning("Advertencia", "Selecciona un sitio", parent=picker_win)
+                        # Obtener la tupla completa del evento
+
+                    evento = self.sheet.get_row_data(row)
+                    picker_win.destroy()
+                    self.parent.after(500, lambda: self.controller.auto_save_pending_event(evento))
             
             self.UI.CTkButton(
                 btn_frame,
@@ -548,17 +521,7 @@ class DailyModule:
             combo.pack(pady=10, fill="x", padx=20)
             combo.focus_set()
             
-            def accept():
-                selected = combo_var.get().strip()
-                if selected:
-                    self.sheet.set_cell_data(row, 1, selected)
-                    self.sheet.redraw()
-                    self.pending_changes.add(row)
-                    picker_win.destroy()
-                    # Guardar después del cambio
-                    self.parent.after(500, self._auto_save_pending)
-                else:
-                    messagebox.showwarning("Advertencia", "Selecciona un sitio", parent=picker_win)
+            
             
             btn_frame = tk.Frame(picker_win, bg="#2c2f33")
             btn_frame.pack(pady=15)
@@ -831,118 +794,6 @@ class DailyModule:
                 parent=self.container
             )
             print(f"[ERROR] Error eliminando evento: {e}")
-    
-    def _auto_save_pending(self):
-        """Guarda automáticamente los cambios pendientes"""
-        if not self.pending_changes:
-            return
-        
-        try:
-            conn = get_connection()
-            if not conn:
-                return
-            
-            cur = conn.cursor()
-            
-            # Obtener ID_Usuario
-            cur.execute("SELECT ID_Usuario FROM user WHERE Nombre_Usuario=%s", (self.username,))
-            user_row = cur.fetchone()
-            if not user_row:
-                cur.close()
-                conn.close()
-                return
-            
-            user_id = int(user_row[0])
-            
-            for idx in list(self.pending_changes):
-                try:
-                    if idx >= len(self.row_data_cache):
-                        continue
-                    
-                    cached = self.row_data_cache[idx]
-                    event_id = cached.get('id')
-                    
-                    if not event_id:
-                        continue
-                    
-                    # Obtener valores actuales del sheet
-                    row_data = self.sheet.get_row_data(idx)
-                    
-                    # Extraer valores (índices según COLUMNS)
-                    # ["Fecha Hora", "Sitio", "Actividad", "Cantidad", "Camera", "Descripción"]
-                    fecha_str = row_data[0] if len(row_data) > 0 else None
-                    sitio_str = row_data[1] if len(row_data) > 1 else None
-                    actividad = row_data[2] if len(row_data) > 2 else None
-                    cantidad = row_data[3] if len(row_data) > 3 else None
-                    camera = row_data[4] if len(row_data) > 4 else None
-                    descripcion = row_data[5] if len(row_data) > 5 else None
-                    
-                    # Parsear fecha con soporte para múltiples formatos
-                    fecha_hora = None
-                    if fecha_str:
-                        try:
-                            # Intentar parsear diferentes formatos que puede generar format_friendly_datetime
-                            formatos_posibles = [
-                                "%Y-%m-%d %H:%M:%S",  # Formato completo con segundos
-                                "%Y-%m-%d %H:%M",     # Formato sin segundos
-                            ]
-                            
-                            # Primero intentar formatos ISO estándar
-                            for formato in formatos_posibles:
-                                try:
-                                    fecha_hora = datetime.strptime(fecha_str, formato)
-                                    break
-                                except ValueError:
-                                    continue
-                            
-                            # Si no funcionó, podría ser formato amigable (HOY, AYER, VIE, etc.)
-                            if not fecha_hora:
-                                # Para formatos amigables, usar la fecha original del cache
-                                # ya que no podemos parsearlos fácilmente
-                                fecha_hora = cached.get('fecha_hora')
-                                print(f"[DEBUG] Usando fecha del cache para formato amigable: {fecha_str}")
-                        except Exception as e:
-                            # Si todo falla, usar fecha del cache
-                            fecha_hora = cached.get('fecha_hora')
-                            print(f"[WARNING] No se pudo parsear fecha '{fecha_str}', usando cache: {e}")
-                    
-                    # Extraer ID_Sitio de formato "Nombre (ID)"
-                    id_sitio = None
-                    if sitio_str:
-                        try:
-                            if '(' in sitio_str and ')' in sitio_str:
-                                id_sitio = int(sitio_str.split('(')[1].split(')')[0])
-                            else:
-                                id_sitio = cached.get('id_sitio')
-                        except:
-                            id_sitio = cached.get('id_sitio')
-                    
-                    # UPDATE en BD
-                    cur.execute("""
-                        UPDATE Eventos
-                        SET FechaHora = %s,
-                            ID_Sitio = %s,
-                            Nombre_Actividad = %s,
-                            Cantidad = %s,
-                            Camera = %s,
-                            Descripcion = %s
-                        WHERE ID_Eventos = %s
-                    """, (fecha_hora, id_sitio, actividad, cantidad, camera, descripcion, event_id))
-                    
-                    print(f"[DEBUG] Auto-saved event ID={event_id}")
-                    
-                except Exception as e:
-                    print(f"[ERROR] Auto-save row {idx}: {e}")
-            
-            conn.commit()
-            cur.close()
-            conn.close()
-            
-            self.pending_changes.clear()
-            self._update_status("Cambios guardados automáticamente")
-            
-        except Exception as e:
-            print(f"[ERROR] _auto_save_pending: {e}")
     
     def _delete_selected(self):
         """Elimina el evento seleccionado"""

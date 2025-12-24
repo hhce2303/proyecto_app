@@ -1,39 +1,84 @@
-
-
 from models.database import get_connection
 import backend_super
+
+def get_last_shift_start(username):
+    """Obtiene la hora de inicio del último turno del usuario"""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT MAX(FechaHora) 
+            FROM eventos e
+            INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
+            WHERE u.Nombre_Usuario = %s and e.Nombre_Actividad = 'START SHIFT'
+        """, (username,))
+        row = cur.fetchone()
+        conn.close()
+        return row[0] if row else None
+    except Exception as e:
+        print(f"[ERROR] get_last_shift_start: {e}")
+        return None
 
 
 def load_daily(username):
     """Carga datos diarios desde el último START SHIFT (MODO DAILY)"""
     try:
-        data = backend_super.get_daily_data_since_last_shift()
-        last_shift_time = backend_super.get_last_shift_start(username)
+        last_shift_time = get_last_shift_start(username)
         conn = get_connection()
         cur = conn.cursor()
         
         # Obtener eventos del usuario desde el último shift
+
         cur.execute("""
             SELECT 
                 e.ID_Eventos,
                 e.FechaHora,
-                e.ID_Sitio,
+                CONCAT(s.ID_Sitio, ' - ', s.Nombre_Sitio) AS Nombre_Sitio,
                 e.Nombre_Actividad,
                 e.Cantidad,
                 e.Camera,
-                e.Descripcion
+                e.Descripcion,
+                e.ID_Usuario
             FROM Eventos e
             INNER JOIN user u ON e.ID_Usuario = u.ID_Usuario
+            INNER JOIN Sitios s ON e.ID_Sitio = s.ID_Sitio
             WHERE u.Nombre_Usuario = %s AND e.FechaHora >= %s
             ORDER BY e.FechaHora ASC
         """, (username, last_shift_time))
 
-        eventos = cur.fetchall()
+        eventos = cur.fetchall()[1:]
         display_rows = []
+        return eventos
     except Exception as e:
         print(f"[ERROR] load_daily: {e}")
         return []
 
+def auto_save_pending_events_bd(username,fecha_hora, id_sitio, actividad, cantidad, camera, descripcion, event_id):
+    """Guarda automáticamente eventos pendientes en backend_super"""
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+            # UPDATE en BD
+        cur.execute("""
+            UPDATE Eventos
+            SET FechaHora = %s,
+                ID_Sitio = %s,
+                Nombre_Actividad = %s,
+                Cantidad = %s,
+                Camera = %s,
+                Descripcion = %s
+            WHERE ID_Eventos = %s
+        """, (fecha_hora, id_sitio, actividad, cantidad, camera, descripcion, event_id))
+            
+        print(f"[DEBUG] Auto-saved event ID={event_id}")
+            
+    except Exception as e:
+        print(f"[ERROR] Auto-save row: {e}")
+    
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def obtain_site_name(cur, id_sitio):
     cur.execute("SELECT Nombre_Sitio FROM Sitios WHERE ID_Sitio = %s", (id_sitio,))
@@ -120,3 +165,5 @@ def create_event(username, site_id, activity, quantity, camera, description, fec
     except Exception as e:
         print(f"[ERROR] create_event: {e}")
         return False, str(e)
+    
+
