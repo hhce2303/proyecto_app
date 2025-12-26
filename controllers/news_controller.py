@@ -1,6 +1,9 @@
 from models.news_model import crear_news, deactivate_news_card_model, cargar_news_activas, delete_news_card_model
 import tkinter as tk
 from tkinter import messagebox
+from utils.ui_factory import UIFactory
+UIFactory = ui_factory = UIFactory(tk)
+
 
 class NewsController:
     def __init__(self, username):
@@ -10,6 +13,10 @@ class NewsController:
         """Obtiene datos y devuelve para que la vista los renderice"""
         return cargar_news_activas()  # Solo retorna datos
     
+    def render_news_container(self, parent_frame):
+        """Renderiza el contenedor de news en el frame padre dado"""
+        return
+
     def crear_news_controller(self, tipo, nombre, urgencia, fecha_out, callback):
         """Crea news y ejecuta callback"""
         try:

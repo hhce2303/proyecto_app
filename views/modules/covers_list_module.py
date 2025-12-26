@@ -170,7 +170,7 @@ class CoversListModule:
         
         # Aplicar anchos personalizados
         for idx, col_name in enumerate(self.COLUMNS):
-            width = self.COLUMN_WIDTHS.get(col_name, 100)
+            width = self.COLUMN_WIDTHS.get(col_name, 180)
             self.sheet.column_width(column=idx, width=width)
     
     def load_data(self):
@@ -198,7 +198,7 @@ class CoversListModule:
                 # item es una tupla: (ID_cover, nombre_usuario, time_request, approved, activo, cover_realizado_id, cover_programado_id, cover_out)
                 # Turno: mostrar número de fila (idx)
                 # Approved: mostrar texto amigable
-                aprobado_str = "Aprobado✅" if str(item[3]) == "1" else "Denegado❌"
+                aprobado_str = "Aprobado✅" if str(item[5]) == "1" else "Denegado❌"
                 sheet_data.append([
                     idx,  # Turno visual (1, 2, 3...)
                     item[1],  # Operador

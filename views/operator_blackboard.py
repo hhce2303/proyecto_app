@@ -9,6 +9,7 @@ IMPORTANTE:
 - SPECIALS = OPERADOR (eventos especiales con timezone) - ✅ FUNCIONANDO
 - COVERS = OPERADOR (solicitar/visualizar covers) - ✅ IMPLEMENTADO
 """
+from controllers.news_controller import NewsController
 from models.user_model import load_users
 from views.blackboard import Blackboard
 from views.modules.daily_module import DailyModule
@@ -46,7 +47,7 @@ class OperatorBlackboard(Blackboard):
         
         # Inicializar controller
         self.controller = DailyController(username)
-        
+        self.news_controller = NewsController(username)
         # Variables para control de shift
         self.shift_warning_label = None
         self.start_shift_btn = None
@@ -165,11 +166,67 @@ class OperatorBlackboard(Blackboard):
         
         self._update_tab_buttons()
     
+    def _setup_lateral_panel_content(self, parent):
+        """Configura el contenido del panel lateral (derecha)"""
+        # Botón para mostrar panel de covers programados
+        self.show_covers_btn = self.ui_factory.button(
+            parent,
+            text="📅 News",
+            command=lambda:None,
+            width=50,
+            fg_color="#4D6068",
+            hover_color="#ffa726"
+        )
+        self.show_covers_btn.pack(pady=10)
+
     def _setup_content(self, parent):
-        """Contenido para tabs de operador"""
+        """Crea el layout horizontal: panel lateral + área principal de contenido"""
+        # Frame contenedor horizontal
+        content_container = self.ui_factory.frame(parent, fg_color="transparent")
+        content_container.pack(fill="both", expand=True)
+
+        # ========== Área lateral de contenido ========== 
+        # Panel lateral (derecha)
+        self.lateral_panel = self.ui_factory.frame(content_container, fg_color="#2c2f33", width=60)
+        self.lateral_panel.pack(side="right", fill="y", padx=(10, 0), pady=5)
+
+        # --- Expansión/colapso con eventos de mouse ---
+        self.lateral_panel.configure(width=60)
+        self._lateral_expanded_width = 220
+        self._lateral_collapsed_width = 60
+
+        def _expand_panel(event):
+            self.lateral_panel.configure(width=self._lateral_expanded_width)
+
+        def _collapse_panel(event):
+            # Solo colapsar si el mouse realmente salió del panel y no está sobre un hijo
+            widget = event.widget
+            # Verifica si el mouse está fuera del panel y todos sus hijos
+            x, y = self.lateral_panel.winfo_pointerxy()
+            abs_x = self.lateral_panel.winfo_rootx()
+            abs_y = self.lateral_panel.winfo_rooty()
+            if not (abs_x <= x <= abs_x + self.lateral_panel.winfo_width() and abs_y <= y <= abs_y + self.lateral_panel.winfo_height()):
+                self.lateral_panel.configure(width=self._lateral_collapsed_width)
+
+        self.lateral_panel.bind("<Enter>", _expand_panel)
+        self.lateral_panel.bind("<Leave>", _collapse_panel)
+
+        # Si agregas widgets hijos, opcionalmente puedes propagar los eventos:
+        def _child_enter(event):
+            _expand_panel(event)
+        def _child_leave(event):
+            _collapse_panel(event)
+        # Ejemplo: si agregas widgets hijos, puedes hacer:
+        # for child in self.lateral_panel.winfo_children():
+        #     child.bind("<Enter>", _child_enter)
+        #     child.bind("<Leave>", _child_leave)
+
+        # Área principal de contenido (tabs)
+        main_content = self.ui_factory.frame(content_container, fg_color="#1e1e1e")
+        main_content.pack(side="left", fill="both", expand=True)
         
         # ========== TAB DAILY (EXCLUSIVO DE OPERADORES) ==========
-        daily_frame = self.ui_factory.frame(parent, fg_color="#1e1e1e")
+        daily_frame = self.ui_factory.frame(main_content, fg_color="#1e1e1e")
         
         # Label de advertencia (solo visible cuando NO hay turno activo)
         warning_frame = self.ui_factory.frame(daily_frame, fg_color="#b71c1c", border_width=2, border_color="#ff5252")
@@ -182,7 +239,17 @@ class OperatorBlackboard(Blackboard):
             font=("Segoe UI", 16, "bold")
         )
         self.shift_warning_label.pack(pady=15)
-        
+
+        lateral_news_panel = self.news_controller.render_news_container(daily_frame)
+
+        # ========= NEWS PANEL LATERAL ==========
+
+        news_panel_container = self.ui_factory.frame(lateral_news_panel, fg_color="#2c2f33", width=200)
+        news_panel_container.pack(side="right", fill="y", padx=(10, 0), pady=5)
+
+
+        # ========= DailyModule (tabla de eventos) ==========
+
         # DailyModule primero
         try:
             self.daily_module = DailyModule(
@@ -206,7 +273,7 @@ class OperatorBlackboard(Blackboard):
         
         # Formulario ABAJO del tksheet
         form_frame = self.ui_factory.frame(daily_frame, fg_color="#2b2b2b")
-        form_frame.pack(fill="x", padx=10, pady=(0, 10))
+        form_frame.pack(fill="x", padx=8, pady=(0, 8))
         
         self._create_event_form(form_frame)
         
@@ -315,11 +382,25 @@ class OperatorBlackboard(Blackboard):
         self.tab_frames["Lista Covers"] = covers_list_frame
         
         self._show_current_tab()
+
+    def _setup_lateral_panel_content(self, parent):
+            # ... tu código de widgets ...
+            parent.config(width=40)  # Ancho inicial
+
+            def expand_panel(event):
+                parent.config(width=220)
+
+            def collapse_panel(event):
+                parent.config(width=40)
+
+            parent.bind("<Enter>", expand_panel)
+            parent.bind("<Leave>", collapse_panel)
     
     def agregar_mi_widget(self):
         # Puedes agregar cualquier widget a self.content_area
         mi_label = tk.Label(self.tab_frames["Daily"], text="¡Hola desde el tab Daily!", bg="#222", fg="white")
         mi_label.pack(pady=20)
+
     def _switch_tab(self, tab_name):
         """Cambia entre tabs y recarga datos"""
         if self.current_tab != tab_name:
@@ -336,7 +417,6 @@ class OperatorBlackboard(Blackboard):
                 self.covers_module.load_data()
             elif tab_name == "Lista Covers" and hasattr(self, 'covers_list_module'):
                 self.covers_list_module.load_data()
-
     def _show_current_tab(self):
         """Muestra el frame del tab actual"""
         for tab_name, frame in self.tab_frames.items():

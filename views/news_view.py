@@ -211,6 +211,34 @@ def create_news_container(top, username, controller, UI=None):
     
     return news_container
 
+def create_news_frame(daily_frame, UI=None):
+    """Crea el frame de news dentro de la ventana principal (Operator Blackboard)"""
+
+    def _news_lateral_frame():
+        """Crea el frame lateral de noticias"""
+        if UI is not None:
+            news_lateral_frame = UI.CTkFrame(daily_frame, fg_color="#2c2f33", width=300)
+        else:
+            news_lateral_frame = tk.Frame(daily_frame, bg="#2c2f33", width=300)
+        return news_lateral_frame
+
+    def _news_header(news_lateral_frame):
+        """Crea el header del panel de noticias"""
+        if UI is not None:
+            header = UI.CTkFrame(news_lateral_frame, fg_color="#23272a")
+            UI.CTkLabel(header, text="📰 Noticias", 
+                        font=("Segoe UI", 14, "bold"),
+                        text_color="#00bfae").pack(side="left", padx=10, pady=10)
+        else:
+            header = tk.Frame(news_lateral_frame, bg="#23272a")
+            tk.Label(header, text="📰 Noticias", bg="#23272a", fg="#00bfae",
+                     font=("Segoe UI", 14, "bold")).pack(side="left", padx=10, pady=10)
+        header.pack(fill="x")
+
+    news_panel_container = _news_lateral_frame()
+    _news_header(news_panel_container)
+
+    return news_panel_container
 
 
 def crear_news_card_preview(parent, news_data, controller):
@@ -221,7 +249,7 @@ def crear_news_card_preview(parent, news_data, controller):
         pass
     """Crea una card visual para preview de news"""
     # ✅ Usa controller en vez de importar del modelo
-    command=lambda: controller.delete_news(news_data['id'], render_news_container.refrescar())
+    command=lambda: controller.delete_news(news_data['id'], render_news_container_mvc.refrescar())
     
     urgency_colors = {
         'HIGH': '#e74c3c',
