@@ -107,6 +107,8 @@ class Blackboard:
         self._setup_header_content(frame)  # Hook para subclases
         return frame
     
+
+    
     def _create_tabs(self):
         """Crea frame de tabs - las subclases lo llenan"""
         frame = self.ui_factory.frame(self.window, fg_color="#23272a")
@@ -115,11 +117,21 @@ class Blackboard:
         return frame
     
     def _create_content_area(self):
-        """Crea área de contenido - las subclases lo llenan"""
-        frame = self.ui_factory.frame(self.window, fg_color="#1e1e1e")
-        frame.pack(fill="both", expand=True, padx=10, pady=5)
-        self._setup_content(frame)  # Hook para subclases
-        return frame
+        """Crea área de contenido con panel lateral y contenido principal"""
+        content_area = self.ui_factory.frame(self.window, fg_color="#1e1e1e")
+        content_area.pack(fill="both", expand=True, padx=10, pady=5)
+
+        # Panel lateral (izquierda o derecha)
+        lateral_panel = self.ui_factory.frame(content_area, fg_color="#2c2f33", width=60)
+        lateral_panel.pack(side="right", fill="y", padx=(10, 0), pady=5)
+        self._setup_lateral_panel_content(lateral_panel)
+
+        # Frame principal de contenido
+        main_content = self.ui_factory.frame(content_area, fg_color="#1e1e1e")
+        main_content.pack(side="left", fill="both", expand=True)
+        self._setup_content(main_content)  # Hook para subclases
+
+        return content_area
     
     def _configure_close_handler(self):
         """Configura el handler de cierre de ventana"""
@@ -143,7 +155,7 @@ class Blackboard:
         Returns:
             str: Geometría de ventana (e.g., "1320x800")
         """
-        return "1320x800"
+        return "1500x800"
     
     def _setup_header_content(self, parent):
         """
