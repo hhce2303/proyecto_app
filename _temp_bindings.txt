@@ -1,0 +1,13 @@
+        self.sheet.pack(fill="both", expand=True)
+        
+        # Habilitar funcionalidades (SOLO LECTURA, no edición - solo undo permitido)
+        self.sheet.enable_bindings(
+            "single_select",
+            "row_select",
+            "column_width_resize",
+            "double_click_column_resize",
+            "arrowkeys",
+            "right_click_popup_menu",
+            "rc_select",
+            "undo"  # Solo UNDO (Ctrl+Z)
+        )
