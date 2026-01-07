@@ -64,6 +64,53 @@ class UIFactory:
                 tk_kwargs['width'] = kwargs['width']
             
             return tk.Frame(parent, **tk_kwargs)
+        
+    def scrollable_frame(self, parent, **kwargs):
+        """
+        Crea un frame scrollable abstrayendo CustomTkinter/Tkinter
+        
+        Args:
+            parent: Widget padre
+            **kwargs: 
+                - bg/fg_color: Color de fondo
+                """
+        if self.is_custom:
+            ctk_kwargs = {}
+            if 'bg' in kwargs:
+                ctk_kwargs['fg_color'] = kwargs['bg']
+            if 'fg_color' in kwargs:
+                ctk_kwargs['fg_color'] = kwargs['fg_color']
+            
+            return self.UI.CTkScrollableFrame(parent, **ctk_kwargs)
+        else:
+            tk_kwargs = {}
+            if 'bg' in kwargs:
+                tk_kwargs['bg'] = kwargs['bg']
+            if 'fg_color' in kwargs:
+                tk_kwargs['bg'] = kwargs['fg_color']
+            
+            # Implementación básica de frame scrollable con Tkinter
+            canvas = tk.Canvas(parent, **tk_kwargs)
+            scrollbar = tk.Scrollbar(parent, command=canvas.yview)
+            scrollable_frame = tk.Frame(canvas, **tk_kwargs)
+
+            scrollable_frame.bind(
+                "<Configure>",
+                lambda e: canvas.configure(
+                    scrollregion=canvas.bbox("all")
+                )
+            )
+
+            canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+            canvas.configure(yscrollcommand=scrollbar.set)
+
+            container = tk.Frame(parent)
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+
+            return container
+
+        
     
     def button(self, parent, text, command, **kwargs):
         """
@@ -240,3 +287,42 @@ class UIFactory:
                 widget.configure(activebackground=kwargs['hover'])
             if 'hover_color' in kwargs:
                 widget.configure(activebackground=kwargs['hover_color'])
+
+    def entry(self, parent, **kwargs):
+        """
+        Crea un entry abstrayendo CustomTkinter/Tkinter
+        
+        Args:
+            parent: Widget padre
+            **kwargs:
+                - bg/fg_color: Color de fondo"""
+        if self.is_custom:
+            ctk_kwargs = {}
+            if 'bg' in kwargs:
+                ctk_kwargs['fg_color'] = kwargs['bg']
+            if 'fg_color' in kwargs:
+                ctk_kwargs['fg_color'] = kwargs['fg_color']
+            if 'width' in kwargs:
+                ctk_kwargs['width'] = kwargs['width']
+            if 'font' in kwargs:
+                ctk_kwargs['font'] = kwargs['font']
+            if 'textvariable' in kwargs:
+                ctk_kwargs['textvariable'] = kwargs['textvariable']
+            
+            return self.UI.CTkEntry(parent, **ctk_kwargs)
+        else:
+            tk_kwargs = {}
+            if 'bg' in kwargs:
+                tk_kwargs['bg'] = kwargs['bg']
+            if 'fg_color' in kwargs:
+                tk_kwargs['bg'] = kwargs['fg_color']
+            if 'width' in kwargs:
+                # tkinter usa caracteres, CustomTkinter usa pixeles
+                # Conversión aproximada: pixels / 8
+                tk_kwargs['width'] = max(1, kwargs['width'] // 8)
+            if 'font' in kwargs:
+                tk_kwargs['font'] = kwargs['font']
+            if 'textvariable' in kwargs:
+                tk_kwargs['textvariable'] = kwargs['textvariable']
+            
+            return tk.Entry(parent, **tk_kwargs)

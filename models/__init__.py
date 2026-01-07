@@ -22,12 +22,9 @@ Archivos:
 # ==================== DATABASE ====================
 from .database import get_connection
 
-# ==================== USER ====================
-from .user_model import (
-    load_users,
-    get_user_status_bd,
-    users_list
-)
+# ==================== USER & STATUS ====================
+# Las funciones de usuarios están distribuidas en varios modelos
+# from .status_model import get_user_status_bd
 
 # ==================== EVENT ====================
 from .event_model import add_event

@@ -4,6 +4,7 @@ Recibe credenciales de login.py y redirecciona a la función de rol correspondie
 NO genera UI propia - delega todo a backend_super.py
 """
 
+import admin_blackboard
 import backend_super
 
 
@@ -62,11 +63,11 @@ def open_main_window(username, station, role, session_id):
     elif role == "Admin":
         # Admin: Panel administrativo con Dashboard en tiempo real
         import admin_window
-        admin_window.open_admin_panel(
+        admin_blackboard.open_admin_blackboard(
             username=username,
             session_id=session_id,
             station=station,
-            parent=None
+            root=None
         )
     
     else:

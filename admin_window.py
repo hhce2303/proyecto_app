@@ -12,515 +12,16 @@ import tkinter as tk
 from tkinter import ttk, messagebox, font as tkfont
 import customtkinter as ctk
 from datetime import datetime, timedelta
-import under_super
-import backend_super
 from models.database import get_connection
-import pymysql
-from PIL import Image, ImageTk
+from models.admin_model import force_logout_user, get_covers_graph_data, get_dashboard_metrics, get_activity_graph_data, get_active_sessions_detailed, get_pending_alerts
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-import threading
 import traceback
 
 # ==================== CONFIGURACIÓN GLOBAL ====================
 ADMIN_WINDOW = None
 AUTO_REFRESH_INTERVAL = 30000  # 30 segundos en milisegundos
-ALERT_THRESHOLDS = {
-    'session_long_hours': 12,      # Sesiones >12 horas
-    'cover_pending_minutes': 30,   # Covers sin aprobar >30 min
-    'event_open_hours': 8,         # Eventos abiertos >8 horas
-    'break_unassigned_minutes': 15 # Breaks sin cubrir >15 min
-}
-
-# ==================== FUNCIONES DE DATOS ====================
-
-def get_dashboard_metrics():
-    """
-    Obtiene métricas clave para el dashboard en tiempo real
-    
-    Returns:
-        dict: {
-            'sesiones_activas': int,
-            'covers_pendientes': int,
-            'breaks_activos': int,
-            'eventos_dia': int,
-            'usuarios_conectados': int,
-            'covers_completados_hoy': int,
-            'eventos_abiertos': int,
-            'alertas_criticas': int
-        }
-    """
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        
-        metrics = {}
-        
-        # 1. Sesiones activas (Active = 1)
-        cur.execute("SELECT COUNT(*) FROM sesion WHERE Active = '1'")
-        metrics['sesiones_activas'] = cur.fetchone()[0]
-        
-        # 2. Covers pendientes de aprobación
-        cur.execute("""
-            SELECT COUNT(*) FROM covers_programados 
-            WHERE Approved = 0 AND is_Active = 1
-        """)
-        metrics['covers_pendientes'] = cur.fetchone()[0]
-        
-        # 3. Breaks activos programados para hoy
-        cur.execute("""
-            SELECT COUNT(*) FROM gestion_breaks_programados 
-            WHERE is_Active = 1 
-            AND DATE(Fecha_hora_cover) = CURDATE()
-        """)
-        metrics['breaks_activos'] = cur.fetchone()[0]
-        
-        # 4. Eventos registrados hoy
-        cur.execute("""
-            SELECT COUNT(*) FROM Eventos 
-            WHERE DATE(FechaHora) = CURDATE()
-        """)
-        metrics['eventos_dia'] = cur.fetchone()[0]
-        
-        # 5. Usuarios únicos conectados
-        cur.execute("""
-            SELECT COUNT(DISTINCT ID_user) FROM sesion 
-            WHERE Active = '1'
-        """)
-        metrics['usuarios_conectados'] = cur.fetchone()[0]
-        
-        # 6. Covers completados hoy
-        cur.execute("""
-            SELECT COUNT(*) FROM covers_realizados 
-            WHERE DATE(Cover_in) = CURDATE()
-        """)
-        metrics['covers_completados_hoy'] = cur.fetchone()[0]
-        
-        # 7. Eventos abiertos - Not tracked in Eventos table
-        metrics['eventos_abiertos'] = 0
-        
-        # 8. Alertas críticas (sesiones >12h + covers sin aprobar >30min)
-        cur.execute("""
-            SELECT COUNT(*) FROM sesion 
-            WHERE Active = '1' 
-            AND TIMESTAMPDIFF(HOUR, Log_in, NOW()) >= %s
-        """, (ALERT_THRESHOLDS['session_long_hours'],))
-        long_sessions = cur.fetchone()[0]
-        
-        cur.execute("""
-            SELECT COUNT(*) FROM covers_programados 
-            WHERE Approved = 0 
-            AND is_Active = 1 
-            AND TIMESTAMPDIFF(MINUTE, Time_request, NOW()) >= %s
-        """, (ALERT_THRESHOLDS['cover_pending_minutes'],))
-        pending_covers = cur.fetchone()[0]
-        
-        metrics['alertas_criticas'] = long_sessions + pending_covers
-        
-        cur.close()
-        conn.close()
-        
-        print(f"[DEBUG] Dashboard metrics: {metrics}")
-        return metrics
-        
-    except Exception as e:
-        print(f"[ERROR] get_dashboard_metrics: {e}")
-        traceback.print_exc()
-        return {
-            'sesiones_activas': 0,
-            'covers_pendientes': 0,
-            'breaks_activos': 0,
-            'eventos_dia': 0,
-            'usuarios_conectados': 0,
-            'covers_completados_hoy': 0,
-            'eventos_abiertos': 0,
-            'alertas_criticas': 0
-        }
-
-
-def get_active_sessions_detailed():
-    """
-    Obtiene detalles de todas las sesiones activas
-    
-    Returns:
-        list: [{
-            'usuario': str,
-            'estacion': str,
-            'hora_inicio': datetime,
-            'tiempo_activo': str (HH:MM),
-            'estado': str,
-            'rol': str,
-            'session_id': int
-        }]
-    """
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        
-        query = """
-            SELECT 
-                s.ID_user AS usuario,
-                s.ID_estacion AS estacion,
-                s.Log_in AS hora_inicio,
-                TIMESTAMPDIFF(MINUTE, s.Log_in, NOW()) AS minutos_activo,
-                s.Statuses AS estado,
-                u.Rol AS rol,
-                s.ID AS session_id
-            FROM sesion s
-            LEFT JOIN user u ON s.ID_user = u.Nombre_Usuario
-            WHERE s.Active = '1'
-            ORDER BY s.Log_in DESC
-        """
-        
-        cur.execute(query)
-        rows = cur.fetchall()
-        
-        sessions = []
-        for row in rows:
-            minutos = row[3] or 0
-            horas = minutos // 60
-            mins = minutos % 60
-            
-            sessions.append({
-                'usuario': row[0],
-                'estacion': row[1] or 'N/A',
-                'hora_inicio': row[2],
-                'tiempo_activo': f"{horas:02d}:{mins:02d}",
-                'estado': row[4] or 'Desconocido',
-                'rol': row[5] or 'N/A',
-                'session_id': row[6]
-            })
-        
-        cur.close()
-        conn.close()
-        
-        print(f"[DEBUG] Active sessions: {len(sessions)} usuarios")
-        return sessions
-        
-    except Exception as e:
-        print(f"[ERROR] get_active_sessions_detailed: {e}")
-        traceback.print_exc()
-        return []
-
-
-def get_pending_alerts():
-    """
-    Obtiene lista de alertas críticas pendientes
-    
-    Returns:
-        list: [{
-            'tipo': str,
-            'mensaje': str,
-            'usuario': str,
-            'timestamp': datetime,
-            'prioridad': str ('alta', 'media', 'baja')
-        }]
-    """
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        
-        alerts = []
-        
-        # 1. Sesiones largas (>12 horas)
-        cur.execute("""
-            SELECT 
-                s.ID_user,
-                s.Log_in,
-                TIMESTAMPDIFF(HOUR, s.Log_in, NOW()) AS horas
-            FROM sesion s
-            WHERE s.Active = '1'
-            AND TIMESTAMPDIFF(HOUR, s.Log_in, NOW()) >= %s
-        """, (ALERT_THRESHOLDS['session_long_hours'],))
-        
-        for row in cur.fetchall():
-            alerts.append({
-                'tipo': 'Sesión Larga',
-                'mensaje': f"Usuario {row[0]} lleva {row[2]} horas conectado",
-                'usuario': row[0],
-                'timestamp': row[1],
-                'prioridad': 'alta'
-            })
-        
-        # 2. Covers sin aprobar (>30 minutos)
-        cur.execute("""
-            SELECT 
-                ID_user,
-                Time_request,
-                TIMESTAMPDIFF(MINUTE, Time_request, NOW()) AS minutos
-            FROM covers_programados
-            WHERE Approved = 0 
-            AND is_Active = 1
-            AND TIMESTAMPDIFF(MINUTE, Time_request, NOW()) >= %s
-        """, (ALERT_THRESHOLDS['cover_pending_minutes'],))
-        
-        for row in cur.fetchall():
-            alerts.append({
-                'tipo': 'Cover Pendiente',
-                'mensaje': f"Cover de {row[0]} sin aprobar hace {row[2]} minutos",
-                'usuario': row[0],
-                'timestamp': row[1],
-                'prioridad': 'media'
-            })
-        
-        # 3. Breaks sin asignar covered_by (>15 minutos antes de la hora)
-        cur.execute("""
-            SELECT 
-                User_covered,
-                Fecha_hora_cover,
-                TIMESTAMPDIFF(MINUTE, NOW(), Fecha_hora_cover) AS minutos_hasta
-            FROM gestion_breaks_programados
-            WHERE is_Active = 1
-            AND User_covering IS NULL
-            AND Fecha_hora_cover > NOW()
-            AND TIMESTAMPDIFF(MINUTE, NOW(), Fecha_hora_cover) <= %s
-        """, (ALERT_THRESHOLDS['break_unassigned_minutes'],))
-        
-        for row in cur.fetchall():
-            alerts.append({
-                'tipo': 'Break Sin Cubrir',
-                'mensaje': f"Break de {row[0]} en {row[2]} minutos sin asignar",
-                'usuario': str(row[0]),
-                'timestamp': row[1],
-                'prioridad': 'alta'
-            })
-        
-        cur.close()
-        conn.close()
-        
-        # Ordenar por prioridad y timestamp
-        priority_order = {'alta': 0, 'media': 1, 'baja': 2}
-        alerts.sort(key=lambda x: (priority_order[x['prioridad']], x['timestamp']), reverse=True)
-        
-        print(f"[DEBUG] Alerts: {len(alerts)} pendientes")
-        return alerts
-        
-    except Exception as e:
-        print(f"[ERROR] get_pending_alerts: {e}")
-        traceback.print_exc()
-        return []
-
-
-def get_covers_graph_data(days=7):
-    """
-    Obtiene datos para análisis visual de covers
-    
-    Args:
-        days: Días hacia atrás para analizar (default: 7)
-    
-    Returns:
-        dict: {
-            'covers_por_dia': [(fecha, completados, pendientes), ...],
-            'covers_por_usuario': [(usuario, cantidad), ...],
-            'covers_por_estado': [(estado, cantidad), ...],
-            'tiempo_aprobacion': [(fecha, minutos_promedio), ...],
-            'covers_por_razon': [(razon, cantidad), ...],
-            'cobertura_por_usuario': [(cubierto_por, cantidad), ...]
-        }
-    """
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        
-        data = {}
-        
-        # 1. Covers por día (completados vs pendientes)
-        cur.execute("""
-            SELECT 
-                DATE(COALESCE(cr.Cover_in, cp.Time_request)) AS fecha,
-                COUNT(CASE WHEN cr.Cover_in IS NOT NULL THEN 1 END) AS completados,
-                COUNT(CASE WHEN cr.Cover_in IS NULL AND cp.Approved = 1 THEN 1 END) AS pendientes
-            FROM covers_programados cp
-            LEFT JOIN covers_realizados cr ON cp.ID_Cover = cr.ID_programacion_covers
-            WHERE DATE(COALESCE(cr.Cover_in, cp.Time_request)) >= CURDATE() - INTERVAL %s DAY
-            GROUP BY fecha
-            ORDER BY fecha
-        """, (days,))
-        data['covers_por_dia'] = cur.fetchall()
-        
-        # 2. Covers por usuario (top 10 solicitantes)
-        cur.execute("""
-            SELECT 
-                cp.ID_user AS usuario,
-                COUNT(*) AS cantidad
-            FROM covers_programados cp
-            WHERE cp.Time_request >= NOW() - INTERVAL %s DAY
-            GROUP BY cp.ID_user
-            ORDER BY cantidad DESC
-            LIMIT 10
-        """, (days,))
-        data['covers_por_usuario'] = cur.fetchall()
-        
-        # 3. Distribución por estado
-        cur.execute("""
-            SELECT 
-                CASE 
-                    WHEN cr.Cover_in IS NOT NULL THEN 'Completado'
-                    WHEN cp.Approved = 1 THEN 'Aprobado - Pendiente'
-                    WHEN cp.Approved = 0 THEN 'Pendiente Aprobación'
-                    ELSE 'Desconocido'
-                END AS estado,
-                COUNT(*) AS cantidad
-            FROM covers_programados cp
-            LEFT JOIN covers_realizados cr ON cp.ID_Cover = cr.ID_programacion_covers
-            WHERE cp.Time_request >= NOW() - INTERVAL %s DAY
-            GROUP BY estado
-            ORDER BY cantidad DESC
-        """, (days,))
-        data['covers_por_estado'] = cur.fetchall()
-        
-        # 4. Tiempo promedio de aprobación (minutos) por día
-        cur.execute("""
-            SELECT 
-                DATE(cp.Time_request) AS fecha,
-                AVG(TIMESTAMPDIFF(MINUTE, cp.Time_request, 
-                    CASE WHEN cp.Approved = 1 THEN cr.Cover_in ELSE NULL END)) AS minutos_promedio
-            FROM covers_programados cp
-            LEFT JOIN covers_realizados cr ON cp.ID_Cover = cr.ID_programacion_covers
-            WHERE cp.Time_request >= NOW() - INTERVAL %s DAY
-            AND cp.Approved = 1
-            AND cr.Cover_in IS NOT NULL
-            GROUP BY fecha
-            ORDER BY fecha
-        """, (days,))
-        data['tiempo_aprobacion'] = cur.fetchall()
-        
-        # 5. Covers por razón/motivo (top 10)
-        cur.execute("""
-            SELECT 
-                COALESCE(cp.Reason, 'Sin especificar') AS razon,
-                COUNT(*) AS cantidad
-            FROM covers_programados cp
-            WHERE cp.Time_request >= NOW() - INTERVAL %s DAY
-            GROUP BY razon
-            ORDER BY cantidad DESC
-            LIMIT 10
-        """, (days,))
-        data['covers_por_razon'] = cur.fetchall()
-        
-        # 6. Top usuarios que cubren (Covered_by)
-        cur.execute("""
-            SELECT 
-                cr.Covered_by AS cubierto_por,
-                COUNT(*) AS cantidad
-            FROM covers_realizados cr
-            WHERE cr.Cover_in >= NOW() - INTERVAL %s DAY
-            AND cr.Covered_by IS NOT NULL
-            GROUP BY cr.Covered_by
-            ORDER BY cantidad DESC
-            LIMIT 10
-        """, (days,))
-        data['cobertura_por_usuario'] = cur.fetchall()
-        
-        cur.close()
-        conn.close()
-        
-        print(f"[DEBUG] Covers graph data: {len(data)} datasets")
-        return data
-        
-    except Exception as e:
-        print(f"[ERROR] get_covers_graph_data: {e}")
-        traceback.print_exc()
-        return {
-            'covers_por_dia': [],
-            'covers_por_usuario': [],
-            'covers_por_estado': [],
-            'tiempo_aprobacion': [],
-            'covers_por_razon': [],
-            'cobertura_por_usuario': []
-        }
-
-
-def get_activity_graph_data(hours=24):
-    """
-    Obtiene datos para gráficos de actividad
-    
-    Args:
-        hours: Horas hacia atrás para analizar (default: 24)
-    
-    Returns:
-        dict: {
-            'eventos_por_hora': [(hora, cantidad), ...],
-            'covers_por_supervisor': [(supervisor, cantidad), ...],
-            'distribucion_eventos': [(tipo, cantidad), ...],
-            'sesiones_por_dia': [(dia, cantidad), ...]
-        }
-    """
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        
-        data = {}
-        
-        # 1. Eventos por hora (últimas 24h)
-        cur.execute("""
-            SELECT 
-                HOUR(FechaHora) AS hora,
-                COUNT(*) AS cantidad
-            FROM Eventos
-            WHERE FechaHora >= NOW() - INTERVAL %s HOUR
-            GROUP BY HOUR(FechaHora)
-            ORDER BY hora
-        """, (hours,))
-        data['eventos_por_hora'] = cur.fetchall()
-        
-        # 2. Covers aprobados por supervisor (último mes)
-        cur.execute("""
-            SELECT 
-                u.Nombre_Usuario AS supervisor,
-                COUNT(*) AS cantidad
-            FROM covers_programados cp
-            LEFT JOIN sesion s ON cp.ID_user = s.ID_user
-            LEFT JOIN user u ON s.ID_user = u.Nombre_Usuario
-            WHERE cp.Approved = 1
-            AND cp.Time_request >= NOW() - INTERVAL 30 DAY
-            AND u.Rol = 'Supervisor'
-            GROUP BY u.Nombre_Usuario
-            ORDER BY cantidad DESC
-            LIMIT 10
-        """)
-        data['covers_por_supervisor'] = cur.fetchall()
-        
-        # 3. Distribución de eventos por actividad (hoy)
-        cur.execute("""
-            SELECT 
-                Nombre_Actividad,
-                COUNT(*) AS cantidad
-            FROM Eventos
-            WHERE DATE(FechaHora) = CURDATE()
-            GROUP BY Nombre_Actividad
-            ORDER BY cantidad DESC
-            LIMIT 10
-        """)
-        data['distribucion_eventos'] = cur.fetchall()
-        
-        # 4. Sesiones por día (última semana)
-        cur.execute("""
-            SELECT 
-                DATE(Log_in) AS dia,
-                COUNT(DISTINCT ID_user) AS cantidad
-            FROM sesion
-            WHERE Log_in >= NOW() - INTERVAL 7 DAY
-            GROUP BY DATE(Log_in)
-            ORDER BY dia
-        """)
-        data['sesiones_por_dia'] = cur.fetchall()
-        
-        cur.close()
-        conn.close()
-        
-        return data
-        
-    except Exception as e:
-        print(f"[ERROR] get_activity_graph_data: {e}")
-        traceback.print_exc()
-        return {
-            'eventos_por_hora': [],
-            'covers_por_supervisor': [],
-            'distribucion_eventos': [],
-            'sesiones_por_dia': []
-        }
 
 
 # ==================== CLASES DE UI ====================
@@ -1741,6 +1242,7 @@ class AdminDashboard(ctk.CTkFrame):
             show='headings',
             style="Dashboard.Treeview",
             height=8
+            
         )
         
         # Configurar columnas
@@ -1991,7 +1493,7 @@ class AdminDashboard(ctk.CTkFrame):
         card = ctk.CTkFrame(self.alerts_container, fg_color="#1e1e1e", corner_radius=5)
         
         # Barra de color izquierda
-        accent = ctk.CTkFrame(card, fg_color=color, width=5)
+        accent = ctk.CTkFrame(card, fg_color=color, width=5, height=10)
         accent.pack(side='left', fill='y')
         
         # Contenido
@@ -2044,36 +1546,32 @@ class AdminDashboard(ctk.CTkFrame):
                            f"Mostrando actividad de: {usuario}\n\n(Función en desarrollo)")
     
     def _force_logout_user(self):
-        """Forzar cierre de sesión del usuario seleccionado"""
+        """Forzar cierre de sesión de uno o varios usuarios seleccionados"""
         selection = self.sessions_tree.selection()
         if not selection:
-            messagebox.showwarning("Advertencia", "Seleccione una sesión primero")
+            messagebox.showwarning("Advertencia", "Seleccione al menos una sesión")
             return
-        
-        item = self.sessions_tree.item(selection[0])
-        usuario = item['values'][0]
-        
+
+        usuarios = []
+        for sel in selection:
+            item = self.sessions_tree.item(sel)
+            if item['values']:
+                usuarios.append(item['values'][0])
+
+        if not usuarios:
+            messagebox.showwarning("Advertencia", "No se pudo obtener el/los usuario(s) seleccionado(s)")
+            return
+
         if messagebox.askyesno("Confirmar", 
-                              f"¿Cerrar sesión de {usuario}?"):
+                              f"¿Cerrar sesión de {usuarios}?"):
             try:
-                conn = get_connection()
-                cur = conn.cursor()
-                
-                cur.execute("""
-                    UPDATE sesion 
-                    SET Active = '0', 
-                        Log_Out = NOW()
-                    WHERE ID_user = %s 
-                    AND Active = '1'
-                """, (usuario,))
-                
-                conn.commit()
-                cur.close()
-                conn.close()
-                
-                messagebox.showinfo("Éxito", f"Sesión de {usuario} cerrada correctamente")
+                force_logout_user(usuarios)
+
+                if force_logout_user(usuarios) == True:
+                    messagebox.showinfo("Éxito", f"Sesión cerrada para: {usuarios}")
+                else:
+                    messagebox.showwarning("Advertencia", f"No se pudo cerrar sesión para: {usuarios}")    
                 self.refresh_dashboard()
-                
             except Exception as e:
                 print(f"[ERROR] _force_logout_user: {e}")
                 messagebox.showerror("Error", f"Error al cerrar sesión: {e}")

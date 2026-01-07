@@ -1,3 +1,4 @@
+
 """
 covers_panel.py
 Panel modal para mostrar la lista de covers programados.

@@ -142,7 +142,7 @@ class Blackboard:
         Returns:
             str: Geometría de ventana (e.g., "1320x800")
         """
-        return "1320x800"
+        return "1420x800"
     
     def _setup_header_content(self, parent):
         """

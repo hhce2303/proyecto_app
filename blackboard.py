@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from utils.ui_factory import UIFactory
-
+from tksheet import Sheet
 
 
 class Blackboard:
@@ -50,10 +50,34 @@ class Blackboard:
         self.header_frame = None
         self.tabs_frame = None
         self.content_area = None
-        
+        self.sheet = None
         # Build UI usando template method
         self._build()
     
+    def create_sheet(self):
+        """Crea y configura el tksheet"""
+        self.sheet_frame = self.ui_factory.frame(self.container, fg_color="#23272a")
+        self.sheet_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        self.sheet = Sheet(
+            self.sheet_frame,
+            headers=self.COLUMNS,
+            theme="dark blue",
+            height=500,
+            width=1000,
+            show_selected_cells_border=True,
+            show_row_index=True,
+            show_top_left=False,
+            empty_horizontal=0,
+            empty_vertical=0
+        )
+
+        self.sheet.enable_bindings('all')
+
+        self.sheet.pack(fill="both", expand=True)
+        self.sheet.change_theme("dark blue")
+        self._apply_column_widths()
+
     def _setup_ui_library(self):
         """Detecta y configura CustomTkinter o retorna None para tkinter"""
         try:
@@ -88,6 +112,7 @@ class Blackboard:
         self.header_frame = self._create_header()
         self.tabs_frame = self._create_tabs()
         self.content_area = self._create_content_area()
+        self.sheet = self.create_sheet()
         self._configure_close_handler()
     
     # ========== MÉTODOS GENERALES (misma implementación para todos) ==========

@@ -17,6 +17,7 @@ from views.modules.specials_module import SpecialsModule
 from views.modules.covers_module import CoversModule
 from views.dialogs.request_cover_dialog import RequestCoverDialog
 from views.dialogs.register_cover_dialog import RegisterCoverDialog
+from views.modules.operator_modules.lateral_panel_module import LateralPanelContent
 from controllers.daily_controller import DailyController
 from under_super import FilteredCombobox
 import tkinter as tk
@@ -95,7 +96,7 @@ class OperatorBlackboard(Blackboard):
         # Botón End Shift (derecha, primero para que aparezca más a la derecha)
         self.end_shift_btn = self.ui_factory.button(
             parent,
-            text="🏁 End Shift",
+            text="🏁 Finalizar Turno",
             command=self._end_shift,
             width=130,
             fg_color="#d32f2f",
@@ -106,11 +107,11 @@ class OperatorBlackboard(Blackboard):
         # Botón Start Shift (derecha)
         self.start_shift_btn = self.ui_factory.button(
             parent,
-            text="🚀 Start Shift",
+            text="🚀 Iniciar Turno",
             command=self._start_shift,
             width=130,
-            fg_color="#00c853",
-            hover_color="#00a043"
+            fg_color="#087c38",
+            hover_color="#096e33"
         )
         self.start_shift_btn.pack(side="right", padx=(10, 5), pady=10)
         
@@ -187,35 +188,7 @@ class OperatorBlackboard(Blackboard):
 
         # ========== Área lateral de contenido ========== 
         # Panel lateral (derecha)
-        self.lateral_panel = self.ui_factory.frame(content_container, fg_color="#2c2f33", width=60)
-        self.lateral_panel.pack(side="right", fill="y", padx=(10, 0), pady=5)
 
-        # --- Expansión/colapso con eventos de mouse ---
-        self.lateral_panel.configure(width=60)
-        self._lateral_expanded_width = 220
-        self._lateral_collapsed_width = 60
-
-        def _expand_panel(event):
-            self.lateral_panel.configure(width=self._lateral_expanded_width)
-
-        def _collapse_panel(event):
-            # Solo colapsar si el mouse realmente salió del panel y no está sobre un hijo
-            widget = event.widget
-            # Verifica si el mouse está fuera del panel y todos sus hijos
-            x, y = self.lateral_panel.winfo_pointerxy()
-            abs_x = self.lateral_panel.winfo_rootx()
-            abs_y = self.lateral_panel.winfo_rooty()
-            if not (abs_x <= x <= abs_x + self.lateral_panel.winfo_width() and abs_y <= y <= abs_y + self.lateral_panel.winfo_height()):
-                self.lateral_panel.configure(width=self._lateral_collapsed_width)
-
-        self.lateral_panel.bind("<Enter>", _expand_panel)
-        self.lateral_panel.bind("<Leave>", _collapse_panel)
-
-        # Si agregas widgets hijos, opcionalmente puedes propagar los eventos:
-        def _child_enter(event):
-            _expand_panel(event)
-        def _child_leave(event):
-            _collapse_panel(event)
         # Ejemplo: si agregas widgets hijos, puedes hacer:
         # for child in self.lateral_panel.winfo_children():
         #     child.bind("<Enter>", _child_enter)
@@ -227,7 +200,106 @@ class OperatorBlackboard(Blackboard):
         
         # ========== TAB DAILY (EXCLUSIVO DE OPERADORES) ==========
         daily_frame = self.ui_factory.frame(main_content, fg_color="#1e1e1e")
-        
+
+        self.lateral_panel = self.ui_factory.frame(content_container, fg_color="#2c2f33", width=60)
+        self.lateral_panel.pack(side="right", fill="y", padx=(10, 0), pady=5)
+        self.lateral_panel.pack_propagate(False)  # Mantener ancho fijo
+
+
+        # --- Expansión/colapso con eventos de mouse ---
+        self.lateral_panel.configure(width=60)
+        self._lateral_expanded_width = 220
+        self._lateral_collapsed_width = 60
+        self._lateral_collapse_job = None  # Job ID para el collapse con delay
+        self._lateral_is_expanded = False  # Estado actual
+
+        def _expand_panel(event):
+            # Cancelar cualquier collapse pendiente
+            if self._lateral_collapse_job:
+                try:
+                    (self.root or self.window).after_cancel(self._lateral_collapse_job)
+                    self._lateral_collapse_job = None
+                except:
+                    pass
+            
+            # Solo expandir si no está ya expandido
+            if not self._lateral_is_expanded:
+                self._lateral_is_expanded = True
+                self.lateral_panel.configure(width=self._lateral_expanded_width)
+
+        def _collapse_panel(event):
+            # Cancelar cualquier collapse pendiente anterior
+            if self._lateral_collapse_job:
+                try:
+                    (self.root or self.window).after_cancel(self._lateral_collapse_job)
+                except:
+                    pass
+            
+            # Programar collapse con delay de 200ms
+            def do_collapse():
+                try:
+                    # Verificar si el mouse está fuera del panel
+                    x, y = self.lateral_panel.winfo_pointerxy()
+                    abs_x = self.lateral_panel.winfo_rootx()
+                    abs_y = self.lateral_panel.winfo_rooty()
+                    
+                    # Solo colapsar si el mouse está realmente fuera
+                    if not (abs_x <= x <= abs_x + self.lateral_panel.winfo_width() and 
+                            abs_y <= y <= abs_y + self.lateral_panel.winfo_height()):
+                        self._lateral_is_expanded = False
+                        self.lateral_panel.configure(width=self._lateral_collapsed_width)
+                    
+                    self._lateral_collapse_job = None
+                except:
+                    pass
+            
+            # Programar el collapse con delay
+            self._lateral_collapse_job = (self.root or self.window).after(200, do_collapse)
+
+        self.lateral_panel.bind("<Enter>", _expand_panel)
+        self.lateral_panel.bind("<Leave>", _collapse_panel)
+
+        # Función para vincular eventos recursivamente
+        def bind_hover_to_children(widget):
+            """Vincula eventos de hover a un widget y todos sus hijos recursivamente"""
+            try:
+                widget.bind("<Enter>", _expand_panel)
+                widget.bind("<Leave>", _collapse_panel)
+                # Recursión en todos los hijos
+                for child in widget.winfo_children():
+                    bind_hover_to_children(child)
+            except:
+                pass
+
+        # Panel para mostrar varios frames con información
+        try:
+            self.lateral_panel_content = LateralPanelContent(
+                parent=self.lateral_panel,
+                username=self.username,
+                ui_factory=self.ui_factory,
+                UI=self.UI
+            )
+            self.lateral_panel_content.blackboard = self
+            
+            # Guardar referencia a la función para que pueda ser llamada después
+            self._bind_lateral_hover = lambda: [bind_hover_to_children(child) for child in self.lateral_panel.winfo_children()]
+            
+            # Aplicar a todos los hijos del lateral_panel inicialmente
+            self._bind_lateral_hover()
+
+            
+
+            print(f"[DEBUG] LateralPanelContent inicializado para OPERADOR: {self.username}")
+            
+        except Exception as e:
+            print(f"[ERROR] No se pudo inicializar LateralPanelContent: {e}")
+
+        self.breaks_lateral_panel = self.ui_factory.frame(self.lateral_panel, fg_color="#2c2f33")
+        self.breaks_lateral_panel.pack(fill="y", pady=(0, 10), expand=True)
+
+        self.breaks_lateral_label = self.ui_factory.label(self.breaks_lateral_panel, fg_color="transparent", text="⏸️ Breaks Activos", font=("Segoe UI", 12, "bold"))
+        self.breaks_lateral_label.pack(pady=5)
+                
         # Label de advertencia (solo visible cuando NO hay turno activo)
         warning_frame = self.ui_factory.frame(daily_frame, fg_color="#b71c1c", border_width=2, border_color="#ff5252")
         warning_frame.pack(fill="x", padx=10, pady=10)
@@ -239,13 +311,6 @@ class OperatorBlackboard(Blackboard):
             font=("Segoe UI", 16, "bold")
         )
         self.shift_warning_label.pack(pady=15)
-
-        lateral_news_panel = self.news_controller.render_news_container(daily_frame)
-
-        # ========= NEWS PANEL LATERAL ==========
-
-        news_panel_container = self.ui_factory.frame(lateral_news_panel, fg_color="#2c2f33", width=200)
-        news_panel_container.pack(side="right", fill="y", padx=(10, 0), pady=5)
 
 
         # ========= DailyModule (tabla de eventos) ==========
@@ -280,7 +345,7 @@ class OperatorBlackboard(Blackboard):
         self.tab_frames["Daily"] = daily_frame
         
         # ========== TAB SPECIALS (OPERADOR - EVENTOS ESPECIALES) ==========
-        specials_frame = self.ui_factory.frame(parent, fg_color="#1e1e1e")
+        specials_frame = self.ui_factory.frame(main_content, fg_color="#1e1e1e")
         
         # SpecialsModule para mostrar eventos de grupos especiales
         try:
@@ -331,7 +396,7 @@ class OperatorBlackboard(Blackboard):
         self.tab_frames["Specials"] = specials_frame
         
         # ========== TAB COVERS (MVC COMPLETO) ==========
-        covers_frame = self.ui_factory.frame(parent, fg_color="#23272a")
+        covers_frame = self.ui_factory.frame(main_content, fg_color="#23272a")
         
         # CoversModule
         try:
@@ -358,7 +423,7 @@ class OperatorBlackboard(Blackboard):
         self.tab_frames["Covers"] = covers_frame
         
         # ========== TAB LISTA DE COVERS PROGRAMADOS ========== 
-        covers_list_frame = self.ui_factory.frame(parent, fg_color="#23272a")
+        covers_list_frame = self.ui_factory.frame(main_content, fg_color="#23272a")
         try:
             from views.modules.covers_list_module import CoversListModule
             self.covers_list_module = CoversListModule(
@@ -382,24 +447,6 @@ class OperatorBlackboard(Blackboard):
         self.tab_frames["Lista Covers"] = covers_list_frame
         
         self._show_current_tab()
-
-    def _setup_lateral_panel_content(self, parent):
-            # ... tu código de widgets ...
-            parent.config(width=40)  # Ancho inicial
-
-            def expand_panel(event):
-                parent.config(width=220)
-
-            def collapse_panel(event):
-                parent.config(width=40)
-
-            parent.bind("<Enter>", expand_panel)
-            parent.bind("<Leave>", collapse_panel)
-    
-    def agregar_mi_widget(self):
-        # Puedes agregar cualquier widget a self.content_area
-        mi_label = tk.Label(self.tab_frames["Daily"], text="¡Hola desde el tab Daily!", bg="#222", fg="white")
-        mi_label.pack(pady=20)
 
     def _switch_tab(self, tab_name):
         """Cambia entre tabs y recarga datos"""
@@ -1527,11 +1574,11 @@ class OperatorBlackboard(Blackboard):
                     from datetime import datetime, timedelta
                     elapsed = datetime.now() - start_time
                     hours_elapsed = elapsed.total_seconds() / 3600
-                    hours_remaining = 7.0 - hours_elapsed
+                    hours_remaining = 9.0 - hours_elapsed
                     
                     messagebox.showwarning(
                         "Turno Incompleto",
-                        f"Debes completar al menos 7 horas de turno.\n\n"
+                        f"Debes completar al menos 9 horas de turno.\n\n"
                         f"Tiempo transcurrido: {hours_elapsed:.1f} horas\n"
                         f"Tiempo restante: {hours_remaining:.1f} horas",
                         parent=self.window
@@ -1552,7 +1599,7 @@ class OperatorBlackboard(Blackboard):
             ):
                 backend_super.on_end_shift(self.username)
                 print(f"[DEBUG] END OF SHIFT registrado exitosamente para {self.username}")
-                
+                login.do_logout(session_id=self.session_id, root=self.window, station=self.station)
                 # Actualizar controles
                 self._update_shift_controls()
                 
@@ -1721,6 +1768,8 @@ class OperatorBlackboard(Blackboard):
                 if self.session_id and self.station:
                     print(f"[DEBUG] Cerrando sesión: {self.username} (ID: {self.session_id})")
                     login.do_logout(self.session_id, self.station, self.window)
+                    #self._send_all_specials()
+
                 
                 # Destruir ventana
                 self.window.destroy()

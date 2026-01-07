@@ -11,10 +11,12 @@ import traceback
 # Backend core
 import backend_super
 import login
+from controllers.healthcheck_controller import HealthcheckController
 import under_super
 from backend_super import _focus_singleton
 
 # Views (todas las vistas MVC)
+from views.modules.healthcheck_module import HealthcheckModule
 from views.specials_view import render_specials_container
 from views.audit_view import render_audit_container
 from views.breaks_view import render_breaks_container
@@ -73,7 +75,8 @@ class SupervisorWindow:
         self._setup_mode_selector()
         self._init_all_containers()
         self._configure_close_handler()
-        
+
+
     def _setup_ui_library(self):
         """Detecta y configura CustomTkinter o retorna None para tkinter"""
         try:
@@ -105,7 +108,7 @@ class SupervisorWindow:
         title_prefix = "👔" if self.role == "Lead Supervisor" else "📊"
         win.title(f"{title_prefix} {self.role} - {self.username}")
         
-        win.geometry("1320x800")
+        win.geometry("1340x800")
         win.resizable(True, True)
         return win
     
@@ -125,9 +128,57 @@ class SupervisorWindow:
         self.refresh_btn.pack(side="left", padx=(20, 5), pady=15)
         
         # Botón Eliminar
+        def eliminar_special():
+            # Obtener el controller y sheet de specials
+            specials_container = self.containers.get('specials')
+            if not specials_container:
+                messagebox.showerror("Error", "No se encontró el container de specials.")
+                return
+            controller = specials_container.get('controller')
+            sheet = specials_container.get('sheet')
+            if not controller or not sheet:
+                messagebox.showerror("Error", "No se encontró la vista de specials.")
+                return
+            selected = sheet.get_selected_rows() if hasattr(sheet, 'get_selected_rows') else []
+            if not selected:
+                messagebox.showwarning("Eliminar Special", "Selecciona un registro para eliminar.")
+                return
+            # Solo se permite eliminar uno a la vez
+            idx = selected[0]
+            # Obtener datos del registro
+            try:
+                row_ids = getattr(sheet, 'row_ids', None)
+                if row_ids and idx < len(row_ids):
+                    special_id = row_ids[idx]
+                else:
+                    # Fallback: intentar obtener el ID de la celda
+                    special_id = sheet.get_cell_data(idx, 0)
+                # Obtener el registro completo
+                registro = controller.get_special_by_id(special_id) if hasattr(controller, 'get_special_by_id') else None
+                if not registro:
+                    messagebox.showerror("Error", "No se pudo obtener el registro seleccionado.")
+                    return
+                # Verificar si tiene ID_Evento
+                id_evento = registro.get('ID_Eventos') if isinstance(registro, dict) else None
+                if id_evento:
+                    messagebox.showinfo("No permitido", "No se puede eliminar un special que tiene ID_Evento.")
+                    return
+                # Llamar a safe_delete
+                backend_super.safe_delete(
+                    table_name="specials",
+                    pk_column="ID_special",
+                    pk_value=special_id,
+                    deleted_by=self.username
+                )
+                messagebox.showinfo("Eliminado", "Special eliminado correctamente.")
+                # Refrescar vista
+                self._refresh_current_mode()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo eliminar el registro:\n{e}")
+                traceback.print_exc()
         self.delete_btn = self.ui_factory.button(
             header, "🗑️ Eliminar",
-            lambda: backend_super.safe_delete(),
+            eliminar_special,
             bg="#d32f2f", hover="#b71c1c",
             width=120, height=40,
             font=("Segoe UI", 12, "bold")
@@ -157,7 +208,8 @@ class SupervisorWindow:
             ('cover_time', '⏱️ Cover Time', 140),
             ('breaks', '☕ Breaks', 130),
             ('rol_cover', '🎭 Rol de Cover', 150),
-            ('news', '📰 News', 130)
+            ('news', '📰 News', 130),
+            ('healthcheck', '✅ Healthcheck', 150)
         ]
         
         # Modos adicionales para Lead Supervisor
@@ -227,10 +279,9 @@ class SupervisorWindow:
             SheetClass=self.SheetClass
         )
         self.containers['specials'] = specials_widgets
-        
         # Agregar botón "Otros Specials" al marks_frame
         self._add_otros_specials_button(specials_widgets['marks_frame'])
-        
+
         # Audit
         audit_widgets = render_audit_container(
             parent=self.window,
@@ -238,7 +289,7 @@ class SupervisorWindow:
             SheetClass=self.SheetClass
         )
         self.containers['audit'] = audit_widgets
-        
+
         # Breaks
         breaks_widgets = render_breaks_container(
             parent=self.window,
@@ -248,7 +299,7 @@ class SupervisorWindow:
             under_super=under_super
         )
         self.containers['breaks'] = breaks_widgets
-        
+
         # Cover Time
         cover_widgets = render_cover_time_container(
             parent=self.window,
@@ -256,14 +307,14 @@ class SupervisorWindow:
             SheetClass=self.SheetClass
         )
         self.containers['cover_time'] = cover_widgets
-        
+
         # Rol de Cover
         rol_widgets = render_rol_cover_container(
             parent=self.window,
             UI=self.UI
         )
         self.containers['rol_cover'] = rol_widgets
-        
+
         # News
         news_widgets = render_news_container_mvc(
             parent=self.window,
@@ -272,6 +323,9 @@ class SupervisorWindow:
             SheetClass=self.SheetClass
         )
         self.containers['news'] = news_widgets
+
+        # Healthcheck: solo placeholder, no instancia el módulo aún
+        self.containers['healthcheck'] = None
     
     def _init_lead_supervisor_containers(self):
         """Inicializa containers adicionales exclusivos para Lead Supervisors"""
@@ -310,34 +364,46 @@ class SupervisorWindow:
     def switch_mode(self, new_mode):
         """Cambia entre modos ocultando/mostrando containers"""
         self.current_mode = new_mode
-        
+
         # Ocultar todos los containers
         for container_data in self.containers.values():
-            container_data['container'].pack_forget()
-        
+            if container_data and 'container' in container_data:
+                container_data['container'].pack_forget()
+
         # Resetear colores de botones (inactivos)
         inactive_color = "#3b4754"
         inactive_hover = "#4a5560"
-        
         for btn in self.mode_buttons.values():
             self.ui_factory.set_widget_color(btn, bg=inactive_color, hover=inactive_hover)
-        
+
         # Mostrar container activo y resaltar botón
         if new_mode in self.containers:
-            self.containers[new_mode]['container'].pack(fill="both", expand=True, padx=10, pady=10)
-            
-            # Botón activo
-            active_color = "#4a90e2"
-            active_hover = "#357ABD"
-            self.ui_factory.set_widget_color(
-                self.mode_buttons[new_mode], 
-                bg=active_color, 
-                hover=active_hover
-            )
-            
-            # Ejecutar refresh si existe
-            if 'refresh' in self.containers[new_mode]:
-                self.containers[new_mode]['refresh']()
+            # Si el módulo healthcheck no está instanciado, créalo aquí
+            if new_mode == 'healthcheck' and self.containers['healthcheck'] is None:
+                from views.modules.healthcheck_module import HealthcheckModule
+                healthcheck_widgets = HealthcheckModule(
+                    parent=self.window,
+                    username=self.username,
+                    UI=self.UI
+                ).__dict__
+                self.containers['healthcheck'] = healthcheck_widgets
+
+            container_data = self.containers[new_mode]
+            if container_data and 'container' in container_data:
+                container_data['container'].pack(fill="both", expand=True, padx=10, pady=10)
+
+                # Botón activo
+                active_color = "#4a90e2"
+                active_hover = "#357ABD"
+                self.ui_factory.set_widget_color(
+                    self.mode_buttons[new_mode], 
+                    bg=active_color, 
+                    hover=active_hover
+                )
+
+                # Ejecutar refresh si existe
+                if 'refresh' in container_data:
+                    container_data['refresh']()
     
     def _refresh_current_mode(self):
         """Refresca el modo/container actual"""
