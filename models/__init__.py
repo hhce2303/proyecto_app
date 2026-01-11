@@ -29,6 +29,12 @@ from .database import get_connection
 # ==================== EVENT ====================
 from .event_model import add_event
 
+# ==================== USER ====================
+from .user_model import (
+    load_users,
+    get_user_status_bd,
+    users_list
+)
 # ==================== SITE & ACTIVITIES ====================
 from .site_model import (
     get_sites,

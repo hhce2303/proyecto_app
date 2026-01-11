@@ -5,12 +5,12 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def cargar_healthcheck_por_requesters_multiples(request_id):
+def cargar_healthcheck_por_requesters_multiples():
     """
     Hace múltiples requests (uno por requester) y combina los resultados.
     Fallback cuando la API no soporta criteria múltiples.
     """
-    url = f"https://sigdomain01:8080/api/v3/requests{request_id}"
+    url = f"https://sigdomain01:8080/api/v3/requests"
     headers = {
         "authtoken": "FE76F794-9884-4C06-85CC-A641E2B20726",
         "Accept": "application/json",
@@ -26,4 +26,4 @@ def cargar_healthcheck_por_requesters_multiples(request_id):
 
 
 if __name__ == "__main__":
-    cargar_healthcheck_por_requesters_multiples("/145159")
+    cargar_healthcheck_por_requesters_multiples()

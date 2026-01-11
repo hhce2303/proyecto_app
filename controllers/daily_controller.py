@@ -2,7 +2,12 @@
 
 from datetime import datetime
 
+import backend_super
 from models import daily_model
+from models.user_model import load_users
+from views.dialogs.register_cover_dialog import RegisterCoverDialog
+import login
+from tkinter import messagebox
 
 
 class DailyController:  
@@ -165,5 +170,140 @@ class DailyController:
                 descripcion=descripcion,
                 event_id=event_id
             )
+            print (f"[INFO] Evento ID {sitio_str}, actividad '{actividad}' guardado automáticamente.")
         except Exception as e:
             print(f"[ERROR] auto_save_pending_events: {e}")
+
+
+    def request_cover(self, username):
+        """
+        Solicita un cover directamente con motivo predeterminado.
+        Usa cover_model.request_covers() (model) para inserción en BD.
+        """
+
+        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
+        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
+        if not backend_super.has_active_shift(self.username):
+            messagebox.showwarning(
+                "Sin Turno Activo",
+                "⚠️ Debes iniciar tu turno antes de solicitar covers.\n\n"
+                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
+                parent=self.window
+            )
+            return
+        
+        try:
+
+            from datetime import datetime
+            time_request = datetime.now()
+            motivo = "Necesito un cover"  # Motivo predeterminado
+            approved = 1  # Siempre aprobado
+            
+            # Llamar al modelo para insertar en BD
+            from models import cover_model
+            
+            cover_id = cover_model.request_covers(
+                username=self.username,
+                time_request=time_request,
+                reason=motivo,
+                aprvoved=approved  # Nota: typo en función original
+            )
+            
+            if cover_id:
+                print(f"[DEBUG] Cover solicitado exitosamente. ID: {cover_id}")
+                # Refrescar módulo de covers si está activo
+                if self.current_tab == "Covers" and hasattr(self, 'covers_module'):
+                    self.covers_module.load_data()
+            else:
+                print("[DEBUG] No se generó ID de cover (posible validación fallida)")
+        
+        except Exception as e:
+            from tkinter import messagebox
+            messagebox.showerror(
+                "Error",
+                f"No se pudo solicitar el cover:\n{e}",
+                parent=self.window
+            )
+            print(f"[ERROR] _request_cover: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def register_covers(self, username, station,  window=None, ui_factory=None, UI=None):
+        """
+        Registra un cover realizado y cambia de sesión al operador que cubre.
+        Usa RegisterCoverDialog (view), cover_model.insertar_cover() (model),
+        y login.logout_silent + login.auto_login para cambio de sesión.
+        """
+        from tkinter import messagebox
+        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
+        if not backend_super.has_active_shift(self.username):
+            messagebox.showwarning(
+                "Sin Turno Activo",
+                "⚠️ Debes iniciar tu turno antes de registrar covers.\n\n"
+                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
+                parent=window
+            )
+            return
+        try:
+            # Obtener lista de operadores disponibles para cubrir
+            operadores = load_users()
+            if not operadores:
+                messagebox.showwarning(
+                    "Sin operadores",
+                    "No hay operadores disponibles en el sistema.",
+                    parent=window
+                )
+                return
+            # Mostrar diálogo para capturar datos
+            dialog = RegisterCoverDialog(
+                parent=window,
+                ui_factory=ui_factory,
+                UI=UI
+            )
+            result = dialog.show(operadores)
+            if not result:
+                # Usuario canceló
+                print("[DEBUG] Registro de cover cancelado por usuario")
+                return
+            # Obtener datos del diálogo
+            motivo = result['motivo']
+            covered_by = result['covered_by']
+            print(f"[DEBUG] Registrando cover: {self.username} cubierto por {covered_by}, motivo: {motivo}")
+            # Llamar al modelo para insertar cover
+            from models import cover_model
+            cover_model.insertar_cover(
+                username=self.username,
+                Covered_by=covered_by,
+                Motivo=motivo,
+                session_id=self.session_id if hasattr(self, 'session_id') else None,
+                station=self.station if hasattr(self, 'station') else None
+            )
+            # Cerrar ventana actual antes de abrir nueva sesión
+            if window:
+                window.destroy()
+            # Auto-login del operador que cubre
+            login.auto_login(
+                username=covered_by,
+                station=station,
+                
+                password="1234",
+                parent=None,
+                silent=True
+            )
+            print(f"[DEBUG] Sesión cambiada exitosamente a {covered_by}")
+        except Exception as e:
+            messagebox.showerror(
+                "Error",
+                f"No se pudo registrar el cover:\n{e}",
+                parent=window
+            )
+            print(f"[ERROR] _register_cover: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def on_cell_edit(self, event):
+        """Handler cuando se edita una celda (recibe la tupla evento)"""
+        try:
+            self.auto_save_pending_event(event)
+        except Exception as e:
+            print(f"[DEBUG] on_cell_edit error: {e}")

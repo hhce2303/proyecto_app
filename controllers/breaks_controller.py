@@ -1,5 +1,5 @@
 from datetime import date
-from models.breaks_model import add_break_to_db, load_covers_from_db, delete_break_from_db, get_user_id_by_name
+from models.breaks_model import Load_user_breaks_from_db, Load_user_covering_breaks, add_break_to_db, load_covers_from_db, delete_break_from_db, get_user_id_by_name
 from models.user_model import load_users
 
 
@@ -176,3 +176,31 @@ class BreaksController:
             callback()
         
         return success
+    
+    @staticmethod
+    def get_operator_breaks(username):
+        """Obtiene los breaks asignados a un operador específico
+        
+        Args:
+            username (str): Nombre del usuario
+            
+        Returns:
+            list: Lista de tuplas con breaks asignados
+        """
+        break_data = Load_user_breaks_from_db(username)
+        print(f"[DEBUG] Breaks para {username}: {break_data}")
+        return break_data if break_data else []
+    
+    @staticmethod
+    def get_operator_covering_breaks(username):
+        """Obtiene los breaks donde el operador es el que cubre
+        
+        Args:
+            username (str): Nombre del usuario
+            
+        Returns:
+            list: Lista de tuplas con breaks donde el usuario cubre
+        """
+        break_data = Load_user_covering_breaks(username)
+        print(f"[DEBUG] Breaks cubiertos por {username}: {break_data}")
+        return break_data if break_data else []

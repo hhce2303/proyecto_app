@@ -117,3 +117,103 @@ def load_covers_from_db():
     except Exception as e:
         print(f"[ERROR] load_covers_from_db: {e}")
         return [] 
+    
+def Load_user_breaks_from_db(username):
+    """Carga breaks programados para un usuario específico
+    
+    Args:
+        username (str): Nombre del usuario
+        
+    Returns:
+        list: Lista de tuplas con (ID_cover, Nombre_covered, Nombre_covering, Fecha_hora, Estado, Aprobacion)
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        query = """
+            SELECT 
+                gbp.ID_cover,
+                u_covered.Nombre_Usuario as covered_name,
+                u_covering.Nombre_Usuario as covering_name,
+                gbp.Fecha_hora_cover,
+                CASE 
+                    WHEN gbp.is_Active = 1 THEN 'Activo'
+                    WHEN gbp.is_Active = 0 THEN 'Completado'
+                    ELSE 'Cancelado'
+                END as estado,
+                CASE
+                    WHEN gbp.Supervisor IS NOT NULL THEN CONCAT('✓ ', u_supervisor.Nombre_Usuario)
+                    ELSE 'Pendiente'
+                END as aprobacion
+            FROM gestion_breaks_programados gbp
+            INNER JOIN user u_covered ON gbp.User_covered = u_covered.ID_Usuario
+            INNER JOIN user u_covering ON gbp.User_covering = u_covering.ID_Usuario
+            LEFT JOIN user u_supervisor ON gbp.Supervisor = u_supervisor.ID_Usuario
+            WHERE u_covered.Nombre_Usuario = %s 
+            AND gbp.is_Active = 1
+            ORDER BY 
+                CASE 
+                    WHEN gbp.Fecha_hora_cover >= NOW() THEN 0
+                    ELSE 1
+                END,
+                ABS(TIMESTAMPDIFF(MINUTE, gbp.Fecha_hora_cover, NOW())) ASC
+            LIMIT 1
+        """
+        cur.execute(query, (username,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"[ERROR] Load_user_breaks_from_db: {e}")
+        return []
+    
+def Load_user_covering_breaks(username):
+    """Carga breaks donde el usuario es el que cubre
+    
+    Args:
+        username (str): Nombre del usuario
+        
+    Returns:
+        list: Lista de tuplas con (ID_cover, Nombre_covered, Nombre_covering, Fecha_hora, Estado, Aprobacion)
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        query = """
+            SELECT 
+                gbp.ID_cover,
+                u_covered.Nombre_Usuario as covered_name,
+                u_covering.Nombre_Usuario as covering_name,
+                gbp.Fecha_hora_cover,
+                CASE 
+                    WHEN gbp.is_Active = 1 THEN 'Activo'
+                    WHEN gbp.is_Active = 0 THEN 'Completado'
+                    ELSE 'Cancelado'
+                END as estado,
+                CASE
+                    WHEN gbp.Supervisor IS NOT NULL THEN CONCAT('✓ ', u_supervisor.Nombre_Usuario)
+                    ELSE 'Pendiente'
+                END as aprobacion
+            FROM gestion_breaks_programados gbp
+            INNER JOIN user u_covered ON gbp.User_covered = u_covered.ID_Usuario
+            INNER JOIN user u_covering ON gbp.User_covering = u_covering.ID_Usuario
+            LEFT JOIN user u_supervisor ON gbp.Supervisor = u_supervisor.ID_Usuario
+            WHERE u_covering.Nombre_Usuario = %s 
+            AND gbp.is_Active = 1
+            ORDER BY 
+                CASE 
+                    WHEN gbp.Fecha_hora_cover >= NOW() THEN 0
+                    ELSE 1
+                END,
+                ABS(TIMESTAMPDIFF(MINUTE, gbp.Fecha_hora_cover, NOW())) ASC
+            LIMIT 10
+        """
+        cur.execute(query, (username,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"[ERROR] Load_user_covering_breaks: {e}")
+        return []

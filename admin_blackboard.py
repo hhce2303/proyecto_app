@@ -95,8 +95,8 @@ class AdminBlackboard(Blackboard):
             self._update_tab_buttons()
             
             # Recargar datos del módulo al cambiar de tab
-            #if tab_name == "Dashboard" and hasattr(self, 'dashboard_module'):
-                #self.dashboard_module.load_dashboard()
+            if tab_name == "Dashboard" and hasattr(self, 'dashboard_module'):
+                self.dashboard_module.refresh_dashboard()
 
 
     def _show_current_tab(self):

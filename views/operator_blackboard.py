@@ -10,27 +10,15 @@ IMPORTANTE:
 - COVERS = OPERADOR (solicitar/visualizar covers) - ✅ IMPLEMENTADO
 """
 from controllers.news_controller import NewsController
-from models.user_model import load_users
 from views.blackboard import Blackboard
 from views.modules.daily_module import DailyModule
 from views.modules.specials_module import SpecialsModule
 from views.modules.covers_module import CoversModule
-from views.dialogs.request_cover_dialog import RequestCoverDialog
-from views.dialogs.register_cover_dialog import RegisterCoverDialog
-from views.modules.operator_modules.lateral_panel_module import LateralPanelContent
+from views.modules.operator_modules.lateral_panel_content import LateralPanelContent
 from controllers.daily_controller import DailyController
-from under_super import FilteredCombobox
-import tkinter as tk
-from datetime import datetime
+from tkinter import messagebox
 import login
 import backend_super
-import customtkinter as ctk
-try:
-    import tkcalendar
-except ImportError:
-    tkcalendar = None
-
-from covers_panel import show_covers_programados_panel
 from models.user_model import get_user_status_bd
 
 class OperatorBlackboard(Blackboard):
@@ -59,6 +47,7 @@ class OperatorBlackboard(Blackboard):
         self.send_selected_btn = None
         self.send_all_btn = None
         self.refresh_job = None
+        self.night_alert_job = None  # Job para alertas nocturnas
         
         super().__init__(username, role, session_id, station, root)
     
@@ -72,6 +61,9 @@ class OperatorBlackboard(Blackboard):
         
         # Iniciar auto-refresh
         self._start_auto_refresh()
+        
+        # Iniciar sistema de alertas nocturnas
+        self._start_night_alerts()
     
     def _setup_tabs_content(self, parent):
         """Tabs de Operador: Daily, Specials, Covers + Botón Solicitar Cover"""
@@ -166,33 +158,12 @@ class OperatorBlackboard(Blackboard):
         (self.root or self.window).after(500, check_and_update_covers_button)
         
         self._update_tab_buttons()
-    
-    def _setup_lateral_panel_content(self, parent):
-        """Configura el contenido del panel lateral (derecha)"""
-        # Botón para mostrar panel de covers programados
-        self.show_covers_btn = self.ui_factory.button(
-            parent,
-            text="📅 News",
-            command=lambda:None,
-            width=50,
-            fg_color="#4D6068",
-            hover_color="#ffa726"
-        )
-        self.show_covers_btn.pack(pady=10)
 
     def _setup_content(self, parent):
         """Crea el layout horizontal: panel lateral + área principal de contenido"""
         # Frame contenedor horizontal
         content_container = self.ui_factory.frame(parent, fg_color="transparent")
         content_container.pack(fill="both", expand=True)
-
-        # ========== Área lateral de contenido ========== 
-        # Panel lateral (derecha)
-
-        # Ejemplo: si agregas widgets hijos, puedes hacer:
-        # for child in self.lateral_panel.winfo_children():
-        #     child.bind("<Enter>", _child_enter)
-        #     child.bind("<Leave>", _child_leave)
 
         # Área principal de contenido (tabs)
         main_content = self.ui_factory.frame(content_container, fg_color="#1e1e1e")
@@ -287,19 +258,12 @@ class OperatorBlackboard(Blackboard):
             # Aplicar a todos los hijos del lateral_panel inicialmente
             self._bind_lateral_hover()
 
-            
-
             print(f"[DEBUG] LateralPanelContent inicializado para OPERADOR: {self.username}")
             
         except Exception as e:
             print(f"[ERROR] No se pudo inicializar LateralPanelContent: {e}")
 
-        self.breaks_lateral_panel = self.ui_factory.frame(self.lateral_panel, fg_color="#2c2f33")
-        self.breaks_lateral_panel.pack(fill="y", pady=(0, 10), expand=True)
 
-        self.breaks_lateral_label = self.ui_factory.label(self.breaks_lateral_panel, fg_color="transparent", text="⏸️ Breaks Activos", font=("Segoe UI", 12, "bold"))
-        self.breaks_lateral_label.pack(pady=5)
-                
         # Label de advertencia (solo visible cuando NO hay turno activo)
         warning_frame = self.ui_factory.frame(daily_frame, fg_color="#b71c1c", border_width=2, border_color="#ff5252")
         warning_frame.pack(fill="x", padx=10, pady=10)
@@ -312,6 +276,7 @@ class OperatorBlackboard(Blackboard):
         )
         self.shift_warning_label.pack(pady=15)
 
+        
 
         # ========= DailyModule (tabla de eventos) ==========
 
@@ -335,12 +300,6 @@ class OperatorBlackboard(Blackboard):
                 font=("Segoe UI", 12),
                 fg="#ff4444"
             ).pack(pady=20)
-        
-        # Formulario ABAJO del tksheet
-        form_frame = self.ui_factory.frame(daily_frame, fg_color="#2b2b2b")
-        form_frame.pack(fill="x", padx=8, pady=(0, 8))
-        
-        self._create_event_form(form_frame)
         
         self.tab_frames["Daily"] = daily_frame
         
@@ -368,30 +327,6 @@ class OperatorBlackboard(Blackboard):
                 font=("Segoe UI", 12),
                 fg="#ff4444"
             ).pack(pady=20)
-        
-        # Toolbar para acciones de Specials
-        specials_toolbar = self.ui_factory.frame(specials_frame, fg_color="#2b2b2b")
-        specials_toolbar.pack(fill="x", padx=10, pady=(0, 10))
-        
-        self.send_selected_btn = self.ui_factory.button(
-            specials_toolbar,
-            text="📤 Enviar Seleccionados",
-            command=self._send_selected_specials,
-            width=180,
-            fg_color="#4CAF50",
-            hover_color="#45a049"
-        )
-        self.send_selected_btn.pack(side="left", padx=5, pady=5)
-        
-        self.send_all_btn = self.ui_factory.button(
-            specials_toolbar,
-            text="📤 Enviar Todos",
-            command=self._send_all_specials,
-            width=150,
-            fg_color="#2196F3",
-            hover_color="#1976D2"
-        )
-        self.send_all_btn.pack(side="left", padx=5, pady=5)
         
         self.tab_frames["Specials"] = specials_frame
         
@@ -464,6 +399,7 @@ class OperatorBlackboard(Blackboard):
                 self.covers_module.load_data()
             elif tab_name == "Lista Covers" and hasattr(self, 'covers_list_module'):
                 self.covers_list_module.load_data()
+
     def _show_current_tab(self):
         """Muestra el frame del tab actual"""
         for tab_name, frame in self.tab_frames.items():
@@ -481,1055 +417,32 @@ class OperatorBlackboard(Blackboard):
                 self.ui_factory.set_widget_color(btn, fg_color="#4D6068")
     
     def _request_cover(self):
-        """
-        Solicita un cover directamente con motivo predeterminado.
-        Usa cover_model.request_covers() (model) para inserción en BD.
-        """
-        from tkinter import messagebox
-        
-        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
-        if not backend_super.has_active_shift(self.username):
-            messagebox.showwarning(
-                "Sin Turno Activo",
-                "⚠️ Debes iniciar tu turno antes de solicitar covers.\n\n"
-                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
-                parent=self.window
-            )
-            return
-        
         try:
-            # Preparar datos para request_covers()
-            from datetime import datetime
-            time_request = datetime.now()
-            motivo = "Necesito un cover"  # Motivo predeterminado
-            approved = 1  # Siempre aprobado
-            
-            # Llamar al modelo para insertar en BD
-            from models import cover_model
-            
-            cover_id = cover_model.request_covers(
-                username=self.username,
-                time_request=time_request,
-                reason=motivo,
-                aprvoved=approved  # Nota: typo en función original
-            )
-            
-            if cover_id:
-                print(f"[DEBUG] Cover solicitado exitosamente. ID: {cover_id}")
-                # Refrescar módulo de covers si está activo
-                if self.current_tab == "Covers" and hasattr(self, 'covers_module'):
-                    self.covers_module.load_data()
-            else:
-                print("[DEBUG] No se generó ID de cover (posible validación fallida)")
-        
+            self.controller.request_cover(username=self.username)
+
         except Exception as e:
-            from tkinter import messagebox
             messagebox.showerror(
                 "Error",
                 f"No se pudo solicitar el cover:\n{e}",
-                parent=self.window
             )
             print(f"[ERROR] _request_cover: {e}")
             import traceback
             traceback.print_exc()
     
     def _register_cover(self):
-        """
-        Registra un cover realizado y cambia de sesión al operador que cubre.
-        Usa RegisterCoverDialog (view), cover_model.insertar_cover() (model),
-        y login.logout_silent + login.auto_login para cambio de sesión.
-        """
-        from tkinter import messagebox
+        self.controller.register_covers(
+            username=self.username,
+            window=self.window,
+            ui_factory=self.ui_factory,
+            station=self.station,
+            UI=self.UI if hasattr(self, 'UI') else None
+        )
         
-        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
-        if not backend_super.has_active_shift(self.username):
-            messagebox.showwarning(
-                "Sin Turno Activo",
-                "⚠️ Debes iniciar tu turno antes de registrar covers.\n\n"
-                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
-                parent=self.window
-            )
-            return
-        
-        try:
-            # Obtener lista de operadores disponibles para cubrir
-            operadores = load_users()
-            
-            if not operadores:
-                from tkinter import messagebox
-                messagebox.showwarning(
-                    "Sin operadores",
-                    "No hay operadores disponibles en el sistema.",
-                    parent=self.window
-                )
-                return
-            
-            # Mostrar diálogo para capturar datos
-            dialog = RegisterCoverDialog(
-                parent=self.window,
-                ui_factory=self.ui_factory,
-                UI=self.UI
-            )
-            
-            result = dialog.show(operadores)
-            
-            if not result:
-                # Usuario canceló
-                print("[DEBUG] Registro de cover cancelado por usuario")
-                return
-            
-            # Obtener datos del diálogo
-            motivo = result['motivo']
-            covered_by = result['covered_by']
-            
-            print(f"[DEBUG] Registrando cover: {self.username} cubierto por {covered_by}, motivo: {motivo}")
-            
-            # Llamar al modelo para insertar cover
-            # insertar_cover ya hace logout_silent al final
-            from models import cover_model
-            
-            cover_model.insertar_cover(
-                username=self.username,
-                Covered_by=covered_by,
-                Motivo=motivo,
-                session_id=self.session_id,
-                station=self.station
-            )
-            
-            # Cerrar ventana actual antes de abrir nueva sesión
-            self.window.destroy()
-            
-            # Auto-login del operador que cubre
-            # Esto abre automáticamente el blackboard del nuevo usuario
-            login.auto_login(
-                username=covered_by,
-                station=self.station,
-                password="1234",
-                parent=None,
-                silent=True
-            )
-            
-            print(f"[DEBUG] Sesión cambiada exitosamente a {covered_by}")
-        
-        except Exception as e:
-            from tkinter import messagebox
-            messagebox.showerror(
-                "Error",
-                f"No se pudo registrar el cover:\n{e}",
-                parent=self.window
-            )
-            print(f"[ERROR] _register_cover: {e}")
-            import traceback
-            traceback.print_exc()
-    
     def _on_logout(self):
         """Handler de logout"""
         from tkinter import messagebox
         if messagebox.askyesno("Logout", "¿Cerrar sesión?", parent=self.window):
             self.window.destroy()
-    
-    def _on_close(self):
-        """Handler de cierre"""
-        from tkinter import messagebox
-        if messagebox.askokcancel("Cerrar", "¿Cerrar ventana?", parent=self.window):
-            self.window.destroy()
-    
-    
-    def _create_event_form(self, parent):
-        """Crea el formulario horizontal alineado con columnas del tksheet"""
-        # Contenedor interno para alineación
-        inner_frame = tk.Frame(parent, bg="#2b2b2b")
-        inner_frame.pack(fill="x", padx=(0, 10), pady=5)
-        
-        # Botón Agregar (lado izquierdo, como row index)
-        self.add_event_btn = self.ui_factory.button(
-            inner_frame,
-            text="➕",
-            command=self._add_event,
-            width=30,
-            fg_color="#4CAF50",
-            hover_color="#45a049"
-        )
-        self.add_event_btn.pack(side="left", padx=(2, 12))
-
-        # Campo Fecha/Hora - ancho 150px
-        datetime_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        datetime_container.pack(side="left", padx=(0, 10))
-        
-        tk.Label(
-            datetime_container,
-            text="Fecha/Hora:",
-            font=("Segoe UI", 9),
-            fg="#ffffff",
-            bg="#2b2b2b",
-            justify="center"
-        ).pack(side="top")
-        
-        # Frame para entry con botón integrado
-        entry_wrapper = tk.Frame(datetime_container, bg="#333333", highlightthickness=0)
-        entry_wrapper.pack(side="top")
-        
-        # Usar CTkEntry de customtkinter para borde y colores personalizados
-
-        self.datetime_entry = ctk.CTkEntry(
-            entry_wrapper,
-            width=120,  # Ajustar ancho visual
-            font=("Segoe UI", 10),
-            fg_color="#333333",
-            text_color="#ffffff",
-            border_width=3,
-            border_color="#4a90e2"
-        )
-        self.datetime_entry.pack(side="left", padx=(3, 0), pady=2)
-        
-        # Botón dentro del entry (lado derecho)
-        datetime_btn = self.ui_factory.button(
-            entry_wrapper,
-            text="📅",
-            command=lambda: self._show_datetime_picker(
-                callback=lambda dt: self._set_datetime_value(dt)
-            ),
-            width=25,
-            height=22,
-            fg_color="#4a90e2",
-            hover_color="#3a7bc2"
-        )
-        datetime_btn.pack(side="left", padx=(2, 2), pady=2)
-        
-        # Campo Sitio
-        site_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        site_container.pack(side="left", padx=0)
-        
-        tk.Label(
-            site_container,
-            text="Sitio:",
-            font=("Segoe UI", 9),
-            fg="#ffffff",
-            bg="#2b2b2b",
-            justify="center"
-        ).pack(side="top")
-        
-        self.site_combo = FilteredCombobox(
-            site_container,
-            width=36,
-            height=5,
-            values=self._get_sites()
-        )
-        self.site_combo.pack(side="top")
-        
-        # Campo Actividad
-        activity_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        activity_container.pack(side="left", padx=3)
-        
-        tk.Label(
-            activity_container,
-            text="Actividad:",
-            font=("Segoe UI", 9),
-            fg="#ffffff",
-            bg="#2b2b2b",
-            justify="center"
-        ).pack(side="top")
-        
-        self.activity_combo = FilteredCombobox(
-            activity_container,
-            width=25,
-            values=self._get_activities()
-        )
-        self.activity_combo.pack(side="top")
-        
-        # Campo Cantidad
-        quantity_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        quantity_container.pack(side="left", padx=3)
-        
-        tk.Label(
-            quantity_container,
-            text="Cantidad:",
-            font=("Segoe UI", 9),
-            fg="#ffffff",
-            bg="#2b2b2b",
-            justify="center"
-        ).pack(side="top")
-        
-        self.quantity_entry = ctk.CTkEntry(
-            quantity_container,
-            width=60,
-            font=("Segoe UI", 10),
-            fg_color="#333333",
-            text_color="#ffffff",
-            border_width=3,
-            border_color="#4a90e2",
-            justify="center"
-        )
-        self.quantity_entry.insert(0, "0")
-        self.quantity_entry.pack(side="top")
-        
-        # Campo Camera
-        camera_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        camera_container.pack(side="left", padx=3)
-        
-        tk.Label(
-            camera_container,
-            text="Camera:",
-            font=("Segoe UI", 9),
-            fg="#ffffff",
-            bg="#2b2b2b",
-            justify="center"
-        ).pack(side="top")
-        
-        self.camera_entry = ctk.CTkEntry(
-            camera_container,
-            width=80,
-            font=("Segoe UI", 10),
-            fg_color="#333333",
-            text_color="#ffffff",
-            border_width=3,
-            border_color="#4a90e2",
-            justify="center"
-        )
-        self.camera_entry.pack(side="top")
-        
-        # Campo Descripción
-        description_container = tk.Frame(inner_frame, bg="#2b2b2b")
-        description_container.pack(side="left", padx=3)
-        
-        tk.Label(
-            description_container,
-            text="Descripción:",
-            font=("Segoe UI", 9),
-            fg="#ffffff",
-            bg="#2b2b2b",
-            justify="center"
-        ).pack(side="top")
-        
-        self.description_entry = ctk.CTkEntry(
-            description_container,
-            width=290,
-            font=("Segoe UI", 10),
-            fg_color="#333333",
-            text_color="#ffffff",
-            border_width=3,
-            border_color="#4a90e2"
-        )
-        self.description_entry.pack(side="top")
-        
-        # Vincular Enter en todos los campos para ejecutar _add_event
-        self._bind_enter_to_submit()
-        
-        # Focus inicial en Sitio
-        self.site_combo.focus_set()
-    
-    def _bind_enter_to_submit(self):
-        """Vincula la tecla Enter a todos los campos del formulario"""
-        fields = [
-            self.datetime_entry,
-            self.site_combo,
-            self.activity_combo,
-            self.quantity_entry,
-            self.camera_entry,
-            self.description_entry
-        ]
-        
-        for field in fields:
-            field.bind("<Return>", self._on_form_enter)
-            field.bind("<KP_Enter>", self._on_form_enter)
-    
-    def _on_form_enter(self, event):
-        """Handler para la tecla Enter en el formulario"""
-        self._add_event()
-        return "break"
-    
-    def _get_sites(self):
-        """Obtiene lista de sitios a través del controller (MVC)"""
-        sites = self.controller.get_sites()
-        return [f"{row[1]} ({row[0]})" for row in sites]
-    
-    def _get_activities(self):
-        """Obtiene lista de actividades a través del controller (MVC)"""
-        activities = self.controller.get_activities()
-        return [row[0] for row in activities]
-    
-    def _add_event(self):
-        """Agrega un nuevo evento usando arquitectura MVC"""
-        from tkinter import messagebox
-        
-        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
-        if not backend_super.has_active_shift(self.username):
-            messagebox.showwarning(
-                "Sin Turno Activo",
-                "⚠️ Debes iniciar tu turno antes de registrar eventos.\n\n"
-                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
-                parent=self.window
-            )
-            return
-        
-        # Obtener valores del formulario
-        site_text = self.site_combo.get()
-        activity = self.activity_combo.get()
-        quantity = self.quantity_entry.get()
-        camera = self.camera_entry.get()
-        description = self.description_entry.get()
-        
-        # Validar campos obligatorios
-        if not site_text or not activity:
-            messagebox.showwarning(
-                "Campos requeridos",
-                "Sitio y Actividad son obligatorios",
-                parent=self.window
-            )
-            return
-        
-        # Extraer ID del sitio
-        try:
-            site_id = int(site_text.split("(")[-1].split(")")[0])
-        except:
-            messagebox.showerror("Error", "Formato de sitio inválido", parent=self.window)
-            return
-        
-        # Validar cantidad
-        try:
-            quantity_val = int(quantity) if quantity else 0
-        except:
-            messagebox.showerror("Error", "Cantidad debe ser un número", parent=self.window)
-            return
-        
-        # Obtener fecha/hora del datetime_entry
-        fecha_hora_str = self.datetime_entry.get().strip()
-        fecha_hora = None
-        if fecha_hora_str:
-            try:
-                from datetime import datetime
-                fecha_hora = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M:%S")
-            except Exception as e:
-                print(f"[WARNING] No se pudo parsear fecha del formulario: {fecha_hora_str}, usando datetime.now(). Error: {e}")
-                fecha_hora = None
-        
-        # Llamar al controller para crear evento (MVC)
-        success, message = self.controller.create_event(
-            site_id,
-            activity,
-            quantity_val,
-            camera,
-            description,
-            fecha_hora  # Pasar fecha/hora desde el formulario
-        )
-        
-        if success:
-            # Limpiar campos
-            self.site_combo.set("")
-            self.activity_combo.set("")
-            self.quantity_entry.delete(0, "end")
-            self.quantity_entry.insert(0, "0")
-            self.camera_entry.delete(0, "end")
-            self.description_entry.delete(0, "end")
-            # Limpiar campo de fecha/hora
-            self.datetime_entry.configure(state="normal")
-            self.datetime_entry.delete(0, "end")
-            self.datetime_entry.configure(state="readonly")
-            # Refrescar DailyModule
-            if hasattr(self, 'daily_module'):
-                self.daily_module.load_data()
-            print(f"[DEBUG] {message}")
-        else:
-            messagebox.showerror(
-                "Error",
-                f"No se pudo agregar el evento: Recuerda no agregar numeros en el campo de actividad.",
-                parent=self.window
-            )
-    
-    def _set_datetime_value(self, dt):
-        """Actualiza el entry de fecha/hora con el datetime seleccionado"""
-        self.datetime_entry.configure(state="normal")
-        self.datetime_entry.delete(0, "end")
-        self.datetime_entry.insert(0, dt.strftime("%Y-%m-%d %H:%M:%S"))
-        self.datetime_entry.configure(state="readonly")
-    
-    def _show_datetime_picker(self, callback, initial_datetime=None):
-        """
-        Muestra un selector de fecha/hora moderno y reutilizable.
-        
-        Args:
-            callback: Función que recibe el datetime seleccionado
-            initial_datetime: datetime inicial (por defecto datetime.now())
-        
-        Ejemplo de uso:
-            self._show_datetime_picker(callback=lambda dt: print(dt))
-        """
-        from tkinter import messagebox
-        
-        if tkcalendar is None:
-            messagebox.showerror(
-                "Error",
-                "El módulo tkcalendar no está instalado.\nInstálalo con: pip install tkcalendar",
-                parent=self.window
-            )
-            return
-        
-        # Fecha/hora inicial
-        now = initial_datetime if initial_datetime else datetime.now()
-        
-        # Crear ventana modal
-        if self.UI is not None:
-            picker_win = self.UI.CTkToplevel(self.window)
-            picker_win.title("Seleccionar Fecha y Hora")
-            picker_win.geometry("500x450")
-            picker_win.resizable(False, False)
-            picker_win.transient(self.window)
-            picker_win.grab_set()
-            
-            # Header
-            header = self.UI.CTkFrame(picker_win, fg_color="#1a1a1a", corner_radius=0, height=60)
-            header.pack(fill="x", padx=0, pady=0)
-            header.pack_propagate(False)
-            
-            self.UI.CTkLabel(
-                header, 
-                text="📅 Seleccionar Fecha y Hora",
-                font=("Segoe UI", 20, "bold"),
-                text_color="#4a90e2"
-            ).pack(pady=15)
-            
-            # Contenido principal
-            content = self.UI.CTkFrame(picker_win, fg_color="transparent")
-            content.pack(fill="both", expand=True, padx=20, pady=20)
-            
-            # Sección de Fecha
-            date_section = self.UI.CTkFrame(content, fg_color="#2b2b2b", corner_radius=10)
-            date_section.pack(fill="x", pady=(0, 15))
-            
-            self.UI.CTkLabel(
-                date_section,
-                text="📅 Fecha:",
-                font=("Segoe UI", 14, "bold"),
-                text_color="#e0e0e0"
-            ).pack(anchor="w", padx=15, pady=(15, 10))
-            
-            # Calendario
-            cal_wrapper = tk.Frame(date_section, bg="#2b2b2b")
-            cal_wrapper.pack(padx=15, pady=(0, 15))
-            
-            cal = tkcalendar.DateEntry(
-                cal_wrapper,
-                width=30,
-                background='#4a90e2',
-                foreground='white',
-                borderwidth=2,
-                year=now.year,
-                month=now.month,
-                day=now.day,
-                date_pattern='yyyy-mm-dd',
-                font=("Segoe UI", 11)
-            )
-            cal.pack()
-            
-            # Sección de Hora
-            time_section = self.UI.CTkFrame(content, fg_color="#2b2b2b", corner_radius=10)
-            time_section.pack(fill="x", pady=(0, 15))
-            
-            self.UI.CTkLabel(
-                time_section,
-                text="🕐 Hora:",
-                font=("Segoe UI", 14, "bold"),
-                text_color="#e0e0e0"
-            ).pack(anchor="w", padx=15, pady=(15, 10))
-            
-            # Variables para hora
-            hour_var = tk.IntVar(value=now.hour)
-            minute_var = tk.IntVar(value=now.minute)
-            second_var = tk.IntVar(value=now.second)
-            
-            # Frame para spinboxes
-            spinbox_container = tk.Frame(time_section, bg="#2b2b2b")
-            spinbox_container.pack(padx=15, pady=(0, 10))
-            
-            # Hora
-            tk.Label(
-                spinbox_container,
-                text="Hora:",
-                bg="#2b2b2b",
-                fg="#a3c9f9",
-                font=("Segoe UI", 11)
-            ).grid(row=0, column=0, padx=5, pady=5)
-            
-            hour_spin = tk.Spinbox(
-                spinbox_container,
-                from_=0,
-                to=23,
-                textvariable=hour_var,
-                width=8,
-                font=("Segoe UI", 12),
-                justify="center"
-            )
-            hour_spin.grid(row=0, column=1, padx=5, pady=5)
-            
-            # Minuto
-            tk.Label(
-                spinbox_container,
-                text="Min:",
-                bg="#2b2b2b",
-                fg="#a3c9f9",
-                font=("Segoe UI", 11)
-            ).grid(row=0, column=2, padx=5, pady=5)
-            
-            minute_spin = tk.Spinbox(
-                spinbox_container,
-                from_=0,
-                to=59,
-                textvariable=minute_var,
-                width=8,
-                font=("Segoe UI", 12),
-                justify="center"
-            )
-            minute_spin.grid(row=0, column=3, padx=5, pady=5)
-            
-            # Segundo
-            tk.Label(
-                spinbox_container,
-                text="Seg:",
-                bg="#2b2b2b",
-                fg="#a3c9f9",
-                font=("Segoe UI", 11)
-            ).grid(row=0, column=4, padx=5, pady=5)
-            
-            second_spin = tk.Spinbox(
-                spinbox_container,
-                from_=0,
-                to=59,
-                textvariable=second_var,
-                width=8,
-                font=("Segoe UI", 12),
-                justify="center"
-            )
-            second_spin.grid(row=0, column=5, padx=5, pady=5)
-            
-            # Botón "Ahora"
-            def set_now():
-                current = datetime.now()
-                cal.set_date(current.date())
-                hour_var.set(current.hour)
-                minute_var.set(current.minute)
-                second_var.set(current.second)
-            
-            self.UI.CTkButton(
-                time_section,
-                text="⏰ Establecer Hora Actual",
-                command=set_now,
-                fg_color="#4a90e2",
-                hover_color="#3a7bc2",
-                font=("Segoe UI", 11),
-                width=200,
-                height=35
-            ).pack(pady=(5, 15))
-            
-            # Botones Aceptar/Cancelar
-            btn_frame = self.UI.CTkFrame(content, fg_color="transparent")
-            btn_frame.pack(pady=10)
-            
-            def accept():
-                try:
-                    selected_date = cal.get_date()
-                    selected_time = datetime.strptime(
-                        f"{selected_date} {hour_var.get():02d}:{minute_var.get():02d}:{second_var.get():02d}",
-                        "%Y-%m-%d %H:%M:%S"
-                    )
-                    callback(selected_time)
-                    picker_win.destroy()
-                except Exception as e:
-                    messagebox.showerror(
-                        "Error",
-                        f"Error al establecer fecha/hora:\n{e}",
-                        parent=picker_win
-                    )
-            
-            self.UI.CTkButton(
-                btn_frame,
-                text="✅ Aceptar",
-                command=accept,
-                fg_color="#00c853",
-                hover_color="#00a043",
-                font=("Segoe UI", 12, "bold"),
-                width=120,
-                height=40
-            ).pack(side="left", padx=10)
-            
-            self.UI.CTkButton(
-                btn_frame,
-                text="❌ Cancelar",
-                command=picker_win.destroy,
-                fg_color="#666666",
-                hover_color="#555555",
-                font=("Segoe UI", 12),
-                width=120,
-                height=40
-            ).pack(side="left", padx=10)
-            
-        else:
-            # Fallback sin CustomTkinter
-            picker_win = tk.Toplevel(self.window)
-            picker_win.title("Seleccionar Fecha y Hora")
-            picker_win.geometry("400x400")
-            picker_win.transient(self.window)
-            picker_win.grab_set()
-            
-            content = tk.Frame(picker_win, bg="#2b2b2b")
-            content.pack(fill="both", expand=True, padx=20, pady=20)
-            
-            tk.Label(
-                content,
-                text="Fecha:",
-                bg="#2b2b2b",
-                fg="#ffffff",
-                font=("Segoe UI", 12, "bold")
-            ).pack(anchor="w", pady=(10, 5))
-            
-            cal = tkcalendar.DateEntry(
-                content,
-                width=25,
-                background='#4a90e2',
-                foreground='white',
-                borderwidth=2,
-                year=now.year,
-                month=now.month,
-                day=now.day
-            )
-            cal.pack(pady=5, fill="x")
-            
-            tk.Label(
-                content,
-                text="Hora:",
-                bg="#2b2b2b",
-                fg="#ffffff",
-                font=("Segoe UI", 12, "bold")
-            ).pack(anchor="w", pady=(20, 5))
-            
-            time_frame = tk.Frame(content, bg="#2b2b2b")
-            time_frame.pack(fill="x", pady=5)
-            
-            hour_var = tk.IntVar(value=now.hour)
-            minute_var = tk.IntVar(value=now.minute)
-            second_var = tk.IntVar(value=now.second)
-            
-            hour_spin = tk.Spinbox(time_frame, from_=0, to=23, textvariable=hour_var, width=8)
-            hour_spin.pack(side="left", padx=5)
-            
-            minute_spin = tk.Spinbox(time_frame, from_=0, to=59, textvariable=minute_var, width=8)
-            minute_spin.pack(side="left", padx=5)
-            
-            second_spin = tk.Spinbox(time_frame, from_=0, to=59, textvariable=second_var, width=8)
-            second_spin.pack(side="left", padx=5)
-            
-            def accept():
-                try:
-                    selected_date = cal.get_date()
-                    selected_time = datetime.strptime(
-                        f"{selected_date} {hour_var.get():02d}:{minute_var.get():02d}:{second_var.get():02d}",
-                        "%Y-%m-%d %H:%M:%S"
-                    )
-                    callback(selected_time)
-                    picker_win.destroy()
-                except Exception as e:
-                    messagebox.showerror("Error", f"Error al establecer fecha/hora:\n{e}", parent=picker_win)
-            
-            btn_frame = tk.Frame(content, bg="#2b2b2b")
-            btn_frame.pack(side="bottom", pady=20)
-            
-            tk.Button(
-                btn_frame,
-                text="Aceptar",
-                command=accept,
-                bg="#00c853",
-                fg="white",
-                width=10
-            ).pack(side="left", padx=5)
-            
-            tk.Button(
-                btn_frame,
-                text="Cancelar",
-                command=picker_win.destroy,
-                bg="#666666",
-                fg="white",
-                width=10
-            ).pack(side="left", padx=5)
-    
-    def _send_selected_specials(self):
-        """Envía eventos especiales seleccionados a un supervisor"""
-        from tkinter import messagebox
-        
-        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
-        if not backend_super.has_active_shift(self.username):
-            messagebox.showwarning(
-                "Sin Turno Activo",
-                "⚠️ Debes iniciar tu turno antes de enviar eventos.\n\n"
-                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
-                parent=self.window
-            )
-            return
-        
-        if not hasattr(self, 'specials_module'):
-            return
-        
-        # Obtener filas seleccionadas del módulo
-        selected_rows = self.specials_module.get_selected_rows()
-        
-        if not selected_rows:
-            from tkinter import messagebox
-            messagebox.showwarning(
-                "Sin selección",
-                "No hay filas seleccionadas",
-                parent=self.window
-            )
-            return
-        
-        # Obtener IDs de eventos seleccionados
-        evento_ids = self.specials_module.get_evento_ids_for_rows(selected_rows)
-        
-        if not evento_ids:
-            from tkinter import messagebox
-            messagebox.showwarning(
-                "Error",
-                "No se pudieron obtener los IDs de eventos",
-                parent=self.window
-            )
-            return
-        
-        # Mostrar selector de supervisor
-        self._show_supervisor_selector(evento_ids)
-    
-    def _send_all_specials(self):
-        """Envía todos los eventos especiales visibles a un supervisor"""
-        from tkinter import messagebox
-        
-        # ⭐ VALIDAR QUE HAY TURNO ACTIVO
-        if not backend_super.has_active_shift(self.username):
-            messagebox.showwarning(
-                "Sin Turno Activo",
-                "⚠️ Debes iniciar tu turno antes de enviar eventos.\n\n"
-                "Haz clic en el botón '🚀 Start Shift' en la esquina superior derecha.",
-                parent=self.window
-            )
-            return
-        
-        if not hasattr(self, 'specials_module'):
-            return
-        
-        # Obtener todas las filas
-        total_rows = self.specials_module.get_total_rows()
-        
-        if total_rows == 0:
-            from tkinter import messagebox
-            messagebox.showinfo(
-                "Sin datos",
-                "No hay eventos para enviar",
-                parent=self.window
-            )
-            return
-        
-        # Obtener IDs de todos los eventos
-        all_rows = list(range(total_rows))
-        evento_ids = self.specials_module.get_evento_ids_for_rows(all_rows)
-        
-        if not evento_ids:
-            from tkinter import messagebox
-            messagebox.showwarning(
-                "Error",
-                "No se pudieron obtener los IDs de eventos",
-                parent=self.window
-            )
-            return
-        
-        # Mostrar selector de supervisor
-        self._show_supervisor_selector(evento_ids)
-    
-    def _show_supervisor_selector(self, evento_ids):
-        """
-        Muestra ventana modal para seleccionar supervisor y enviar eventos.
-        
-        Args:
-            evento_ids (list): Lista de IDs de eventos a enviar
-        """
-        from tkinter import messagebox
-        
-        # Obtener lista de supervisores activos a través del controller
-        controller = self.specials_module.controller
-        supervisores = controller.get_active_supervisors()
-        
-        if not supervisores:
-            messagebox.showwarning(
-                "Sin supervisores",
-                "No hay supervisores activos disponibles",
-                parent=self.window
-            )
-            return
-        
-        # Crear ventana modal
-        if self.UI is not None:
-            supervisor_win = self.UI.CTkToplevel(self.window)
-            supervisor_win.configure(fg_color="#2c2f33")
-        else:
-            supervisor_win = tk.Toplevel(self.window)
-            supervisor_win.configure(bg="#2c2f33")
-        
-        supervisor_win.title("Selecciona un Supervisor")
-        supervisor_win.geometry("360x220")
-        supervisor_win.resizable(False, False)
-        supervisor_win.transient(self.window)
-        supervisor_win.grab_set()
-        supervisor_win.focus_set()
-        
-        # Header
-        if self.UI is not None:
-            self.UI.CTkLabel(
-                supervisor_win,
-                text="Supervisores disponibles:",
-                text_color="#00bfae",
-                font=("Segoe UI", 16, "bold")
-            ).pack(pady=(18, 8))
-            
-            container = self.UI.CTkFrame(supervisor_win, fg_color="#2c2f33")
-            container.pack(fill="both", expand=True, padx=16, pady=(0, 12))
-        else:
-            tk.Label(
-                supervisor_win,
-                text="Supervisores disponibles:",
-                bg="#2c2f33",
-                fg="#00bfae",
-                font=("Segoe UI", 13, "bold")
-            ).pack(pady=(18, 4))
-            
-            container = tk.Frame(supervisor_win, bg="#2c2f33")
-            container.pack(fill="both", expand=True, padx=14, pady=(4, 16))
-        
-        # Control de selección
-        sup_var = tk.StringVar()
-        
-        if self.UI is not None:
-            opt = self.UI.CTkOptionMenu(
-                container,
-                variable=sup_var,
-                values=supervisores,
-                fg_color="#262a31",
-                button_color="#14414e",
-                text_color="#00bfae"
-            )
-            sup_var.set(supervisores[0])
-            opt.pack(fill="x", padx=6, pady=6)
-        else:
-            yscroll_sup = tk.Scrollbar(container, orient="vertical")
-            yscroll_sup.pack(side="right", fill="y")
-            
-            sup_listbox = tk.Listbox(
-                container,
-                height=10,
-                selectmode="browse",
-                bg="#262a31",
-                fg="#00bfae",
-                font=("Segoe UI", 12),
-                yscrollcommand=yscroll_sup.set,
-                activestyle="dotbox",
-                selectbackground="#14414e"
-            )
-            sup_listbox.pack(side="left", fill="both", expand=True)
-            yscroll_sup.config(command=sup_listbox.yview)
-            
-            for sup in supervisores:
-                sup_listbox.insert("end", sup)
-            
-            if supervisores:
-                sup_listbox.selection_set(0)
-        
-        def aceptar_supervisor():
-            """Procesa el envío de eventos al supervisor seleccionado"""
-            # Obtener supervisor seleccionado
-            if self.UI is not None:
-                supervisor = (sup_var.get() or "").strip()
-                if not supervisor:
-                    messagebox.showwarning(
-                        "Sin supervisor",
-                        "Debes seleccionar un supervisor",
-                        parent=supervisor_win
-                    )
-                    return
-            else:
-                selected_indices = sup_listbox.curselection()
-                if not selected_indices:
-                    messagebox.showwarning(
-                        "Sin supervisor",
-                        "Debes seleccionar un supervisor",
-                        parent=supervisor_win
-                    )
-                    return
-                supervisor = sup_listbox.get(selected_indices[0])
-            
-            # Llamar al controller para enviar (MVC)
-            success, message, stats = controller.send_to_supervisor(evento_ids, supervisor)
-            
-            supervisor_win.destroy()
-            
-            if success:
-                messagebox.showinfo(
-                    "Éxito",
-                    message,
-                    parent=self.window
-                )
-                # Recargar datos
-                self.specials_module.load_data()
-            else:
-                messagebox.showerror(
-                    "Error",
-                    f"No se pudo enviar eventos:\n{message}",
-                    parent=self.window
-                )
-        
-        # Botones Aceptar/Cancelar
-        if self.UI is not None:
-            btn_frame = self.UI.CTkFrame(supervisor_win, fg_color="transparent")
-            btn_frame.pack(pady=(8, 16))
-            
-            self.UI.CTkButton(
-                btn_frame,
-                text="✅ Aceptar",
-                command=aceptar_supervisor,
-                fg_color="#00c853",
-                hover_color="#00a043",
-                font=("Segoe UI", 12, "bold"),
-                width=120,
-                height=36
-            ).pack(side="left", padx=10)
-            
-            self.UI.CTkButton(
-                btn_frame,
-                text="❌ Cancelar",
-                command=supervisor_win.destroy,
-                fg_color="#666666",
-                hover_color="#555555",
-                font=("Segoe UI", 12),
-                width=120,
-                height=36
-            ).pack(side="left", padx=10)
-        else:
-            btn_frame = tk.Frame(supervisor_win, bg="#2c2f33")
-            btn_frame.pack(pady=(8, 16))
-            
-            tk.Button(
-                btn_frame,
-                text="✅ Aceptar",
-                command=aceptar_supervisor,
-                bg="#00c853",
-                fg="white",
-                relief="flat",
-                width=12,
-                font=("Segoe UI", 11, "bold")
-            ).pack(side="left", padx=10)
-            
-            tk.Button(
-                btn_frame,
-                text="❌ Cancelar",
-                command=supervisor_win.destroy,
-                bg="#666666",
-                fg="white",
-                relief="flat",
-                width=12,
-                font=("Segoe UI", 11)
-            ).pack(side="left", padx=10)
     
     def _start_shift(self):
         """Inicia el turno del operador"""
@@ -1748,6 +661,168 @@ class OperatorBlackboard(Blackboard):
             except Exception as e:
                 print(f"[ERROR] _stop_auto_refresh: {e}")
     
+    def _start_night_alerts(self):
+        """Inicia el sistema de alertas nocturnas cada 30 minutos"""
+        # Esperar 2 segundos para asegurar que la ventana está completamente inicializada
+        window = self.root or self.window
+        if window and window.winfo_exists():
+            window.after(2000, self._schedule_next_night_alert)
+            print("[DEBUG] Sistema de alertas nocturnas iniciado")
+    
+    def _schedule_next_night_alert(self):
+        """Calcula y programa la próxima alerta nocturna"""
+        try:
+            from datetime import datetime, timedelta
+            
+            now = datetime.now()
+            current_hour = now.hour
+            current_minute = now.minute
+            
+            # Calcular próxima media hora (:00 o :30)
+            if current_minute < 28:
+                next_alert_minute = 28
+                next_alert_hour = current_hour
+            else:
+                next_alert_minute = 0
+                next_alert_hour = (current_hour + 1) % 24
+            
+            # Crear datetime de la próxima alerta
+            next_alert = now.replace(
+                hour=next_alert_hour,
+                minute=next_alert_minute,
+                second=0,
+                microsecond=0
+            )
+            
+            # Si la hora calculada es menor que la actual, es del día siguiente
+            if next_alert <= now:
+                next_alert += timedelta(days=1)
+            
+            # Calcular milisegundos hasta la próxima alerta
+            time_until_alert = (next_alert - now).total_seconds() * 1000
+            
+            print(f"[DEBUG] Próxima alerta programada para: {next_alert.strftime('%Y-%m-%d %H:%M:%S')} (en {time_until_alert/1000:.1f} segundos)")
+            
+            # Programar la alerta
+            window = self.root or self.window
+            if window and window.winfo_exists():
+                self.night_alert_job = window.after(
+                    int(time_until_alert),
+                    self._check_and_show_night_alert
+                )
+                print(f"[DEBUG] Alert job programado con ID: {self.night_alert_job}")
+        
+        except Exception as e:
+            print(f"[ERROR] _schedule_next_night_alert: {e}")
+    
+    def _check_and_show_night_alert(self):
+        """Verifica si es horario nocturno y muestra la alerta"""
+        try:
+            from datetime import datetime
+            
+            now = datetime.now()
+            current_hour = now.hour
+            
+            # Verificar si estamos en horario nocturno (21:00-08:00)
+            # 21:00 = 9 PM, 08:00 = 8 AM
+            is_night_time = current_hour >= 21 or current_hour < 8
+            
+            if is_night_time:
+                print(f"[DEBUG] Mostrando alerta nocturna a las {now.strftime('%H:%M:%S')}")
+                self._show_night_alert_popup()
+            else:
+                print(f"[DEBUG] Fuera de horario nocturno ({now.strftime('%H:%M:%S')}), alerta omitida")
+            
+            # Programar siguiente alerta (cada 30 minutos)
+            self._schedule_next_night_alert()
+        
+        except Exception as e:
+            print(f"[ERROR] _check_and_show_night_alert: {e}")
+            # Reprogramar de todos modos
+            self._schedule_next_night_alert()
+    
+    def _show_night_alert_popup(self):
+        """Muestra popup de alerta nocturna"""
+        try:
+            from datetime import datetime
+       
+        # Crear ventana de alerta
+            alert_win = self.ui_factory.toplevel(self.window)
+            alert_win.configure(fg_color="#1a1a1a")
+
+            alert_win.title("⏰ Recordatorio")
+            alert_win.geometry("500x280")
+            alert_win.resizable(False, False)
+            alert_win.transient(self.window)
+            alert_win.grab_set()
+            
+            # Centrar ventana
+            alert_win.update_idletasks()
+            x = (alert_win.winfo_screenwidth() // 2) - (500 // 2)
+            y = (alert_win.winfo_screenheight() // 2) - (280 // 2)
+            alert_win.geometry(f"500x280+{x}+{y}")
+            
+            # Contenido
+  
+            # Header con ícono y hora actual
+            header = self.ui_factory.frame(alert_win, fg_color="#ff6b35", corner_radius=0, height=80)
+            header.pack(fill="x")
+            header.pack_propagate(False)
+            
+            self.ui_factory.label(
+                header,
+                text="⏰",
+                font=("Segoe UI", 48)
+            ).pack(pady=10)
+            
+            # Mensaje principal
+            content = self.UI.CTkFrame(alert_win, fg_color="transparent")
+            content.pack(fill="both", expand=True, padx=30, pady=20)
+            
+            current_time = datetime.now().strftime("%I:%M %p")
+                
+            self.ui_factory.label(
+                    content,
+                    text=f"Son las {current_time}",
+                    font=("Segoe UI", 20, "bold"),
+                    text_color="#ffffff"
+                ).pack(pady=(10, 5))
+                
+            self.ui_factory.label(
+                content,
+                text="Tours",
+                font=("Segoe UI", 14),
+                text_color="#b0b0b0"
+            ).pack(pady=(0, 20))
+                
+            # Botón cerrar
+            self.ui_factory.button(
+                content,
+                text="✅ Entendido",
+                command=alert_win.destroy,
+                fg_color="#00c853",
+                hover_color="#00a043",
+                font=("Segoe UI", 14, "bold"),
+                width=200,
+                height=45
+            ).pack(pady=10)
+            
+            # Auto-cerrar después de 10 segundos
+            alert_win.after(40000, lambda: alert_win.destroy() if alert_win.winfo_exists() else None)
+            
+        except Exception as e:
+            print(f"[ERROR] _show_night_alert_popup: {e}")
+    
+    def _stop_night_alerts(self):
+        """Detiene el sistema de alertas nocturnas"""
+        if self.night_alert_job:
+            try:
+                self.window.after_cancel(self.night_alert_job)
+                self.night_alert_job = None
+                print("[DEBUG] Sistema de alertas nocturnas detenido")
+            except Exception as e:
+                print(f"[ERROR] _stop_night_alerts: {e}")
+    
     def _on_close(self):
         """
         Handler personalizado para cierre de ventana de operador.
@@ -1761,6 +836,8 @@ class OperatorBlackboard(Blackboard):
             parent=self.window
         ):
             try:
+                # Detener alertas nocturnas
+                self._stop_night_alerts()
                 # Detener auto-refresh
                 self._stop_auto_refresh()
                 
@@ -1768,9 +845,7 @@ class OperatorBlackboard(Blackboard):
                 if self.session_id and self.station:
                     print(f"[DEBUG] Cerrando sesión: {self.username} (ID: {self.session_id})")
                     login.do_logout(self.session_id, self.station, self.window)
-                    #self._send_all_specials()
 
-                
                 # Destruir ventana
                 self.window.destroy()
                 
@@ -1789,7 +864,6 @@ class OperatorBlackboard(Blackboard):
                     self.window.destroy()
                 except:
                     pass
-
 
 def open_operator_blackboard(username, session_id, station, root=None):
     """

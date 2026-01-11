@@ -13,7 +13,7 @@ class AdminDashboard(Dashboard):
     
     def __init__(self, username, role, session_id=None, station=None, root=None):
         """Inicializa dashboard de admin"""
-        self.current_tab = "Users"
+        self.current_tab = "Dashboard"
         self.tab_buttons = {}
         self.tab_frames = {}
         
