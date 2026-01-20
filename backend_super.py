@@ -1684,26 +1684,31 @@ def prompt_exit_active_cover(username, root):
         cur.execute(
             """
             SELECT ID_Covers FROM covers_realizados
-            WHERE Nombre_usuarios = %s AND Cover_out IS NULL
+            WHERE Nombre_usuarios = %s 
+            AND Cover_out IS NULL
+            AND (
+                Covered_by != Nombre_usuarios  -- Si no es auto-cover, permitir siempre
+                OR TIMESTAMPDIFF(MINUTE, Cover_in, NOW()) >= 5  -- Si es auto-cover, esperar 5 min
+            )
             ORDER BY ID_Covers DESC
             LIMIT 1
             """,
             (username,)
         )
-        row = cur.fetchone()
+        id_cover = cur.fetchone()
     finally:
         try: cur.close()
         except: pass
         try: conn.close()
         except: pass
 
-    if row:
+    if id_cover:
         messagebox.showinfo(
             "Cover activo",
             "Tienes un cover activo. Se cerrará automáticamente.",
             parent=root
         )
-        exit_cover(username)
+        exit_cover(id_cover)
 
 def cover_mode(username, session_id, station, root=None):
     # Ventana única por función
@@ -1926,34 +1931,11 @@ def cover_mode(username, session_id, station, root=None):
 
 
 
-def exit_cover(username):
+def exit_cover(id_cover):
     """Cierra el cover abierto (pone Cover_out a now) y desactiva el modo_cover."""
     now = datetime.now()
     conn = get_connection()
     cur = conn.cursor()
-    
-    # Obtener el último ID de Covers para el usuario con Activo = -1
-    try:
-        cur.execute(
-            """
-        SELECT ID_Covers
-        FROM covers_realizados
-        WHERE Nombre_usuarios = %s
-        ORDER BY ID_Covers DESC
-        LIMIT 1
-        """,
-        (username,)
-        )
-        conn.commit()
-        
-
-        result = cur.fetchone()
-        ID_cover = result[0] if result else None
-        print(f"[DEBUG] ID_cover obtenido: {ID_cover}")
-    
-    except pymysql.Error as e:
-        print(f"[ERROR] al obtener ID_cover: {e}")
-        return ID_cover
 
     try:
         # Usar el último ID insertado (current_cover_id) y el username para actualizar Activo a 0
@@ -1961,9 +1943,9 @@ def exit_cover(username):
             """
             UPDATE covers_realizados
             SET Cover_out = %s
-            WHERE ID_Covers = %s AND Nombre_usuarios = %s
+            WHERE ID_Covers = %s
             """,
-            (now, ID_cover, username)
+            (now, id_cover)
         )
         conn.commit()
         print("[DEBUG] Cover actualizado correctamente")

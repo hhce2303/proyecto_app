@@ -35,7 +35,7 @@ class OperatorBlackboard(Blackboard):
         self.tab_frames = {}
         
         # Inicializar controller
-        self.controller = DailyController(username)
+        self.controller = DailyController(username, window=root, current_tab=self.current_tab)
         self.news_controller = NewsController(username)
         # Variables para control de shift
         self.shift_warning_label = None
@@ -418,7 +418,8 @@ class OperatorBlackboard(Blackboard):
     
     def _request_cover(self):
         try:
-            self.controller.request_cover(username=self.username)
+            self.controller.request_cover(
+                username=self.username)
 
         except Exception as e:
             messagebox.showerror(
@@ -440,7 +441,7 @@ class OperatorBlackboard(Blackboard):
         
     def _on_logout(self):
         """Handler de logout"""
-        from tkinter import messagebox
+
         if messagebox.askyesno("Logout", "¿Cerrar sesión?", parent=self.window):
             self.window.destroy()
     
@@ -678,12 +679,15 @@ class OperatorBlackboard(Blackboard):
             current_hour = now.hour
             current_minute = now.minute
             
-            # Calcular próxima media hora (:00 o :30)
-            if current_minute < 28:
-                next_alert_minute = 28
+            # Calcular próxima alerta a las :37 o :57
+            if current_minute < 37:
+                next_alert_minute = 37
+                next_alert_hour = current_hour
+            elif current_minute < 57:
+                next_alert_minute = 57
                 next_alert_hour = current_hour
             else:
-                next_alert_minute = 0
+                next_alert_minute = 37
                 next_alert_hour = (current_hour + 1) % 24
             
             # Crear datetime de la próxima alerta
@@ -760,6 +764,17 @@ class OperatorBlackboard(Blackboard):
             alert_win.update_idletasks()
             x = (alert_win.winfo_screenwidth() // 2) - (500 // 2)
             y = (alert_win.winfo_screenheight() // 2) - (280 // 2)
+            alert_win.geometry(f"500x280+{x}+{y}")
+            
+            # Forzar que la ventana esté al frente y centrada respecto a la principal
+            alert_win.lift()
+            alert_win.attributes('-topmost', True)
+            alert_win.focus_force()
+            # Centrar respecto a la ventana principal (no solo pantalla)
+            parent = self.window
+            parent.update_idletasks()
+            x = parent.winfo_x() + (parent.winfo_width() // 2) - (500 // 2)
+            y = parent.winfo_y() + (parent.winfo_height() // 2) - (280 // 2)
             alert_win.geometry(f"500x280+{x}+{y}")
             
             # Contenido

@@ -451,3 +451,70 @@ class SpecialsOperatorController:
             import traceback
             traceback.print_exc()
             return False, str(e), {}
+    
+    def auto_detect_and_send(self, evento_ids):
+        """
+        Detecta automáticamente el supervisor según la estación del operador
+        y envía los eventos especiales.
+        
+        Proceso:
+        1. Obtiene la estación del operador desde stations_map
+        2. Detecta el supervisor asignado según rango de estaciones
+        3. Valida que el supervisor esté activo
+        4. Llama a send_to_supervisor() con los eventos
+        
+        Args:
+            evento_ids (list[int]): Lista de IDs de eventos especiales a enviar
+        
+        Returns:
+            tuple: (success: bool, supervisor: str|None, message: str)
+        """
+        try:
+            print(f"[AUTO_DETECT] Iniciando detección automática para '{self.username}'")
+            
+            # Validar lista de eventos
+            if not evento_ids or len(evento_ids) == 0:
+                message = "No hay eventos para enviar"
+                print(f"[AUTO_DETECT] {message}")
+                return False, None, message
+            
+            # 1. Obtener estación del operador
+            station = specials_model.get_operator_station(self.username)
+            
+            if station is None:
+                message = f"Operador '{self.username}' sin estación asignada en stations_map"
+                print(f"[AUTO_DETECT] ERROR: {message}")
+                return False, None, message
+            
+            # 2. Detectar supervisor por estación
+            supervisor = specials_model.get_supervisor_by_station(station)
+            
+            if supervisor is None:
+                message = f"Estación {station} sin supervisor configurado o supervisor inactivo"
+                print(f"[AUTO_DETECT] ERROR: {message}")
+                return False, None, message
+            
+            print(f"[AUTO_DETECT] Supervisor detectado: '{supervisor}' para estación {station}")
+            
+            # 3. Llamar a send_to_supervisor (método existente)
+            success, result_message, stats = self.send_to_supervisor(evento_ids, supervisor)
+            
+            # 4. Formatear respuesta
+            if success:
+                message = f"{len(evento_ids)} eventos enviados a '{supervisor}'"
+                if stats:
+                    message += f"\n• Insertados: {stats.get('inserted', 0)}"
+                    message += f"\n• Actualizados: {stats.get('updated', 0)}"
+                print(f"[AUTO_DETECT] ✅ ÉXITO: {message}")
+                return True, supervisor, message
+            else:
+                message = f"Error al enviar a '{supervisor}': {result_message}"
+                print(f"[AUTO_DETECT] ❌ ERROR: {message}")
+                return False, supervisor, message
+            
+        except Exception as e:
+            error_msg = f"Error inesperado en auto_detect_and_send: {e}"
+            print(f"[AUTO_DETECT] ❌ EXCEPCIÓN: {error_msg}")
+            import traceback
+            traceback.print_exc()
+            return False, None, error_msg

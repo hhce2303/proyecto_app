@@ -3,10 +3,7 @@ Módulo de Specials para Operadores
 Arquitectura: MVC - Vista (Presentation Layer)
 Responsabilidad: Renderizar datos de eventos especiales en tksheet
 """
-
-import tkinter as tk
 from tksheet import Sheet
-from models.database import get_connection
 from controllers.specials_operator_controller import SpecialsOperatorController
 
 
@@ -65,6 +62,9 @@ class SpecialsModule:
         # Configurar sheet
         self._setup_sheet()
         self._setup_bindings()
+        
+        # ⏰ TIMER AUTOMÁTICO: Envío cada 30 minutos (inicia después del primer intervalo)
+        self._schedule_auto_send(first_run=True)
     
     def _setup_sheet(self):
         """Configura el tksheet."""
@@ -274,6 +274,130 @@ class SpecialsModule:
                 evento_ids.append(self.row_ids[idx])
         
         return evento_ids
+    
+    def trigger_auto_send(self):
+        """
+        Hook para disparar envío automático de specials.
+        
+        Proceso:
+        1. Recarga datos actualizados del controlador
+        2. Filtra eventos que necesitan acción:
+           - Sin color (sin marca): INSERT nuevo
+           - Ámbar (pendiente): UPDATE
+           - Verde (sincronizado): IGNORAR
+        3. Llama al controlador para auto-detección y envío
+        4. Recarga vista después del envío
+        
+        Returns:
+            tuple: (success: bool, message: str)
+        """
+        try:
+            print(f"[TRIGGER_AUTO_SEND] Iniciando envío automático para '{self.username}'")
+            
+            # 1. Recargar datos actualizados desde el controlador
+            current_data = self.controller.load_specials_data()
+            
+            if not current_data or len(current_data) == 0:
+                message = "No hay eventos especiales en este turno"
+                print(f"[TRIGGER_AUTO_SEND] ℹ️ {message}")
+                return False, message
+            
+            # 2. Filtrar eventos que necesitan ser enviados/actualizados
+            eventos_to_send = []
+            for item in current_data:
+                estado_color = item.get('estado_color')
+                evento_id = item.get('id')
+                
+                if estado_color == 'green':
+                    # Verde = ya sincronizado, ignorar
+                    continue
+                elif estado_color == 'amber':
+                    # Ámbar = pendiente por actualizar (UPDATE)
+                    eventos_to_send.append(evento_id)
+                else:
+                    # Sin color = sin enviar (INSERT)
+                    eventos_to_send.append(evento_id)
+            
+            # 3. Validar que hay eventos para procesar
+            if not eventos_to_send or len(eventos_to_send) == 0:
+                message = "Todos los eventos ya están sincronizados (verde)"
+                print(f"[TRIGGER_AUTO_SEND] ✅ {message}")
+                return True, message
+            
+            print(f"[TRIGGER_AUTO_SEND] Eventos a procesar: {len(eventos_to_send)}/{len(current_data)}")
+            print(f"[TRIGGER_AUTO_SEND] - Sin enviar o pendientes: {len(eventos_to_send)}")
+            print(f"[TRIGGER_AUTO_SEND] - Ya sincronizados (ignorados): {len(current_data) - len(eventos_to_send)}")
+            
+            # 4. Llamar al controlador para auto-detección y envío
+            success, supervisor, message = self.controller.auto_detect_and_send(eventos_to_send)
+
+            
+            # 5. Recargar vista después del envío
+            if success:
+                print(f"[TRIGGER_AUTO_SEND] ✅ ÉXITO: {message}")
+                print(f"[TRIGGER_AUTO_SEND] Supervisor: {supervisor}")
+                print(f"[TRIGGER_AUTO_SEND] Recargando vista...")
+                
+            else:
+                print(f"[TRIGGER_AUTO_SEND] ❌ ERROR: {message}")
+            
+            # 6. Retornar resultado
+            self.load_data()  # Recargar para actualizar colores
+            return success, message
+            
+        except Exception as e:
+            error_msg = f"Error en trigger_auto_send: {e}"
+            print(f"[TRIGGER_AUTO_SEND] ❌ EXCEPCIÓN: {error_msg}")
+            import traceback
+            traceback.print_exc()
+            return False, error_msg
+    
+    def _schedule_auto_send(self, first_run=False):
+        """
+        Programa el envío automático de specials cada 30 minutos.
+        
+        Funcionamiento:
+        - En la primera llamada (first_run=True): Solo programa, no ejecuta
+        - En llamadas subsecuentes: Ejecuta trigger_auto_send() y se reprograma
+        - Intervalo: 1800000 ms (30 minutos)
+        
+        Args:
+            first_run (bool): True si es la primera llamada desde __init__
+        
+        Nota: El timer se inicia automáticamente al crear el módulo.
+        """
+        try:
+            if first_run:
+                # Primera llamada: Solo programar, no ejecutar todavía (datos aún no cargados)
+                print(f"[TIMER_AUTO_SEND] Timer iniciado para '{self.username}' - primer envío en 30 minutos")
+                if hasattr(self, 'container') and self.container.winfo_exists():
+                    self.container.after(500, self._schedule_auto_send)  # 2 min = 2000 ms
+            else:
+                # Llamadas subsecuentes: Ejecutar y reprogramar
+                print(f"[TIMER_AUTO_SEND] Ejecutando envío automático programado para '{self.username}'")
+                
+                # Ejecutar envío automático
+                self.trigger_auto_send()
+                
+                # Reprogramar para el próximo ciclo (30 minutos)
+                if hasattr(self, 'container') and self.container.winfo_exists():
+                    self.container.after(30000, self._schedule_auto_send)  # 0.1 min = 6000 ms
+                    print(f"[TIMER_AUTO_SEND] Próximo envío automático en 0.1 minutos")
+                else:
+                    print(f"[TIMER_AUTO_SEND] Módulo destruido, timer cancelado")
+                
+        except Exception as e:
+            print(f"[TIMER_AUTO_SEND] ❌ Error en timer: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Intentar reprogramar incluso si hubo error
+            try:
+                if hasattr(self, 'container') and self.container.winfo_exists():
+                    self.container.after(1800000, self._schedule_auto_send)
+            except:
+                pass
+    
     
     def refresh(self):
         """Recarga los datos del módulo."""

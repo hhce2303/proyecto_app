@@ -4,6 +4,8 @@ import login
 from utils.ui_factory import UIFactory
 from views.blackboard import Blackboard
 from views.modules.admin_modules.dashboard_module import DashboardModule
+from views.modules.admin_modules.healthcheck_admin_module import AdminHCModules
+from views.modules.healthcheck_module import HealthcheckModule
 
 
 
@@ -48,7 +50,7 @@ class AdminBlackboard(Blackboard):
             ("📶Dashboard", "Dashboard"),
             ("👥Users", "Users"),
             ("📋Sessions", "Sessions"),
-            ("📊Reports", "Reports"),
+            ("📊HealthCheck", "HealthCheck"),
             ("⚙️Settings", "Settings")
         ]
 
@@ -86,6 +88,20 @@ class AdminBlackboard(Blackboard):
 
         self.tab_frames["Dashboard"] = dashboard_frame
 
+        healthcheck_frame = self.ui_factory.frame(self.blackframe_bg, fg_color="#000000")
+
+        try:
+            
+            self.healthcheck_module = AdminHCModules(
+                container=healthcheck_frame,
+                username=self.username,
+                ui_factory=self.ui_factory,
+                UI=self.UI
+            )
+        except Exception as e:
+            print(f"[ERROR] No se pudo cargar el módulo HealthCheck: {e}")
+
+        self.tab_frames["HealthCheck"] = healthcheck_frame
     
     def _switch_tab(self, tab_name):
         """Cambia entre tabs y recarga datos"""

@@ -1,5 +1,3 @@
-
-
 from datetime import datetime
 
 import backend_super
@@ -12,8 +10,10 @@ from tkinter import messagebox
 
 class DailyController:  
 
-    def __init__(self, username):
+    def __init__(self, username, window=None, current_tab=None):
         self.username = username
+        self.window = window
+        self.current_tab = current_tab
         
     def load_daily(self):
         """Carga datos diarios desde el último START SHIFT (MODO DAILY)"""
@@ -301,9 +301,9 @@ class DailyController:
             import traceback
             traceback.print_exc()
 
-    def on_cell_edit(self, event):
+    def on_cell_edit(self, evento):
         """Handler cuando se edita una celda (recibe la tupla evento)"""
         try:
-            self.auto_save_pending_event(event)
+            self.auto_save_pending_event(evento)
         except Exception as e:
             print(f"[DEBUG] on_cell_edit error: {e}")

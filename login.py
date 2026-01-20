@@ -6,7 +6,8 @@ from pathlib import Path
 import backend_super
 import main_super  # módulo principal
 from datetime import datetime
-#
+from models.user_model import get_station_id_by_number, get_station_number_by_id, get_username_by_id
+from models.user_model import get_user_id_by_name
 import under_super
 
 from models.database import get_connection
@@ -67,15 +68,17 @@ def do_logout(session_id, station, root):
         print(f"[DEBUG] Filas afectadas: {cursor.rowcount}")
         print("[DEBUG] UPDATE Sesiones OK ✅")
 
+        statio_id = get_station_id_by_number(station)
+
         # 🔹 Liberar estación (ahora usando Station_Number)
         cursor.execute(
             """
-            UPDATE Estaciones
-            SET User_Logged = NULL
-            WHERE Station_Number=%s
+            UPDATE stations_map
+            SET station_user = null, is_active = null
+            WHERE station_ID =%s
             
             """,
-            (station)
+            (statio_id)
         )
         print("[DEBUG] Estación liberada en tabla Estaciones")
 
@@ -323,13 +326,9 @@ def show_login():
     def do_login():
         username = username_entry.get()
         password = password_entry.get()
-        station_input = station_entry.get()
+        station = station_entry.get()
 
-        # Validar estación
-        if not station_input.isdigit():
-            messagebox.showerror("Error", "Datos invalidos")
-            return
-        station = int(station_input)  # Número lógico de estación
+
 
         print(f"[DEBUG] username: {username} ({type(username)})")
         print(f"[DEBUG] password: {password} ({type(password)})")
@@ -392,18 +391,24 @@ def show_login():
             session_id = cursor.fetchone()[0]
             print(f"[DEBUG] Nuevo Session_ID generado: {session_id}")
 
+        
+            
             # 🔹 Verificar si la estación ya está ocupada
-            cursor.execute("SELECT User_Logged FROM estaciones WHERE Station_Number=%s", (station,))
+            cursor.execute("SELECT station_user FROM stations_map WHERE station_ID=%s", (station,))
             row = cursor.fetchone()
 
             if row and row[0]:  # Si ya hay alguien logeado
-                print(f"❌ La estación {station} ya está siendo usada por {row[0]}")
+                print(f"❌ La estación {station} ya está siendo usada ")
                 return
+            
+            user_id= get_user_id_by_name(username)
+            station_id = get_station_id_by_number(station)
 
             # 🔹 Actualizar estación si está libre
-            cursor.execute("""INSERT INTO estaciones (User_Logged, Station_Number)
-            VALUES (%s, %s)
-            """, (username, station))
+            cursor.execute("""UPDATE stations_map
+            SET station_user = %s, is_active = 1
+            WHERE station_ID = %s
+            """, (user_id, station_id))
 
             print("[DEBUG] INSERT Estaciones ejecutado")
             conn.commit()
@@ -544,6 +549,8 @@ def auto_login(username, station, password="1234", parent=None, silent=True):
 
     Returns (ok, session_id, role) and opens main_super.open_main_window on success.
     """
+    
+    backend_super.prompt_exit_active_cover(username, parent)
     try:
         # Validate station
         if isinstance(station, str):

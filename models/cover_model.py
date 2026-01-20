@@ -51,8 +51,7 @@ def request_covers(username, time_request, reason, aprvoved):
                 f"Estado: Pendiente de aprobación/ejecución"
             )
             print(f"[DEBUG] Solicitud rechazada: cover activo existente (ID: {active_cover[0]})")
-            cursor.close()
-            conn.close()
+
             return None
         
         # ⭐ VERIFICAR LÍMITE DE TIEMPO: 10 minutos entre solicitudes (solo del día actual)
