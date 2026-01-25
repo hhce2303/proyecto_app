@@ -1,0 +1,103 @@
+<!-- SVG: Dark workspace map layout
+- No names
+- Dark background
+- Each workstation has a unique ID for Python control
+- IDs are placed on <g> groups (recommended)
+--><svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+
+
+<!-- ====== DEFINITIONS ====== -->
+<defs>
+<style>
+.desk { fill:#1e1e1e; stroke:#5f6368; stroke-width:2; rx:10; }
+.screen { fill:#2b2b2b; stroke:#9aa0a6; stroke-width:1.5; rx:4; }
+.chair { fill:#3a3a3a; }
+.table { fill:#232323; stroke:#5f6368; stroke-width:2; rx:14; }
+.zone { fill:#151515; stroke:#2f3133; stroke-width:2; rx:18; }
+</style>
+
+
+<!-- subtle glow for alerts (can be toggled from Python) -->
+<filter id="glow">
+<feGaussianBlur stdDeviation="4" result="blur"/>
+<feMerge>
+<feMergeNode in="blur"/>
+<feMergeNode in="SourceGraphic"/>
+</feMerge>
+</filter>
+</defs>
+
+
+<!-- ====== BACKGROUND ====== -->
+<rect x="0" y="0" width="1600" height="900" fill="#0f1115"/>
+
+
+<!-- ====== ZONES ====== -->
+<!-- Left block -->
+<rect class="zone" x="60" y="120" width="260" height="660"/>
+
+
+<!-- Center blocks -->
+<rect class="zone" x="420" y="160" width="260" height="580"/>
+<rect class="zone" x="760" y="160" width="260" height="580"/>
+
+
+<!-- Right block -->
+<rect class="zone" x="1100" y="120" width="260" height="660"/>
+
+
+<!-- ====== WORKSTATIONS (GROUPED WITH IDS) ====== -->
+
+
+<!-- LEFT COLUMN (WS_01 - WS_08) -->
+<g id="WS_01" transform="translate(100,160)" filter="url(#glow)">
+<rect class="table" width="180" height="70" fill="#8b0000"/>
+<rect class="screen" x="50" y="10" width="80" height="30"/>
+<circle class="chair" cx="90" cy="85" r="12"/>
+</g>
+
+
+<g id="WS_02" transform="translate(100,250)">
+<rect class="table" width="180" height="70"/>
+<rect class="screen" x="50" y="10" width="80" height="30"/>
+<circle class="chair" cx="90" cy="85" r="12"/>
+</g>
+
+
+<g id="WS_03" transform="translate(100,340)">
+<rect class="table" width="180" height="70"/>
+<rect class="screen" x="50" y="10" width="80" height="30"/>
+<circle class="chair" cx="90" cy="85" r="12"/>
+</g>
+
+
+<g id="WS_04" transform="translate(100,430)">
+<rect class="table" width="180" height="70"/>
+<rect class="screen" x="50" y="10" width="80" height="30"/>
+<circle class="chair" cx="90" cy="85" r="12"/>
+</g>
+
+
+<g id="WS_05" transform="translate(100,520)">
+<rect class="table" width="180" height="70"/>
+<rect class="screen" x="50" y="10" width="80" height="30"/>
+<circle class="chair" cx="90" cy="85" r="12"/>
+</g>
+
+
+<g id="WS_06" transform="translate(100,610)">
+<rect class="table" width="180" height="70"/>
+<rect class="screen" x="50" y="10" width="80" height="30"/>
+<circle class="chair" cx="90" cy="85" r="12"/>
+</g>
+
+
+<!-- CENTER LEFT COLUMN (WS_09 - WS_14) -->
+<g id="WS_09" transform="translate(460,200)">
+<rect class="table" width="180" height="70"/>
+<rect class="screen" x="50" y="10" width="80" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+</g>
+
+
+</svg>

@@ -1,0 +1,363 @@
+<!-- SVG: Dark workspace map layout
+- No names
+- Dark background
+- Each workstation has a unique ID for Python control
+- IDs are placed on <g> groups (recommended)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+
+
+<!-- ====== DEFINITIONS ====== -->
+<defs>
+<style>
+.desk { fill:#1e1e1e; stroke:#5f6368; stroke-width:2; rx:10; }
+.screen { fill:#2b2b2b; stroke:#9aa0a6; stroke-width:1.5; rx:4; }
+.chair { fill:#3a3a3a; }
+.table { fill:#232323; stroke:#5f6368; stroke-width:2; rx:14; }
+.zone { fill:#151515; stroke:#2f3133; stroke-width:2; rx:18; }
+</style>
+
+
+<!-- subtle glow for alerts (can be toggled from Python) -->
+<filter id="glow">
+<feGaussianBlur stdDeviation="4" result="blur"/>
+<feMerge>
+<feMergeNode in="blur"/>
+<feMergeNode in="SourceGraphic"/>
+</feMerge>
+</filter>
+</defs>
+
+
+<!-- ====== BACKGROUND ====== -->
+<rect x="0" y="0" width="1600" height="900" fill="#0f1115"/>
+    
+
+<!-- ====== ZONES ====== -->
+<!-- Left block -->
+<rect class="zone" x="150" y="60" width="260" height="790"/>
+
+
+<!-- Center blocks -->
+<rect class="zone" x="510" y="50" width="260" height="800"/>
+<rect class="zone" x="850" y="50" width="260" height="800"/>
+
+
+
+<!-- Right block -->
+<rect class="zone" x="1190" y="8" width="260" height="840"/>
+
+
+<!-- ====== WORKSTATIONS (GROUPED WITH IDS) ====== -->
+
+
+<!-- LEFT COLUMN (WS_01 - WS_08) -->
+<g id="WS_01" transform="translate(190,120)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+
+<g id="WS_02" transform="translate(190,210)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+
+<g id="WS_03" transform="translate(190,300)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<!--Space for tv-->
+
+<g id="WS_04" transform="translate(190,470)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+
+<g id="WS_05" transform="translate(190,540)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+
+<g id="WS_06" transform="translate(190,630)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_07" transform="translate(190,720)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+
+<!-- CENTER LEFT COLUMN (WS_09 - WS_14) -->
+<g id="WS_09" transform="translate(550,70)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_10" transform="translate(550,160)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_11" transform="translate(550,250)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<!--Space for Lead supervisor-->
+
+<g id="WS_12" transform="translate(550,390)">
+<rect class="table" width="120" height="50" x="30"/>
+<rect class="screen" x="70" y="10" width="40" height="15"/>
+<circle class="chair" cx="90" cy="-10" r="12"/>
+</g>
+
+<!--Space for Lead supervisor-->
+
+<g id="WS_13" transform="translate(550,490)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_14" transform="translate(550,580)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_15" transform="translate(550,670)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<!--Space for Supervisor-->
+
+<g id="WS_16" transform="translate(550,760)">
+<rect class="table" width="120" height="50" x="30"/>
+<rect class="screen" x="70" y="10" width="40" height="15"/>
+<circle class="chair" cx="90" cy="65" r="12"/>
+</g>
+
+<!--Space for Supervisor-->
+
+<!-- RIGHT CENTER COLUMN (WS_17 - WS_24) -->
+<g id="WS_17" transform="translate(890,70)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_18" transform="translate(890,160)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_19" transform="translate(890,250)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<!--Space for Lead supervisor-->
+
+<g id="WS_12" transform="translate(890,390)">
+<rect class="table" width="120" height="50" x="30"/>
+<rect class="screen" x="70" y="10" width="40" height="15"/>
+<circle class="chair" cx="90" cy="-10" r="12"/>
+</g>
+
+<!--Space for Lead supervisor-->
+
+<g id="WS_20" transform="translate(890,490)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_21" transform="translate(890,580)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_22" transform="translate(890,670)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<!--Space for Supervisor-->
+
+<g id="WS_23" transform="translate(890,760)">
+<rect class="table" width="120" height="50" x="30"/>
+<rect class="screen" x="70" y="10" width="40" height="15"/>
+<circle class="chair" cx="90" cy="65" r="12"/>
+</g>
+
+<!--Space for Supervisor-->
+
+
+<!--RIGHT COLUMN-->
+
+<g id="WS_24" transform="translate(1230,10)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_25" transform="translate(1230,100)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_26" transform="translate(1230,190)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_27" transform="translate(1230,280)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<!--Space for TV-->
+
+<g id="WS_28" transform="translate(1230,400)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_29" transform="translate(1230,490)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_30" transform="translate(1230,580)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<g id="WS_31" transform="translate(1230,670)">
+<rect class="table" width="90" height="70"/>
+<rect class="screen" x="50" y="18" width="20" height="30"/>
+<rect class="table" x="93" width="90" height="70"/>
+<rect class="screen" x="115" y="18" width="20" height="30"/>
+<circle class="chair" cx="-10" cy="35" r="12"/>
+<circle class="chair" cx="190" cy="35" r="12"/>
+</g>
+
+<!--Space for Supervisor-->
+
+<g id="WS_32" transform="translate(1230,760)">
+<rect class="table" width="120" height="50" x="30"/>
+<rect class="screen" x="70" y="10" width="40" height="15"/>
+<circle class="chair" cx="90" cy="65" r="12"/>
+</g>
+
+<!--Space for Supervisor-->
+
+
+</svg>

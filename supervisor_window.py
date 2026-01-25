@@ -108,7 +108,7 @@ class SupervisorWindow:
         title_prefix = "👔" if self.role == "Lead Supervisor" else "📊"
         win.title(f"{title_prefix} {self.role} - {self.username}")
         
-        win.geometry("1340x800")
+        win.geometry("1390x800")
         win.resizable(True, True)
         return win
     
